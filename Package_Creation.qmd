@@ -1,0 +1,29 @@
+---
+title: "fishblicc Support & Package Creation"
+author: "Paul Medley"
+date:   "August 2022"
+format: html
+editor: visual
+---
+
+
+```{r}
+
+# The package was created using:
+# library("rstantools")
+# rstan_create_package(
+#   path="E:/Dropbox/Routines/fishblicc",
+# )
+
+library
+
+
+```
+
+
+```{r}
+#| echo: false
+2 * 2
+```
+
+The `echo: false` option disables the printing of code (only output is displayed).
