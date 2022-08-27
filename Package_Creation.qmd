@@ -15,8 +15,9 @@ editor: visual
 #   path="E:/Dropbox/Routines/fishblicc",
 # )
 
-library
-
+library("devtools")
+packageVersion("devtools")
+use_git()
 
 ```
 
