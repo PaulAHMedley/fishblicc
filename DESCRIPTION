@@ -2,10 +2,9 @@ Package: fishblicc
 Title: Bayesian Length Interval Catch Curve
 Version: 0.0.0.1000
 Authors@R: 
-    person("Paul", "Medley", , "paulahmedley@gmail.com", role = c("aut", "cre"),
-           comment = c(ORCID = "YOUR-ORCID-ID"))
+    person("Paul", "Medley", , "paulahmedley@gmail.com", role = c("aut", "cre"))
 Description: The package provides functions for fitting a catch curve to length frequency data. The model assumes that the fish population is in a steady state (constant recruitment), growth is Gamma distributed with a fixed CV and mean following the von Bertalanffy function and mortality is constant within each length interval. The model provides the expected frequency in each length interval for a negative binomial likelihood. This implementation assumes that natural mortality is constant and selectivity can be modelled using a double-sided normal function. The model is fitted using Stan which estimates the probability for parameters of interest. 
-License: `use_mit_license()`
+License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.2.1
@@ -26,3 +25,6 @@ LinkingTo:
     rstan (>= 2.18.1),
     StanHeaders (>= 2.18.0)
 SystemRequirements: GNU make
+Suggests: 
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3

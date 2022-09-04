@@ -222,6 +222,10 @@ vector Survival_Est(vector gl_node, vector gl_wt, vector Len, vector Zki, real a
 
 vector NinInterval(vector Surv, vector Zki) {
   // Expected numbers of fish within each length interval
+  // Due to numerical error, it is possible zero or, mre likely,  a very small negative number will be returned, 
+  // which will be rejected by the sampler.
+  // Whether this is a problem in practice is not clear. Fixing it by setting minimum values might upset the sampler which uses gradients
+  // and assumes continuous variables. Keeping the length bins tight around observations (e.g. bracket the observations with a single zero).
   int nl = rows(Surv);
   vector[nl] NinIntv = append_row((Surv[1:(nl-1)]-Surv[2:nl]), Surv[nl]) ./ Zki; // assumes no survival to the nl+1 interval
   return NinIntv;
@@ -285,7 +289,7 @@ transformed data {
   // LMP is only used for selectivity model
   for (i in 1:(oBN-1)) 
     LMP[i] = 0.5*(Len[i]+Len[i+1]);
-  LMP[oBN] = Len[oBN] + 0.5*(Len[oBN]-Len[oBN-1]);      // Final interval 
+  LMP[oBN] = Len[oBN] + 0.5*(Len[oBN]-Len[oBN-1]);
 }
 
 
@@ -350,18 +354,18 @@ model {
     vector[oBN] Zki;                                 // Total mortality
     vector[oBN] Sv;
     if (Flat_top == 0)
-      Fki = sel_ssnormal(LMP, Smx, Ss1) * Fk;          // Fishing mortality with selectivity
+      Fki = sel_ssnormal(LMP, Smx, Ss1) * Fk;          // Fishing mortality with flat top selectivity
     else
-      Fki = sel_dsnormal(LMP, Smx, Ss1, Ss2) * Fk;   // Fishing mortality with selectivity
+      Fki = sel_dsnormal(LMP, Smx, Ss1, Ss2) * Fk;     // Fishing mortality with domed selectivity
     Zki = Fki+Mk;                                 // Total mortality
     //calculate the expected survival at each length point integrating over age
     Sv = Survival_Est(kn_wt[1], kn_wt[2], Len, Zki, Galpha, Gbeta);
 
-    efq = Fki .* NinInterval(Sv, Zki);
-    Sum_efq = sum(efq);
-    efq *= NObs/Sum_efq;    // Normalise and raise to the expected numbers in the sample
-    efq += eps;             // Add a small number to avoid an expected zero and increase numerical stability
+    efq     = Fki .* NinInterval(Sv, Zki);
     //efq = Fki .* append_row((Sv[1:(oBN-1)]-Sv[2:oBN]), Sv[oBN]) * NObs ./ Zki;
+    Sum_efq = sum(efq);
+    efq    *= NObs/Sum_efq;    // Normalise and raise to the expected numbers in the sample
+    efq    += eps;             // Add a small number to avoid an expected zero and increase numerical stability
   }
   
   //<><  ><>  <><  ><>  <><  ><>  <><  ><>  <><  ><>  
@@ -390,7 +394,7 @@ generated quantities {
     if (Flat_top == 0)
       Zki = sel_ssnormal(LMP, Smx, Ss1) * Fk + Mk;          // Fishing mortality with selectivity
     else
-      Zki = sel_dsnormal(LMP, Smx, Ss1, Ss2) * Fk + Mk;   // Fishing mortality with selectivity
+      Zki = sel_dsnormal(LMP, Smx, Ss1, Ss2) * Fk + Mk;     // Fishing mortality with selectivity
     //calculate the expected survival at each length point integrating over age
     Sv = Survival_Est(kn_wt[1], kn_wt[2], Len, Zki, Galpha, Gbeta);
     SPRF = MB * NinInterval(Sv, Zki);   // Spawning biomass calculation
