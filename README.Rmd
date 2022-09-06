@@ -58,20 +58,26 @@ The length catch curve is used to estimate the spawning potential ratio. To do t
 
 This is a basic example which shows you how to solve a common problem:  
 
-```{r example, eval=FALSE}
+```{r example, eval=TRUE}
 library("fishblicc")
 ## Prepare some data in the required format
-ld <- blicc_dat(LLB = 25:35, fq=c(0,1,2,26,72,66,36,24,12,4,0), Linf=c(35, 2))
-## Fit the model to some data
+ld <- blicc_dat(LLB = 10:35,          # Lower boundaries of each length bin
+          fq=c(0,1,2,5,26,70,72,66,36,34,25,24,20,
+               10,12,5,3,5,6,4,2,0,2,0,1,0),    # Corresponding frequency data
+          a=1.0e-4,       # Length-weight scale parameter (optional)
+          b=2.95,         # Length-weight exponent
+          L50=24,         # Length at 50% maturity
+          Linf=c(32, 3))  # Maximum mean length normal priors
+## Fit the model to these data with default settings
 slim <- blicc_fit(ld)
-## Calculate reference points
-res_df <- blicc_ref_pts(slim, ld)
-## Get the model values by length
-l_df <- blicc_expect_len(res_df, ld)
+## Calculate reference points - this takes some time
+rp_df <- blicc_ref_pts(slim, ld)
+## Get the model expected values by length
+lx_df <- blicc_expect_len(rp_df, ld)
 ## Because the fit takes a little time, it might be best to save the results
-save(ld, slim, l_df, file="fishblicc_analysis.rda") 
+save(ld, slim, rp_df, lx_df, file="fishblicc_analysis.rda") 
 ## Summarise the results
-summary(res_df)
-plot_expected_frequency(l_df, ld) #Plot the results to check the model fit
+summary(rp_df)
+plot_expected_frequency(rp_df, lx_df, ld) #Plot the results to check the model fit
 ```
 

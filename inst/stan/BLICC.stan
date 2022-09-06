@@ -1,6 +1,6 @@
  //><>  ><>  ><>  ><>  ><>  ><>  ><>  ><>  ><>  ><>  ><>  ><>  ><>  ><>  ><>
  // ><>  ><>  ><>  ><>  ><>  ><>  ><>  ><>  ><>  ><>  ><>  ><>  ><>  ><>  ><>
- //  
+ //
  //###########    Bayes Length Interval Catch Curve Stock Assessment #############
  //###########    PAUL MEDLEY                                        #############
  //###########    paulahmedley@gmail.com                             #############
@@ -8,7 +8,7 @@
  //><>  ><>  ><>  ><>  ><>  ><>  ><>  ><>  ><>  ><>  ><>  ><>  ><>  ><>  ><>
  // ><>  ><>  ><>  ><>  ><>  ><>  ><>  ><>  ><>  ><>  ><>  ><>  ><>  ><>  ><>
 
-// Fits a length catch curve with with constant mortality within specified length interval (i.e. length bins). 
+// Fits a length catch curve with with constant mortality within specified length interval (i.e. length bins).
 
 //###########################################
 //####  FUNCTIONS   #########################
@@ -58,9 +58,9 @@ functions {
       knot_wt[2] = square(wt);
       return knot_wt;
     }
-    
+
     bj[nt] = 0.0;
-    
+
     for (ll in 1:nt) {
       int j = 0;
       int Do_Loop = 1;
@@ -69,7 +69,7 @@ functions {
         while ((m<nt) && (fabs(bj[m]) > r8_epsilon * (fabs(aj[m]) + fabs(aj[m+1])))) { //set m
           m += 1;
         }
-        if (m == ll) {  
+        if (m == ll) {
           Do_Loop = 0;  //break; ends while(1) loop
         } else {
           p = aj[ll];
@@ -78,7 +78,7 @@ functions {
           }
           j += 1;
           g = (aj[ll+1]-p) / (2.0*bj[ll]);
-          if (g>=0) sign_g = 1.0; else sign_g = -1.0; 
+          if (g>=0) sign_g = 1.0; else sign_g = -1.0;
           r =  sqrt(square(g) + 1.0);
           s = g + fabs(r)*sign_g;
           g = aj[m] - p + (bj[ll] / s);
@@ -86,7 +86,7 @@ functions {
           c = 1.0;
           p = 0.0;
           mml = m - ll;
-        
+
           for (ii in 1:mml) {
             int i = m - ii;
             f = s * bj[i];
@@ -125,14 +125,14 @@ functions {
       int i = ii - 1;
       k = i;
       p = aj[i];
-      
+
       for (j in ii:nt) {
         if (aj[j] < p) {
           k = j;
           p = aj[j];
         }
       }
-      
+
       if (k != i) {
         g = aj[i];
         aj[k] = g;
@@ -196,9 +196,9 @@ vector Survival_Est(vector gl_node, vector gl_wt, vector Len, vector Zki, real a
   real           lg_alpha = lgamma(alpha);
   vector[nv]     x_beta = gl_node / beta;
   vector[nv]     log_x_beta = log(x_beta);
-  vector[nl-1]   Zin = append_row(-Zki[1], Zki[1:(nl-2)] - Zki[2:(nl-1)]); 
+  vector[nl-1]   Zin = append_row(-Zki[1], Zki[1:(nl-2)] - Zki[2:(nl-1)]);
   vector[nl]     surv;
-  row_vector[nv] ss; 
+  row_vector[nv] ss;
 
   ss = (log(gl_node + beta*Len[1]) * (alpha-1.0) - beta*Len[1] - lg_alpha)';
   surv[1] = exp(ss) * gl_wt;
@@ -207,7 +207,7 @@ vector Survival_Est(vector gl_node, vector gl_wt, vector Len, vector Zki, real a
   // Len >2
   for (n in 3:nl) {
     vector[n-1] Lrange = Len[1:(n-1)];
-    vector[n-1] Zii = Zin[1:(n-1)]; 
+    vector[n-1] Zii = Zin[1:(n-1)];
     row_vector[nv] v2 = (log_x_beta*Zki[n-1] + log(gl_node + beta*Len[n])*(alpha-1.0))';
     real v3 = beta*Len[n] + lg_alpha;
     row_vector[nv] v1;
@@ -222,7 +222,7 @@ vector Survival_Est(vector gl_node, vector gl_wt, vector Len, vector Zki, real a
 
 vector NinInterval(vector Surv, vector Zki) {
   // Expected numbers of fish within each length interval
-  // Due to numerical error, it is possible zero or, mre likely,  a very small negative number will be returned, 
+  // Due to numerical error, it is possible zero or, mre likely,  a very small negative number will be returned,
   // which will be rejected by the sampler.
   // Whether this is a problem in practice is not clear. Fixing it by setting minimum values might upset the sampler which uses gradients
   // and assumes continuous variables. Keeping the length bins tight around observations (e.g. bracket the observations with a single zero).
@@ -243,7 +243,7 @@ vector NinInterval(vector Surv, vector Zki) {
 
 
 data {
-  //Likelihood are strictly applied to the bins supplied. 
+  //Likelihood are strictly applied to the bins supplied.
   //It is important to include all zero observations with non-negligible probability
   int<lower=2>   NK;
   //Assume non-overlapping length bins
@@ -271,7 +271,7 @@ data {
   real polSs1s;
   real polSs2m;
   real polSs2s;
-  real polNB_phim; 
+  real polNB_phim;
   real polNB_phis;
 }
 
@@ -285,9 +285,9 @@ transformed data {
     N_Ss = 1;
   else
     N_Ss = 2;
-  
+
   // LMP is only used for selectivity model
-  for (i in 1:(oBN-1)) 
+  for (i in 1:(oBN-1))
     LMP[i] = 0.5*(Len[i]+Len[i+1]);
   LMP[oBN] = Len[oBN] + 0.5*(Len[oBN]-Len[oBN-1]);
 }
@@ -299,7 +299,7 @@ transformed data {
 
 
 parameters {  //modelled param
-  real<lower = -poLinfm/poLinfs>  nLinf;  
+  real<lower = -poLinfm/poLinfs>  nLinf;
   real                            nGalpha;
   real                            nMk;
   real                            nFk;
@@ -309,7 +309,7 @@ parameters {  //modelled param
 }
 
 transformed parameters {
-  real Linf = poLinfm + nLinf*poLinfs;  
+  real Linf = poLinfm + nLinf*poLinfs;
   real Galpha = exp(polGam + nGalpha*polGas);
   real Mk = exp(polMkm + nMk*polMks);
   real Fk = exp(polFkm + nFk*polFks);
@@ -318,7 +318,7 @@ transformed parameters {
   real Ss2;
   real NB_phi = exp(polNB_phim + nNB_phi*polNB_phis);
   real Gbeta = Galpha / Linf;
-  
+
   if (Flat_top == 0)
     Ss2 = 0;
   else
@@ -331,12 +331,12 @@ transformed parameters {
 //###########################################
 
 model {
-  vector[oBN] efq; 
-  //<><  ><>  <><  ><>  <><  ><>  <><  ><>  <><  ><>  
+  vector[oBN] efq;
+  //<><  ><>  <><  ><>  <><  ><>  <><  ><>  <><  ><>
   //###   PRIORS   ###  <><  ><>  <><  ><>  <><  ><>
   //<><  ><>  <><  ><>  <><  ><>  <><  ><>  <><  ><>
-  
-  target += normal_lpdf(nLinf   | 0, 1);           
+
+  target += normal_lpdf(nLinf   | 0, 1);
   target += normal_lpdf(nGalpha | 0, 1);
   target += normal_lpdf(nMk     | 0, 1);
   target += normal_lpdf(nFk     | 0, 1);
@@ -344,9 +344,9 @@ model {
   target += normal_lpdf(nSs     | 0, 1);
   target += normal_lpdf(nNB_phi | 0, 1);
 
-  //<><  ><>  <><  ><>  <><  ><>  <><  ><>  <><  ><>  
+  //<><  ><>  <><  ><>  <><  ><>  <><  ><>  <><  ><>
   //### Expecteds ###  <><  ><>  <><  ><>  <><  ><>
-  //<><  ><>  <><  ><>  <><  ><>  <><  ><>  <><  ><>  
+  //<><  ><>  <><  ><>  <><  ><>  <><  ><>  <><  ><>
   {
     //calculate expected mortality for current parameter set
     real        Sum_efq;
@@ -367,10 +367,10 @@ model {
     efq    *= NObs/Sum_efq;    // Normalise and raise to the expected numbers in the sample
     efq    += eps;             // Add a small number to avoid an expected zero and increase numerical stability
   }
-  
-  //<><  ><>  <><  ><>  <><  ><>  <><  ><>  <><  ><>  
+
+  //<><  ><>  <><  ><>  <><  ><>  <><  ><>  <><  ><>
   //### LIKELIHOOD ###  <><  ><>  <><  ><>  <><  ><>
-  //<><  ><>  <><  ><>  <><  ><>  <><  ><>  <><  ><>  
+  //<><  ><>  <><  ><>  <><  ><>  <><  ><>  <><  ><>
 
   {
     target += neg_binomial_2_lpmf(fq | efq, NB_phi);
@@ -380,10 +380,10 @@ model {
 
 generated quantities {
   real SPR;
-  //<><  ><>  <><  ><>  <><  ><>  <><  ><>  <><  ><>  
+  //<><  ><>  <><  ><>  <><  ><>  <><  ><>  <><  ><>
   //### Spawning Potential Ratio (SPR) ###  <><  ><>
-  //<><  ><>  <><  ><>  <><  ><>  <><  ><>  <><  ><>  
-  
+  //<><  ><>  <><  ><>  <><  ><>  <><  ><>  <><  ><>
+
   {
     real SPR0;
     real SPRF;
@@ -398,14 +398,15 @@ generated quantities {
     //calculate the expected survival at each length point integrating over age
     Sv = Survival_Est(kn_wt[1], kn_wt[2], Len, Zki, Galpha, Gbeta);
     SPRF = MB * NinInterval(Sv, Zki);   // Spawning biomass calculation
-    
+
     // Same calculation of the spawning biomass but for the unexploited stock
     Zki = rep_vector(Mk, oBN);                                              // Only natural mortality for unexploited stock
     Sv = Survival_Est(kn_wt[1], kn_wt[2], Len, Zki, Galpha, Gbeta);
     SPR0 = MB * NinInterval(Sv, Zki);
 
-    //SPR is the ratio of the spawning biomass with fishing to spawning biomass without fishing 
+    //SPR is the ratio of the spawning biomass with fishing to spawning biomass without fishing
     SPR = SPRF/SPR0;
   }
 }
+
 
