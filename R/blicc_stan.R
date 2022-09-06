@@ -71,6 +71,10 @@ blicc_fit <- function(blicc_ld,
                       nwarmup = 1000,
                       nchain = 4,
                       ...) {
+
+options(mc.cores = parallel::detectCores())  # Needed for parallel chains
+
+
   #### remove for the package version
   # Test version
   # stan_fn <- here("source", "BLICC.stan")
