@@ -96,7 +96,11 @@ This is a basic example which shows you how to solve a common problem:
 ``` r
 library("fishblicc")
 ## Prepare some data in the required format
+<<<<<<< HEAD
 ld <- blicc_dat(LLB = 10:35,          # Lower boundaries of each length bin
+=======
+eg_ld <- blicc_dat(LLB = 10:35,          # Lower boundaries of each length bin
+>>>>>>> 75ac5e9f2ad2dfbc56b0c95030bffd74ae792f5b
           fq=c(0,1,2,5,26,70,72,66,36,34,25,24,20,
                10,12,5,3,5,6,4,2,0,2,0,1,0),    # Corresponding frequency data
           a=1.0e-4,       # Length-weight scale parameter (optional)
@@ -105,6 +109,7 @@ ld <- blicc_dat(LLB = 10:35,          # Lower boundaries of each length bin
           Linf=c(32, 3))  # Maximum mean length normal priors
 ## Fit the model to these data with default settings
 slim <- blicc_fit(ld)
+<<<<<<< HEAD
 ><> Chain 1: Initial log joint probability = -1481.35
 ><> Chain 1:     Iter      log prob        ||dx||      ||grad||       alpha      alpha0  # evals  Notes 
 ><> Chain 1: Exception: neg_binomial_2_lpmf: Location parameter[1] is nan, but must be positive finite! (in 'string', line 328, column 4 to column 52)
@@ -218,10 +223,17 @@ rp_df <- blicc_ref_pts(slim, ld)
 ## Get the model expected values by length
 lx_df <- blicc_expect_len(rp_df, ld)
 ><> Warning: Dropping 'draws_df' class as required metadata was removed.
+=======
+## Calculate reference points - this takes some time
+rp_df <- blicc_ref_pts(slim, ld)
+## Get the model expected values by length
+lx_df <- blicc_expect_len(res_df, ld)
+>>>>>>> 75ac5e9f2ad2dfbc56b0c95030bffd74ae792f5b
 ## Because the fit takes a little time, it might be best to save the results
 save(ld, slim, rp_df, lx_df, file="fishblicc_analysis.rda") 
 ## Summarise the results
 summary(rp_df)
+<<<<<<< HEAD
 ><> # A tibble: 18 × 10
 ><>    variable     mean   median       sd      mad       q5      q95   rhat ess_b…¹
 ><>    <chr>       <dbl>    <dbl>    <dbl>    <dbl>    <dbl>    <dbl>  <dbl>   <dbl>
@@ -247,6 +259,9 @@ summary(rp_df)
 ><> #   ¹​ess_bulk
 plot_expected_frequency(rp_df, lx_df, ld) #Plot the results to check the model fit
 ><> Warning: Dropping 'draws_df' class as required metadata was removed.
+=======
+plot_expected_frequency(lx_df, ld) #Plot the results to check the model fit
+>>>>>>> 75ac5e9f2ad2dfbc56b0c95030bffd74ae792f5b
 ```
 
 <img src="man/figures/README-example-1.png" width="100%" />

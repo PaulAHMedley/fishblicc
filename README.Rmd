@@ -58,7 +58,11 @@ The length catch curve is used to estimate the spawning potential ratio. To do t
 
 This is a basic example which shows you how to solve a common problem:  
 
+<<<<<<< HEAD
 ```{r example}
+=======
+```{r example, eval=TRUE}
+>>>>>>> 75ac5e9f2ad2dfbc56b0c95030bffd74ae792f5b
 library("fishblicc")
 ## Prepare some data in the required format
 ld <- blicc_dat(LLB = 10:35,          # Lower boundaries of each length bin
