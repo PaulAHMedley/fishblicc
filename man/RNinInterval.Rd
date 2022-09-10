@@ -8,7 +8,7 @@ RNinInterval(surv, Zki)
 }
 \arguments{
 \item{surv}{Survival to the lower boundary of each length bin
-(see \code{RSurvival_est})}
+(see \code{RSurvival_est()})}
 
 \item{Zki}{Total mortality within each bin (time in units of the
 growth rate K)}

@@ -24,7 +24,7 @@ flat-topped selectivity}
 \item{blicc_ld}{A standard data list created by \code{blicc_dat}}
 
 \item{glq}{a list of \code{nodes} and \code{weights} for the
-Gauss-Laguerre rule (see \code{statmod::gauss.quad})}
+Gauss-Laguerre rule (see \code{statmod::gauss.quad()})}
 }
 \value{
 F0.1 per-recruit fishing mortality reference point

@@ -43,7 +43,7 @@
 #' There are additional parameters for sampling from the MCMC. These can be
 #' used to attempt to fix problems. Some, such as low ESS, can be fixed by
 #' increasing the number of iterations (in this case, raise ntarget above 2000).
-#' Other problems may require consultation with the `rstan::sampling`
+#' Other problems may require consultation with the `rstan::sampling()`
 #' documentation. The most likely significant problem would be "divergent" draws
 #' which are clearly identified in the stanfit object and in summary
 #' diagnostics. These invalidate the MCMC because they cannot be guaranteed as
@@ -55,12 +55,12 @@
 #'
 #' @export
 #' @param  blicc_ld    A standard data list suitable for the model
-#' (see function `blicc_dat`)
+#' (see function `blicc_dat()`)
 #' @param  ntarget     Target draw for the MCMC
 #' @param  nwarmup     Warm up iterations for the Stan MCMC
 #' @param  nchain      Number of chains to run in parallel
-#' @param  ...         Other arguments passed to `rstan::sampling`.
-#' @return An object of class `stanfit` returned by `rstan::sampling`
+#' @param  ...         Other arguments passed to `rstan::sampling()`.
+#' @return An object of class stanfit returned by `rstan::sampling()`
 #' @examples
 #' ld <- blicc_dat(LLB = 25:35, fq=c(0,1,2,26,72,66,36,24,12,4,0),
 #'                 Linf=c(35, 2), NK=50)
@@ -73,7 +73,6 @@ blicc_fit <- function(blicc_ld,
                       ...) {
 
 options(mc.cores = parallel::detectCores())  # Needed for parallel chains
-
 
   #### remove for the package version
   # Test version
@@ -179,7 +178,7 @@ options(mc.cores = parallel::detectCores())  # Needed for parallel chains
 #' @param NK   Number of nodes for the Gauss Laguerre quadrature rule. 110 is a
 #' safe value, but extends the run time of all calculations.  Optional.
 #' @return     A list of vectors and numbers structured suitable for use in the
-#' Stan model `BLICC.stan`
+#' Stan model BLICC.stan.
 #' @examples
 #' ld <- blicc_dat(LLB = 25:35, fq=c(0,1,2,26,72,66,36,24,12,4,0), Linf=c(35, 2))
 #'
@@ -336,6 +335,7 @@ blicc_dat <-
 #' Provides a list of start parameters for the MCMC - defaults to zero values
 #'
 #' @return A list of initial parameter values for the BLICC Stan model
+#' @noRd
 #'
 blicc_ini <- function() {
   return(list(
@@ -360,6 +360,7 @@ blicc_ini <- function() {
 #' @param  par    A list of start parameter values (optional)
 #' @return A list of start parameters equal to the number of chains for
 #' the BLICC Stan model
+#' @noRd
 #'
 blicc_mcmc_ini <- function(pchain = 4, par = NULL) {
   if (is.null(par)) {
@@ -373,11 +374,13 @@ blicc_mcmc_ini <- function(pchain = 4, par = NULL) {
 #' Calculates the mean log-probability density ratio between two sets of draws
 #'
 #' Simple Bayes factor estimate based on the mean posterior density.
-#' This only works where data and likelihood model remain the same in stf1
-#' and stf0. The only change is a single fixed parameter in stf0 is estimated
-#' in stf1. This allows direct comparison of the estimated total posterior
-#' probability between the two fits. This can be used to assess the fit
-#' between a domed and flat-topped selectivity function.
+#' This only works where the data and the likelihood model remain between
+#' the two fits. The intended use is to compare a flat-top selectivity (stf0)
+#' with a domed selectivity (stf1). In this case, the only change is a single
+#' parameter fixed at zero in stf0, but estimated in stf1. This function
+#' allows direct comparison of the estimated total posterior
+#' probability between the two fits to help determine how much better a domed
+#' selectivity fits the data.
 #'
 #' @export
 #' @param stf1,stf0 Stan model output for the numerator and denominator

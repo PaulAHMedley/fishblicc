@@ -33,6 +33,7 @@ Rsel_dsnormal <- function(LMP, Smx, Ss1, Ss2) {
   return(SL)
 }
 
+
 #' Calculate the survival of a fish cohort to sequential length boundaries
 #'
 #' The model integrates over growth rate variability and sums mortality
@@ -84,11 +85,12 @@ RSurvival_Est <- function(node, wt, Len, Zki, Galpha, Gbeta)  {
   for (Li in 3:LN) {
     Ln <- Len[Li]
     Lrange <- Ln - Len[1:(Li - 1)]
+
     Zii <- c(-Zki[1], Zki[1:(Li - 2)] - Zki[2:(Li - 1)])
     v2 <- log_x_beta * Zki[Li - 1]
-    lbw <- vapply(x_beta, zsum, FUN.VALUE=0, Lr=Lrange,
+    lim <- vapply(x_beta, zsum, FUN.VALUE=0, Lr=Lrange,
                   Z=Zii, USE.NAMES=FALSE)   # sapply not safe to use here
-    ss <- lbw + v2 + log(node + Gbeta * Ln) * (Galpha - 1.0) -
+    ss <- lim + v2 + log(node + Gbeta * Ln) * (Galpha - 1.0) -
           Gbeta * Ln - lgamma_Galpha
     surv[Li] <- sum(exp(ss) * wt)
   }
@@ -104,7 +106,7 @@ RSurvival_Est <- function(node, wt, Len, Zki, Galpha, Gbeta)  {
 #'
 #' @export
 #' @param  surv Survival to the lower boundary of each length bin
-#' (see `RSurvival_est`)
+#' (see `RSurvival_est()`)
 #' @param  Zki  Total mortality within each bin (time in units of the
 #' growth rate K)
 #' @return A vector of relative numbers of fish within each length bin.
@@ -116,8 +118,8 @@ RSurvival_Est <- function(node, wt, Len, Zki, Galpha, Gbeta)  {
 #' plot(y=P, x=15:55, type="l")
 #'
 RNinInterval <- function (surv, Zki) {
-  return(c(surv[1:(length(surv) - 1)] - surv[2:length(surv)],
-           surv[length(surv)]) / Zki)
+  n <- length(surv)
+  return(c(surv[-n] - surv[-1], surv[n]) / Zki)
 }
 
 

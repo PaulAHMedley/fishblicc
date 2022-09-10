@@ -11,10 +11,55 @@ Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
 Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
+// Csel_dsnormal
+Rcpp::NumericVector Csel_dsnormal(Rcpp::NumericVector LMP, double Smx, double Ss1, double Ss2);
+RcppExport SEXP _fishblicc_Csel_dsnormal(SEXP LMPSEXP, SEXP SmxSEXP, SEXP Ss1SEXP, SEXP Ss2SEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type LMP(LMPSEXP);
+    Rcpp::traits::input_parameter< double >::type Smx(SmxSEXP);
+    Rcpp::traits::input_parameter< double >::type Ss1(Ss1SEXP);
+    Rcpp::traits::input_parameter< double >::type Ss2(Ss2SEXP);
+    rcpp_result_gen = Rcpp::wrap(Csel_dsnormal(LMP, Smx, Ss1, Ss2));
+    return rcpp_result_gen;
+END_RCPP
+}
+// CSurvival_Est
+Rcpp::NumericVector CSurvival_Est(Rcpp::NumericVector node, Rcpp::NumericVector wt, Rcpp::NumericVector Len, Rcpp::NumericVector Zki, double Galpha, double Gbeta);
+RcppExport SEXP _fishblicc_CSurvival_Est(SEXP nodeSEXP, SEXP wtSEXP, SEXP LenSEXP, SEXP ZkiSEXP, SEXP GalphaSEXP, SEXP GbetaSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type node(nodeSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type wt(wtSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type Len(LenSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type Zki(ZkiSEXP);
+    Rcpp::traits::input_parameter< double >::type Galpha(GalphaSEXP);
+    Rcpp::traits::input_parameter< double >::type Gbeta(GbetaSEXP);
+    rcpp_result_gen = Rcpp::wrap(CSurvival_Est(node, wt, Len, Zki, Galpha, Gbeta));
+    return rcpp_result_gen;
+END_RCPP
+}
+// CNinInterval
+Rcpp::NumericVector CNinInterval(Rcpp::NumericVector surv, Rcpp::NumericVector Zki);
+RcppExport SEXP _fishblicc_CNinInterval(SEXP survSEXP, SEXP ZkiSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type surv(survSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type Zki(ZkiSEXP);
+    rcpp_result_gen = Rcpp::wrap(CNinInterval(surv, Zki));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 RcppExport SEXP _rcpp_module_boot_stan_fit4BLICC_mod();
 
 static const R_CallMethodDef CallEntries[] = {
+    {"_fishblicc_Csel_dsnormal", (DL_FUNC) &_fishblicc_Csel_dsnormal, 4},
+    {"_fishblicc_CSurvival_Est", (DL_FUNC) &_fishblicc_CSurvival_Est, 6},
+    {"_fishblicc_CNinInterval", (DL_FUNC) &_fishblicc_CNinInterval, 2},
     {"_rcpp_module_boot_stan_fit4BLICC_mod", (DL_FUNC) &_rcpp_module_boot_stan_fit4BLICC_mod, 0},
     {NULL, NULL, 0}
 };

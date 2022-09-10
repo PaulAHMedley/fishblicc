@@ -21,7 +21,7 @@
 #'
 #' @inheritParams blicc_get_expected
 #' @param  glq  a list of `nodes` and `weights` for the
-#' Gauss-Laguerre rule (see `statmod::gauss.quad`)
+#' Gauss-Laguerre rule (see `statmod::gauss.quad()`)
 #' @return F0.1 per-recruit fishing mortality reference point
 #'
 F01_solve <-
@@ -47,7 +47,7 @@ F01_solve <-
     Gbeta <- Galpha / Linf
     Len <- blicc_ld$Len
     weight <- weight_at_length(blicc_ld)
-    Sel <- Rsel_dsnormal(blicc_ld$LMP, Smx, Ss1, Ss2)
+    Sel <- Csel_dsnormal(blicc_ld$LMP, Smx, Ss1, Ss2)
     slope01 <-
       0.1 * (
         fYPR(0.01, Galpha, Gbeta, Mk, Sel, Len, weight, glq) -
@@ -76,6 +76,7 @@ F01_solve <-
 #' @param  tarSPR target SPR reference point: usually 0.2, 0.3 or 0.4
 #' @return Spawning potential ratio per-recruit fishing mortality consistent
 #' with parameters and reference point
+#' @noRd
 #'
 FSPR_solve <-
   function(Smx,
@@ -94,7 +95,7 @@ FSPR_solve <-
 
     Gbeta <- Galpha / Linf
     Len <- blicc_ld$Len
-    Sel <- Rsel_dsnormal(blicc_ld$LMP, Smx, Ss1, Ss2)
+    Sel <- Csel_dsnormal(blicc_ld$LMP, Smx, Ss1, Ss2)
     mb <- mature_biomass_at_length(blicc_ld)
     SPR0 <-
       fSPR(0, Galpha, Gbeta, Mk, Sel, Len, mb, glq) # Unexploited SPR
@@ -122,9 +123,10 @@ FSPR_solve <-
 #' @inheritParams blicc_get_expected
 #' @param  tarSPR target SPR reference point: usually 0.2, 0.3 or 0.4
 #' @param  glq  a list of `nodes` and `weights` for the Gauss-Laguerre rule
-#' (see `statmod::gauss.quad`)
+#' (see `statmod::gauss.quad()`)
 #' @return Selectivity mode (full selectivity) achieving the target SPR.
 #' NA indicates this target cannot be achieved.
+#' @noRd
 #'
 SSPR_solve <-
   function(Fk,
@@ -147,10 +149,11 @@ SSPR_solve <-
     mb <- mature_biomass_at_length(blicc_ld)
     SPR0 <-
       fSPR(0, Galpha, Gbeta, Mk,
-           RSel = rep(0, length(Len)), Len, mb, glq) # Unexploited SPR
+           RSel = rep(0, blicc_ld$oBN), Len, mb, glq) # Unexploited SPR
 
     # First need to bracket tarSPR
-    V2 <- SRP_eval(Linf)
+    S2 <- Linf
+    V2 <- SRP_eval(S2)
     if (V2 < 0) {
       S1 <- Linf
       V1 <- V2
@@ -161,18 +164,16 @@ SSPR_solve <-
         return(NA)
       }
     } else {
-      # V2 is positive
-      S1 <- Linf - 0.5
+      # V2 > 0
+      S1 <- blicc_ld$Lm
       V1 <- SRP_eval(S1)
-      while (V1 > 0 & S1 > 0) {
+      while ((V1 > 0) & (S1 >= Len[1])) {
+        S1 <- S1 - 1.0
         V1 <- SRP_eval(S1)
-        S1 <- S1 - 0.5
       }
       if (V1 > 0) {
         return(NA)
       }
-      S1 <- S1 + 0.5
-      S2 <- S1 + 0.5
     }
     return(stats::uniroot(f = SRP_eval,
                           interval = c(S1, S2))$root)
@@ -190,6 +191,7 @@ SSPR_solve <-
 #'
 #' @inheritParams SSPR_solve
 #' @return maximum yield point for the selectivity mode
+#' @noRd
 #'
 SMY_solve <-
   function(Fk, Linf, Galpha, Mk, Ss1, Ss2, blicc_ld, glq) {
@@ -226,19 +228,20 @@ SMY_solve <-
 #' @param Fk     Fishing mortality (per unit growth rate K)
 #' @param Gbeta  Rate parameter for the Gamma distribution growth variability
 #' (=Galpha/Linf)
-#' @param RSel   Vector of selectivity from function `Rsel_dsnormal` or
+#' @param RSel   Vector of selectivity from function `Rsel_dsnormal()` or
 #' another source
 #' @param Len    Vector of lower length boundaries for the length bins
-#' @param weight Vector of weights from `weight_at_length` function
+#' @param weight Vector of weights from `weight_at_length()` function
 #' @return yield-per-recruit
+#' @noRd
 #'
 fYPR <- function(Fk, Galpha, Gbeta, Mk, RSel, Len, weight, glq) {
   LN <- length(Len)
   Fki <- RSel * Fk
   Zki <- Fki + Mk
   Rsurv <-
-    RSurvival_Est(glq$nodes, glq$weights, Len, Zki, Galpha, Gbeta)
-  N_L <- c(Rsurv[1:(LN - 1)] - Rsurv[2:LN], Rsurv[LN]) / Zki
+    CSurvival_Est(glq$nodes, glq$weights, Len, Zki, Galpha, Gbeta)
+  N_L <- CNinInterval(Rsurv, Zki)
   efq <- N_L * Fki # Catch
   Yield <- sum(efq * weight)
   return(Yield)
@@ -256,6 +259,7 @@ fYPR <- function(Fk, Galpha, Gbeta, Mk, RSel, Len, weight, glq) {
 #' flat-topped selectivity
 #' @param  LMP    Vector of length bin mid-points to calculate selectivity
 #' @return yield-per-recruit
+#' @noRd
 #'
 fYPR2 <-
   function(Smx,
@@ -270,12 +274,12 @@ fYPR2 <-
            weight,
            glq) {
     LN <- length(Len)
-    RSel <- Rsel_dsnormal(LMP, Smx, Ss1, Ss2)
+    RSel <- Csel_dsnormal(LMP, Smx, Ss1, Ss2)
     Fki <- RSel * Fk
     Zki <- Fki + Mk
     Rsurv <-
-      RSurvival_Est(glq$nodes, glq$weights, Len, Zki, Galpha, Gbeta)
-    N_L <- c(Rsurv[1:(LN - 1)] - Rsurv[2:LN], Rsurv[LN]) / Zki
+      CSurvival_Est(glq$nodes, glq$weights, Len, Zki, Galpha, Gbeta)
+    N_L <- CNinInterval(Rsurv, Zki)
     efq <- N_L * Fki # Catch
     Yield <- sum(efq * weight)
     return(Yield)
@@ -287,16 +291,17 @@ fYPR2 <-
 #' Used to evaluate the SPR for different values of Fk.
 #'
 #' @inheritParams fYPR
-#' @param mb   Vector of mature biomass from `mature_biomass_at_length` function
+#' @param mb   Vector of mature biomass from `mature_biomass_at_length()` function
 #' @return spawning biomass per recruit
+#' @noRd
 #'
 fSPR <- function(Fk, Galpha, Gbeta, Mk, RSel, Len, mb, glq) {
   # Spawning potential ratio
   LN <- length(Len)
   Zki <- RSel * Fk + Mk
   Rsurv <-
-    RSurvival_Est(glq$nodes, glq$weights, Len, Zki, Galpha, Gbeta)
-  N_L <- c(Rsurv[1:(LN - 1)] - Rsurv[2:LN], Rsurv[LN]) / Zki
+    CSurvival_Est(glq$nodes, glq$weights, Len, Zki, Galpha, Gbeta)
+  N_L <- CNinInterval(Rsurv, Zki)
   return(sum(N_L * mb))
 }
 
@@ -306,8 +311,9 @@ fSPR <- function(Fk, Galpha, Gbeta, Mk, RSel, Len, mb, glq) {
 #' Used to evaluate the SPR for different values of Fk and Smx.
 #'
 #' @inheritParams fYPR2
-#' @param mb   Vector of mature biomass from `mature_biomass_at_length` function
-#' @return spawning biomass per recruit
+#' @param mb Vector of mature biomass from `mature_biomass_at_length()` function
+#' @return   spawning biomass per recruit
+#' @noRd
 #'
 fSPR2 <-
   function(Smx,
@@ -323,10 +329,10 @@ fSPR2 <-
            glq) {
     # Spawning potential ratio
     LN <- length(Len)
-    RSel <- Rsel_dsnormal(LMP, Smx, Ss1, Ss2)
+    RSel <- Csel_dsnormal(LMP, Smx, Ss1, Ss2)
     Zki <- RSel * Fk + Mk
     Rsurv <-
-      RSurvival_Est(glq$nodes, glq$weights, Len, Zki, Galpha, Gbeta)
-    N_L <- c(Rsurv[1:(LN - 1)] - Rsurv[2:LN], Rsurv[LN]) / Zki
+      CSurvival_Est(glq$nodes, glq$weights, Len, Zki, Galpha, Gbeta)
+    N_L <- CNinInterval(Rsurv, Zki)
     return(sum(N_L * mb))
   }

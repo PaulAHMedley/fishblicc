@@ -167,14 +167,12 @@ blicc_get_expected <-
     LN <- length(Len)
     glq <-
       statmod::gauss.quad(blicc_ld$NK, kind = "laguerre", alpha = 0.0)
-    Rsel <- Rsel_dsnormal(blicc_ld$LMP, Smx, Ss1, Ss2)
+    Rsel <- Csel_dsnormal(blicc_ld$LMP, Smx, Ss1, Ss2)
     Fki <- Rsel * Fk
     Zki <- Fki + Mk
     Rsurv <-
-      RSurvival_Est(glq$nodes, glq$weights, Len, Zki, Galpha, Galpha / Linf)
-    N_L <-
-      c(Rsurv[1:(length(Rsurv) - 1)] - Rsurv[2:length(Rsurv)],
-        Rsurv[length(Rsurv)]) / Zki
+      CSurvival_Est(glq$nodes, glq$weights, Len, Zki, Galpha, Galpha / Linf)
+    N_L <- CNinInterval(Rsurv, Zki)
     efq <- N_L * Fki # Catch
     efq <- sum(blicc_ld$fq) * efq / sum(efq) # Normalise
     return(tibble::tibble(
@@ -211,14 +209,12 @@ blicc_get_efq <-
     LN <- length(Len)
     glq <-
       statmod::gauss.quad(blicc_ld$NK, kind = "laguerre", alpha = 0.0)
-    Rsel <- Rsel_dsnormal(blicc_ld$LMP, Smx, Ss1, Ss2)
+    Rsel <- Csel_dsnormal(blicc_ld$LMP, Smx, Ss1, Ss2)
     Fki <- Rsel * Fk
     Zki <- Fki + Mk
     Rsurv <-
-      RSurvival_Est(glq$nodes, glq$weights, Len, Zki, Galpha, Galpha / Linf)
-    efq <-
-      Fki * c(Rsurv[1:(length(Rsurv) - 1)] - Rsurv[2:length(Rsurv)],
-              Rsurv[length(Rsurv)]) / Zki
+      CSurvival_Est(glq$nodes, glq$weights, Len, Zki, Galpha, Galpha / Linf)
+    efq <- Fki * CNinInterval(Rsurv, Zki)
     efq <- sum(blicc_ld$fq) * efq / sum(efq) # Normalise
     return(efq)
   }

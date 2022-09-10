@@ -39,6 +39,8 @@ system2("powershell", args=c("Set-Content", "-Path", paste0(here(),"\\.Rproj.use
 ```
 
 ```{r SetUpPackages}
+#use_testthat(3)   # Sets up testing skeleton
+
 # add additional package dependences
 usethis::use_package("stats")
 usethis::use_package("statmod")
@@ -53,6 +55,7 @@ usethis::use_tidy_description()   #orders and formats DESCRIPTION fields
 ```
 
 ```{r UpdatePackages}
+Rcpp::compileAttributes()
 rstan_config()  #run when Stan file names change
 
 # Following compiles Stan code and creates the package
@@ -65,6 +68,17 @@ pkgbuild::compile_dll() # to preform a fake R CMD install.
 roxygen2::roxygenize()  # to update the documentation etc.
 
 document()  # updates documentation
+
+```
+
+
+```{r test_that}
+
+use_r("BLICC_Model")
+use_r("BLICC_ObsExp")
+use_r("BLICC_Plots")
+use_r("BLICC_PR")
+use_r("BLICC_stan")
 
 #use_testthat(3)   # Sets up testing skeleton
 use_test("BLICC_Model")
@@ -86,7 +100,9 @@ load_all()  # To test functions as though they are installed as package
 
 # install the package locally
 install.packages("../fishblicc", repos=NULL, type="source")
+remotes::install_github("PaulAHMedley/fishblicc")
 ```
+
 
 ```{r DataCreation}
 #library("rstan")
@@ -170,4 +186,23 @@ plot_efq_FRP(eg_rp, eg_lx, eg_ld)
 plot_efq_SRP(eg_rp, eg_lx, eg_ld)
 plot_SPR_contour(eg_rp, eg_ld)
 plot_YPR_contour(eg_rp, eg_ld)
+```
+
+```{r test, eval=F}
+ld$NK <- 110
+t1 <- proc.time()
+tmp1 <- blicc_ref_pts(stf1, ld)
+t2 <- proc.time()
+ld$NK <- 50
+t3 <- proc.time()
+tmp2 <- blicc_ref_pts(stf1, ld)
+t4 <- proc.time()
+ld$NK <- 20
+t5 <- proc.time()
+tmp3 <- blicc_ref_pts(stf1, ld)
+t6 <- proc.time()
+t2-t1
+t4-t3
+t6-t5
+summary(tmp2)
 ```
