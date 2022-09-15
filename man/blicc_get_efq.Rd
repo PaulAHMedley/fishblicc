@@ -4,7 +4,7 @@
 \alias{blicc_get_efq}
 \title{The expected length frequency}
 \usage{
-blicc_get_efq(Linf, Galpha, Mk, Fk, Smx, Ss1, Ss2, blicc_ld)
+blicc_get_efq(Linf, Galpha, Mk, Fk, Smx, Ss1, Ss2, blicc_ld, glq)
 }
 \arguments{
 \item{Linf}{Maximum mean length fish in the population can grow to}
@@ -25,6 +25,9 @@ be multiplied by selectivity to get fishing mortality in each length bin}
 flat-topped selectivity}
 
 \item{blicc_ld}{A standard data list created by \code{blicc_dat}}
+
+\item{glq}{The Gauss-Laguerre nodes and weights: glq <-
+statmod::gauss.quad(blicc_ld$NK, kind = "laguerre", alpha = 0.0)}
 }
 \value{
 A vector of the expected length bin frequency
@@ -32,11 +35,13 @@ A vector of the expected length bin frequency
 \description{
 For a set of parameter values, returns the expected catch in each length bin
 based on the BLICC model. This is the same as the blicc_get_expected()
-function, but only returns the expected length frequency.
+function, but only returns the expected length frequency. Used for
+predictive posterior.
 }
 \examples{
+\dontrun{
 lfq <- blicc_get_efq(Linf = 32, Galpha = 100, Mk = 1.5, Fk = 1.5, Smx = 24,
                      Ss1 = 0.1, Ss2 = 0.001, blicc_ld = eg_ld)
 plot(y = lfq, x = eg_ld$Len)
-
+}
 }

@@ -6,13 +6,14 @@
 
 #' Fit a Bayesian length interval catch curve to a length frequency data sample
 #'
-#' The model assumes constant recruitment, double-sided normal selectivity,
-#' a single natural mortality parameter, and Gamma-distributed von Bertalanffy
-#' growth to define expected numbers of fish in pre-defined length bins.
-#' The model assumes a negative binomial likelihood function to fit to a single
-#' length frequency sample. Selectivity, mortality, asymptotic mean length and
-#' scale parameters are fitted to generate the spawning potential ratio as a
-#' measure of the stock status.
+#' The model is fitted to length frequency data using a Markov chain Monte
+#' Carlo (MCMC) simulation. The model assumes constant recruitment,
+#' double-sided normal selectivity, a single natural mortality parameter, and
+#' Gamma-distributed von Bertalanffy growth to define expected numbers of fish
+#' in pre-defined length bins. The model also assumes a negative binomial
+#' likelihood function to fit to a single length frequency sample. Selectivity,
+#' mortality, asymptotic mean length and scale parameters are fitted to
+#' generate the spawning potential ratio as a measure of the stock status.
 #'
 #' @details
 #' The fitted model estimates mortality and survival through sequential length
@@ -124,6 +125,84 @@ options(mc.cores = parallel::detectCores())  # Needed for parallel chains
     ...
   )
   return(stf)
+}
+
+
+#' Finds Bayesian length interval catch curve maximum posterior density point
+#'
+#' The maximum posterior density point is found using on the likelihood for the
+#' length frequency data and the priors.  The model assumes constant
+#' recruitment, double-sided normal selectivity, a single natural mortality
+#' parameter, and Gamma-distributed von Bertalanffy growth to define expected
+#' numbers of fish in pre-defined length bins. The model also assumes
+#' a negative binomial likelihood function to fit to a single
+#' length frequency sample. Selectivity, mortality, asymptotic mean length and
+#' scale parameters are fitted to generate the spawning potential ratio as a
+#' measure of the stock status.
+#'
+#' @details
+#' Unlike `blicc_fit()`, the model finds a point estimate. This is much faster
+#' than the MCMC, but does not provide full information on uncertainty.
+#' The model estimates mortality and survival through sequential length
+#' intervals. This is then used to derive abundance and catch in numbers within
+#' each length bin. The mortality is required to remain constant within each
+#' bin, but otherwise can vary arbitrarily. However, in this implementation
+#' mortality is constrained by a parametric model with constant natural
+#' mortality by length and a double-sided normal selectivity function for
+#' fishing mortality. See `blicc_dat()` and `blicc_fit()` documentation for
+#' a description of the model and data requirements.
+#'
+#' The standard errors are estimated from 1000 random draws from a multivariate
+#' normal with mean at the MPD mode and covariance estimated from the inverted
+#' Hessian matrix. This is an approximation and SE estimates may differ from
+#' the full MCMC sampling.
+#'
+#' In addtion to the parameters, the fit reports the spawning potential ratio
+#' (SPR) and the log probability at the mode (lp__).
+#'
+#' @export
+#' @param  blicc_ld    A standard data list suitable for the model
+#' (see function `blicc_dat()`)
+#' @return A tibble of parameter estimates (mpd) with standard errors.
+#' @examples
+#' ld <- blicc_dat(LLB = 25:35, fq=c(0,1,2,26,72,66,36,24,12,4,0),
+#'                 Linf=c(35, 3))
+#' mpd_fit <- blicc_mpd(ld)
+#'
+blicc_mpd <- function(blicc_ld) {
+  # Find the posterior mode
+  fit <-
+    rstan::optimizing(
+      stanmodels$BLICC,
+      # Test version
+      # res <-
+      #   optimizing(
+      #     stmod,
+      #
+      data = blicc_ld,
+      init = blicc_ini(),
+      hessian = TRUE,
+      as_vector = FALSE,
+      verbose = FALSE,
+      iter = 10000,
+      refresh = 500,
+      tol_obj = 1e-12,
+      tol_rel_obj = 1e3,
+      tol_grad = 1e-8,
+      tol_rel_grad = 1e5,
+      tol_param = 1e-8,
+      draws = 1000
+    )
+
+  rd <- fit$theta_tilde[,c("Linf", "Galpha", "Mk", "Fk", "Smx", "Ss1", "Ss2", "NB_phi", "SPR")]
+
+  res <- tibble::tibble(
+    par = c("Linf", "Galpha", "Mk", "Fk", "Smx", "Ss1", "Ss2", "NB_phi", "SPR", "lp__"),
+    mpd = c(unlist(fit$par)[c("Linf", "Galpha", "Mk", "Fk", "Smx", "Ss1", "Ss2", "NB_phi", "SPR")],
+            fit$value) ,
+    se = c(apply(rd, MARGIN=2, FUN="sd"), NA)
+  )
+  return(res)
 }
 
 
@@ -397,10 +476,10 @@ blicc_mcmc_ini <- function(pchain = 4, par = NULL) {
 #'}
 posterior_density_ratio <- function(stf1, stf0) {
   p1 <-
-    extract(stf1,
+    rstan::extract(stf1,
             pars = c("lp__"))
   p0 <-
-    extract(stf0,
+    rstan::extract(stf0,
             pars = c("lp__"))
 
   meanp1 <-

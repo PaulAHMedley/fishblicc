@@ -65,17 +65,18 @@ rejected.
 
 The model fits the following 8 parameters: - Linf the asymptotic mean
 length  
-- Galpha the growth model inverse error parameter
-($CV = Galpha^{-0.5}$) - Mk the natural mortality in time units of K,
-the growth rate  
+- Galpha the growth model inverse error parameter ( $CV = Galpha^{-0.5}$
+)  
+- Mk the natural mortality in time units of K, the growth rate  
 - Fk a scale parameter for the fishing mortality in time units of K, the
 growth rate  
-- Smx the maximum point for the double-sided normal selectivity model -
-Ss1 the lower-side slope parameter for the double-sided normal
-selectivity model (i.e. 1/variance) - Ss2 the upper-side slope parameter
-for the double-sided normal selectivity model (equal to zero for a
-flat-topped selectivity. - phi the over-dispersion parameter of the
-counts in the length bins for the negative binomial.
+- Smx the maximum point for the double-sided normal selectivity model  
+- Ss1 the lower-side slope parameter for the double-sided normal
+selectivity model (i.e. 1/variance)  
+- Ss2 the upper-side slope parameter for the double-sided normal
+selectivity model (equal to zero for a flat-topped selectivity.  
+- phi the over-dispersion parameter of the counts in the length bins for
+the negative binomial.
 
 The length catch curve is used to estimate the spawning potential ratio.
 To do this, estimates of natural mortality, length-weight and maturity
@@ -91,16 +92,22 @@ and maturity steepness for a logistic maturity curve.
 
 ## Example
 
-This is a basic example which shows you how to solve a common problem:
+In this basic example, there is a single representative sample of
+lengths from a single gear fishery. The objective is to estimate a
+simple selectivity based on the double-sided normal function as well as
+determine the stock status. Because this is data limited, it is also
+valuable to estimate the uncertainty and evaluative how reliable the
+result is.
+
+The analysis consists of fitting the model to the data, determining the
+spawning potential ratio reference points, and then the expected catch,
+selectivity and so on by length. (Note that because the fit uses MCMC,
+estimation take some time.)
 
 ``` r
 library("fishblicc")
 ## Prepare some data in the required format
-<<<<<<< HEAD
 ld <- blicc_dat(LLB = 10:35,          # Lower boundaries of each length bin
-=======
-eg_ld <- blicc_dat(LLB = 10:35,          # Lower boundaries of each length bin
->>>>>>> 75ac5e9f2ad2dfbc56b0c95030bffd74ae792f5b
           fq=c(0,1,2,5,26,70,72,66,36,34,25,24,20,
                10,12,5,3,5,6,4,2,0,2,0,1,0),    # Corresponding frequency data
           a=1.0e-4,       # Length-weight scale parameter (optional)
@@ -109,159 +116,78 @@ eg_ld <- blicc_dat(LLB = 10:35,          # Lower boundaries of each length bin
           Linf=c(32, 3))  # Maximum mean length normal priors
 ## Fit the model to these data with default settings
 slim <- blicc_fit(ld)
-<<<<<<< HEAD
-><> Chain 1: Initial log joint probability = -1481.35
+><> Chain 1: Initial log joint probability = -306.169
 ><> Chain 1:     Iter      log prob        ||dx||      ||grad||       alpha      alpha0  # evals  Notes 
 ><> Chain 1: Exception: neg_binomial_2_lpmf: Location parameter[1] is nan, but must be positive finite! (in 'string', line 328, column 4 to column 52)
 ><> Exception: neg_binomial_2_lpmf: Location parameter[1] is nan, but must be positive finite! (in 'string', line 328, column 4 to column 52)
+><> Exception: neg_binomial_2_lpmf: Location parameter[1] is nan, but must be positive finite! (in 'string', line 328, column 4 to column 52)
 ><> 
-><> Chain 1:      322      -66.4741   1.27638e-05    0.00269604      0.8401      0.8401      424   
+><> Chain 1: Exception: neg_binomial_2_lpmf: Location parameter[1] is nan, but must be positive finite! (in 'string', line 328, column 4 to column 52)
+><> Exception: neg_binomial_2_lpmf: Location parameter[1] is nan, but must be positive finite! (in 'string', line 328, column 4 to column 52)
+><> 
+><> Chain 1:      394      -66.4741   1.95901e-05    0.00785845      0.7942     0.07942      524   
 ><> Chain 1: Optimization terminated normally: 
 ><> Chain 1:   Convergence detected: relative gradient magnitude is below tolerance
-><> 
-><> SAMPLING FOR MODEL 'BLICC' NOW (CHAIN 1).
-><> Chain 1: 
-><> Chain 1: Gradient evaluation took 0.003925 seconds
-><> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 39.25 seconds.
-><> Chain 1: Adjust your expectations accordingly!
-><> Chain 1: 
-><> Chain 1: 
-><> Chain 1: Iteration:    1 / 1500 [  0%]  (Warmup)
-><> Chain 1: Iteration:  150 / 1500 [ 10%]  (Warmup)
-><> Chain 1: Iteration:  300 / 1500 [ 20%]  (Warmup)
-><> Chain 1: Iteration:  450 / 1500 [ 30%]  (Warmup)
-><> Chain 1: Iteration:  600 / 1500 [ 40%]  (Warmup)
-><> Chain 1: Iteration:  750 / 1500 [ 50%]  (Warmup)
-><> Chain 1: Iteration:  900 / 1500 [ 60%]  (Warmup)
-><> Chain 1: Iteration: 1001 / 1500 [ 66%]  (Sampling)
-><> Chain 1: Iteration: 1150 / 1500 [ 76%]  (Sampling)
-><> Chain 1: Iteration: 1300 / 1500 [ 86%]  (Sampling)
-><> Chain 1: Iteration: 1450 / 1500 [ 96%]  (Sampling)
-><> Chain 1: Iteration: 1500 / 1500 [100%]  (Sampling)
-><> Chain 1: 
-><> Chain 1:  Elapsed Time: 210.559 seconds (Warm-up)
-><> Chain 1:                35.352 seconds (Sampling)
-><> Chain 1:                245.911 seconds (Total)
-><> Chain 1: 
-><> 
-><> SAMPLING FOR MODEL 'BLICC' NOW (CHAIN 2).
-><> Chain 2: 
-><> Chain 2: Gradient evaluation took 0.003716 seconds
-><> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 37.16 seconds.
-><> Chain 2: Adjust your expectations accordingly!
-><> Chain 2: 
-><> Chain 2: 
-><> Chain 2: Iteration:    1 / 1500 [  0%]  (Warmup)
-><> Chain 2: Iteration:  150 / 1500 [ 10%]  (Warmup)
-><> Chain 2: Iteration:  300 / 1500 [ 20%]  (Warmup)
-><> Chain 2: Iteration:  450 / 1500 [ 30%]  (Warmup)
-><> Chain 2: Iteration:  600 / 1500 [ 40%]  (Warmup)
-><> Chain 2: Iteration:  750 / 1500 [ 50%]  (Warmup)
-><> Chain 2: Iteration:  900 / 1500 [ 60%]  (Warmup)
-><> Chain 2: Iteration: 1001 / 1500 [ 66%]  (Sampling)
-><> Chain 2: Iteration: 1150 / 1500 [ 76%]  (Sampling)
-><> Chain 2: Iteration: 1300 / 1500 [ 86%]  (Sampling)
-><> Chain 2: Iteration: 1450 / 1500 [ 96%]  (Sampling)
-><> Chain 2: Iteration: 1500 / 1500 [100%]  (Sampling)
-><> Chain 2: 
-><> Chain 2:  Elapsed Time: 223.858 seconds (Warm-up)
-><> Chain 2:                47.4 seconds (Sampling)
-><> Chain 2:                271.258 seconds (Total)
-><> Chain 2: 
-><> 
-><> SAMPLING FOR MODEL 'BLICC' NOW (CHAIN 3).
-><> Chain 3: 
-><> Chain 3: Gradient evaluation took 0.003713 seconds
-><> Chain 3: 1000 transitions using 10 leapfrog steps per transition would take 37.13 seconds.
-><> Chain 3: Adjust your expectations accordingly!
-><> Chain 3: 
-><> Chain 3: 
-><> Chain 3: Iteration:    1 / 1500 [  0%]  (Warmup)
-><> Chain 3: Iteration:  150 / 1500 [ 10%]  (Warmup)
-><> Chain 3: Iteration:  300 / 1500 [ 20%]  (Warmup)
-><> Chain 3: Iteration:  450 / 1500 [ 30%]  (Warmup)
-><> Chain 3: Iteration:  600 / 1500 [ 40%]  (Warmup)
-><> Chain 3: Iteration:  750 / 1500 [ 50%]  (Warmup)
-><> Chain 3: Iteration:  900 / 1500 [ 60%]  (Warmup)
-><> Chain 3: Iteration: 1001 / 1500 [ 66%]  (Sampling)
-><> Chain 3: Iteration: 1150 / 1500 [ 76%]  (Sampling)
-><> Chain 3: Iteration: 1300 / 1500 [ 86%]  (Sampling)
-><> Chain 3: Iteration: 1450 / 1500 [ 96%]  (Sampling)
-><> Chain 3: Iteration: 1500 / 1500 [100%]  (Sampling)
-><> Chain 3: 
-><> Chain 3:  Elapsed Time: 227.334 seconds (Warm-up)
-><> Chain 3:                41.592 seconds (Sampling)
-><> Chain 3:                268.926 seconds (Total)
-><> Chain 3: 
-><> 
-><> SAMPLING FOR MODEL 'BLICC' NOW (CHAIN 4).
-><> Chain 4: 
-><> Chain 4: Gradient evaluation took 0.004245 seconds
-><> Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 42.45 seconds.
-><> Chain 4: Adjust your expectations accordingly!
-><> Chain 4: 
-><> Chain 4: 
-><> Chain 4: Iteration:    1 / 1500 [  0%]  (Warmup)
-><> Chain 4: Iteration:  150 / 1500 [ 10%]  (Warmup)
-><> Chain 4: Iteration:  300 / 1500 [ 20%]  (Warmup)
-><> Chain 4: Iteration:  450 / 1500 [ 30%]  (Warmup)
-><> Chain 4: Iteration:  600 / 1500 [ 40%]  (Warmup)
-><> Chain 4: Iteration:  750 / 1500 [ 50%]  (Warmup)
-><> Chain 4: Iteration:  900 / 1500 [ 60%]  (Warmup)
-><> Chain 4: Iteration: 1001 / 1500 [ 66%]  (Sampling)
-><> Chain 4: Iteration: 1150 / 1500 [ 76%]  (Sampling)
-><> Chain 4: Iteration: 1300 / 1500 [ 86%]  (Sampling)
-><> Chain 4: Iteration: 1450 / 1500 [ 96%]  (Sampling)
-><> Chain 4: Iteration: 1500 / 1500 [100%]  (Sampling)
-><> Chain 4: 
-><> Chain 4:  Elapsed Time: 225.96 seconds (Warm-up)
-><> Chain 4:                37.995 seconds (Sampling)
-><> Chain 4:                263.955 seconds (Total)
-><> Chain 4:
 ## Calculate reference points - this takes some time
 rp_df <- blicc_ref_pts(slim, ld)
 ## Get the model expected values by length
 lx_df <- blicc_expect_len(rp_df, ld)
 ><> Warning: Dropping 'draws_df' class as required metadata was removed.
-=======
-## Calculate reference points - this takes some time
-rp_df <- blicc_ref_pts(slim, ld)
-## Get the model expected values by length
-lx_df <- blicc_expect_len(res_df, ld)
->>>>>>> 75ac5e9f2ad2dfbc56b0c95030bffd74ae792f5b
-## Because the fit takes a little time, it might be best to save the results
+## Because the calculation takes a little time, it is best to save the results
 save(ld, slim, rp_df, lx_df, file="fishblicc_analysis.rda") 
-## Summarise the results
-summary(rp_df)
-<<<<<<< HEAD
-><> # A tibble: 18 × 10
-><>    variable     mean   median       sd      mad       q5      q95   rhat ess_b…¹
-><>    <chr>       <dbl>    <dbl>    <dbl>    <dbl>    <dbl>    <dbl>  <dbl>   <dbl>
-><>  1 Linf      3.46e+1  3.45e+1  2.18     2.11     3.12e+1  38.5     1.01    1109.
-><>  2 Galpha    9.76e+1  9.46e+1 24.4     23.9      6.29e+1 143.      1.00    1856.
-><>  3 Mk        9.83e-1  9.80e-1  0.0959   0.0984   8.35e-1   1.14    1.00    1794.
-><>  4 Fk        2.85e+0  2.81e+0  0.694    0.677    1.79e+0   4.06    1.01     935.
-><>  5 Smx       1.65e+1  1.65e+1  0.340    0.333    1.60e+1  17.1     1.00     871.
-><>  6 Ss1       2.66e-1  2.58e-1  0.0664   0.0633   1.73e-1   0.389   1.01     855.
-><>  7 Ss2       4.54e-3  3.82e-3  0.00338  0.00359  3.24e-4   0.0107  1.00     909.
-><>  8 NB_phi    1.18e+2  1.02e+2 63.3     48.6      4.61e+1 241.      1.00    1709.
-><>  9 Gbeta     2.83e+0  2.74e+0  0.705    0.670    1.85e+0   4.12    1.00    1796.
-><> 10 SPR       7.99e-2  5.88e-2  0.0653   0.0427   1.97e-2   0.205   1.00     793.
-><> 11 lp__     -6.82e+1 -6.79e+1  2.07     1.98    -7.20e+1 -65.4     1.01     743.
-><> 12 F20       1.58e+0  1.48e+0  0.401    0.350    1.11e+0   2.37    0.999   1406.
-><> 13 F30       1.15e+0  1.08e+0  0.306    0.272    7.93e-1   1.75    0.999   1357.
-><> 14 F40       8.57e-1  8.04e-1  0.236    0.214    5.81e-1   1.32    0.999   1319.
-><> 15 F01       1.36e+0  1.28e+0  0.433    0.423    8.27e-1   2.21    1.00    1017.
-><> 16 S20      NA       NA       NA       NA       NA        NA      NA         NA 
-><> 17 S40      NA       NA       NA       NA       NA        NA      NA         NA 
-><> 18 SMY       2.51e+1  2.50e+1  2.01     1.96     2.19e+1  28.6     1.00    1118.
-><> # … with 1 more variable: ess_tail <dbl>, and abbreviated variable name
-><> #   ¹​ess_bulk
-plot_expected_frequency(rp_df, lx_df, ld) #Plot the results to check the model fit
-><> Warning: Dropping 'draws_df' class as required metadata was removed.
-=======
-plot_expected_frequency(lx_df, ld) #Plot the results to check the model fit
->>>>>>> 75ac5e9f2ad2dfbc56b0c95030bffd74ae792f5b
 ```
 
-<img src="man/figures/README-example-1.png" width="100%" />
+This produces the following objects:  
+- “ld” is the data file containing the length frequency and information
+for priors used in the fit.  
+- “slim” is a stanfit object and there are useful tools in the package
+rstan which will allow you to examine the fit. However, rstan will
+require that Rtools has also been installed on Windows or Mac OS because
+it requires access to a C++ compiler.  
+- “rp_df” is a draws object that can be used by the packages posterior
+and bayesplot to examine results.  
+- “lx_df” is a tibble (data frame) that provides expected values by
+length, such as the length frequency and selectivity.
+
+The fit results can be summarised in table form.
+
+``` r
+## Summarise the results
+summary(rp_df)
+><> # A tibble: 18 × 10
+><>    variable      mean   median       sd      mad       q5      q95  rhat ess_b…¹
+><>    <chr>        <dbl>    <dbl>    <dbl>    <dbl>    <dbl>    <dbl> <dbl>   <dbl>
+><>  1 Linf      34.5      3.45e+1  2.09     2.10     3.12e+1  38.2     1.00   1163.
+><>  2 Galpha    97.0      9.39e+1 24.9     23.4      6.25e+1 142.      1.00   1833.
+><>  3 Mk         0.983    9.77e-1  0.0985   0.0974   8.30e-1   1.15    1.00   1903.
+><>  4 Fk         2.86     2.82e+0  0.666    0.688    1.83e+0   3.99    1.01   1044.
+><>  5 Smx       16.5      1.65e+1  0.347    0.327    1.60e+1  17.1     1.01   1043.
+><>  6 Ss1        0.265    2.55e-1  0.0689   0.0614   1.71e-1   0.389   1.00   1142.
+><>  7 Ss2        0.00448  3.78e-3  0.00338  0.00355  3.01e-4   0.0108  1.00    886.
+><>  8 NB_phi   116.       1.04e+2 60.2     46.3      4.75e+1 222.      1.00   1829.
+><>  9 Gbeta      2.81     2.74e+0  0.717    0.666    1.82e+0   4.08    1.00   1846.
+><> 10 SPR        0.0785   5.66e-2  0.0662   0.0408   1.96e-2   0.204   1.00   1087.
+><> 11 lp__     -68.2     -6.79e+1  2.05     1.87    -7.22e+1 -65.5     1.00    901.
+><> 12 F20        1.57     1.48e+0  0.404    0.362    1.10e+0   2.37    1.00   1294.
+><> 13 F30        1.14     1.07e+0  0.308    0.279    7.86e-1   1.75    1.00   1257.
+><> 14 F40        0.852    8.00e-1  0.237    0.219    5.77e-1   1.32    1.00   1236.
+><> 15 F01        1.36     1.27e+0  0.437    0.428    8.30e-1   2.20    1.00   1134.
+><> 16 S20       NA       NA       NA       NA       NA        NA      NA        NA 
+><> 17 S40       NA       NA       NA       NA       NA        NA      NA        NA 
+><> 18 SMY       25.1      2.50e+1  1.91     1.92     2.20e+1  28.4     1.00   1200.
+><> # … with 1 more variable: ess_tail <dbl>, and abbreviated variable name
+><> #   ¹​ess_bulk
+```
+
+There are a number of specialised plotting functions specific to length
+frequency and yield-per-recruit analysis for convenience. This is a plot
+showing the observed and expected length frequency, with 80% credible
+interval for the observations (including the expected variation in the
+data).
+
+``` r
+plot_expected_frequency(rp_df, lx_df, ld) #Plot the results to check the model fit
+><> Warning: Dropping 'draws_df' class as required metadata was removed.
+```
+
+<img src="man/figures/README-unnamed-chunk-4-1.png" width="100%" />

@@ -24,6 +24,9 @@
 #' plot_expected_frequency(eg_rp, eg_lx, eg_ld)
 #'
 plot_expected_frequency <- function(blicc_rp, blicc_lx, blicc_ld) {
+  # Not necessary but stops CMD check notes
+  .draw=Lgroup=LMP=fq=NB_phi=NULL
+  efq=fq_lo=fq_hi=efq_m=efq_lo=efq_hi=dat_lo=dat_hi=NULL
   df1 <- blicc_rp |>
     dplyr::select(.draw, NB_phi) |>
     dplyr::left_join(blicc_lx, by = ".draw") |>
@@ -56,7 +59,6 @@ plot_expected_frequency <- function(blicc_rp, blicc_lx, blicc_ld) {
       data = df2,
       ggplot2::aes(x = LMP, y = fq),
       shape = 95,
-      size = 5,
       colour = "black"
     ) +
     ggplot2::geom_line(ggplot2::aes(y = efq_m)) +
@@ -83,6 +85,7 @@ plot_expected_frequency <- function(blicc_rp, blicc_lx, blicc_ld) {
 #' plot_selectivity(eg_lx, eg_ld)
 #'
 plot_selectivity <- function(blicc_lx, blicc_ld) {
+  Lgroup=sel=LMP=sel_01=sel_90=sel_25=sel_75=sel_m=NULL
   blicc_lx |>
     dplyr::select(Lgroup, sel) |>
     dplyr::group_by(Lgroup) |>
@@ -118,6 +121,8 @@ plot_selectivity <- function(blicc_lx, blicc_ld) {
 #' plot_SPR_density(eg_rp)
 #'
 plot_SPR_density <- function(blicc_rp) {
+  SPR=NULL
+
   ggplot2::ggplot(blicc_rp, ggplot2::aes(SPR)) +
     ggplot2::geom_density(fill = "lightblue") +
     ggplot2::geom_vline(ggplot2::aes(xintercept = 0.2),
@@ -143,6 +148,8 @@ plot_SPR_density <- function(blicc_rp) {
 #' plot_FkF40_density(eg_rp)
 #'
 plot_FkF40_density <- function(blicc_rp) {
+  Fk=F40=NULL # Not necessary but stops CMD check notes
+
   StatAreaUnderDensity <- ggplot2::ggproto(
     "StatAreaUnderDensity",
     ggplot2::Stat,
@@ -182,7 +189,6 @@ plot_FkF40_density <- function(blicc_rp) {
       params = list(xlim = xlim, n = n, ...)
     )
   }
-
   ggplot2::ggplot(blicc_rp, ggplot2::aes(Fk / F40)) +
     ggplot2::geom_density(fill = "#A11826") +
     ggplot2::geom_vline(ggplot2::aes(xintercept = 1.0),
@@ -219,23 +225,32 @@ plot_FkF40_density <- function(blicc_rp) {
 #' plot_efq_FRP(eg_rp, eg_lx, eg_ld)
 #'
 plot_efq_FRP <- function(blicc_rp, blicc_lx, blicc_ld) {
+  # Not necessary but stops CMD check notes
+  Linf=Galpha=Mk=Fk=Smx=Ss1=Ss2=NB_phi=NULL
+  .draw=Lgroup=Current=SPR20=SPR40=SMY=LMP=fq=Harvest_Level=NULL
+  F20=F30=F40=efq=fq_lo=fq_hi=N=efq_m=dat_lo=dat_hi=lab=x=y=NULL
+
+  glq <- statmod::gauss.quad(blicc_ld$NK, kind = "laguerre", alpha = 0.0)
   df <- blicc_rp |>
     dplyr::mutate(Lgroup = list(factor(blicc_ld$Len))) |>
     dplyr::mutate(
       SPR20 = purrr::pmap(
         list(Linf, Galpha, Mk, F20, Smx, Ss1, Ss2),
         blicc_get_efq,
-        blicc_ld = blicc_ld
+        blicc_ld = blicc_ld,
+        glq
       ),
       SPR30 = purrr::pmap(
         list(Linf, Galpha, Mk, F30, Smx, Ss1, Ss2),
         blicc_get_efq,
-        blicc_ld = blicc_ld
+        blicc_ld = blicc_ld,
+        glq
       ),
       SPR40 = purrr::pmap(
         list(Linf, Galpha, Mk, F40, Smx, Ss1, Ss2),
         blicc_get_efq,
-        blicc_ld = blicc_ld
+        blicc_ld = blicc_ld,
+        glq
       )
     ) |>
     dplyr::select(`.draw`, NB_phi, Lgroup, SPR20:SPR40) |>
@@ -287,7 +302,6 @@ plot_efq_FRP <- function(blicc_rp, blicc_lx, blicc_ld) {
       data = df2,
       ggplot2::aes(x = LMP, y = fq),
       shape = 95,
-      size = 5,
       colour = "black"
     ) +
     ggplot2::geom_line(ggplot2::aes(y = efq_m)) +
@@ -324,23 +338,32 @@ plot_efq_FRP <- function(blicc_rp, blicc_lx, blicc_ld) {
 #' plot_efq_SRP(eg_rp, eg_lx, eg_ld)
 #'
 plot_efq_SRP <- function(blicc_rp, blicc_lx, blicc_ld) {
+  Linf=Galpha=Mk=Fk=Smx=Ss1=Ss2=NB_phi=NULL
+  .draw=Lgroup=Current=SPR20=SPR40=LMP=fq=Harvest_Level=NULL
+  S20=S40=SMY=efq=fq_lo=fq_hi=N=efq_m=dat_lo=dat_hi=lab=x=y=NULL
+
+  Max_Yield=Selectivity=NULL
+  glq <- statmod::gauss.quad(blicc_ld$NK, kind = "laguerre", alpha = 0.0)
   df <- blicc_rp |>
     dplyr::mutate(Lgroup = list(factor(blicc_ld$Len))) |>
     dplyr::mutate(
       SPR20 = purrr::pmap(
         list(Linf, Galpha, Mk, Fk, S20, Ss1, Ss2),
         blicc_get_efq,
-        blicc_ld = blicc_ld
+        blicc_ld = blicc_ld,
+        glq
       ),
       SPR40 = purrr::pmap(
         list(Linf, Galpha, Mk, Fk, S40, Ss1, Ss2),
         blicc_get_efq,
-        blicc_ld = blicc_ld
+        blicc_ld = blicc_ld,
+        glq
       ),
       Max_Yield = purrr::pmap(
         list(Linf, Galpha, Mk, Fk, SMY, Ss1, Ss2),
         blicc_get_efq,
-        blicc_ld = blicc_ld
+        blicc_ld = blicc_ld,
+        glq
       )
     ) |>
     dplyr::select(`.draw`, NB_phi, Lgroup, SPR20:Max_Yield) |>
@@ -393,7 +416,6 @@ plot_efq_SRP <- function(blicc_rp, blicc_lx, blicc_ld) {
       data = df2,
       ggplot2::aes(x = LMP, y = fq),
       shape = 95,
-      size = 5,
       colour = "black"
     ) +
     ggplot2::geom_line(ggplot2::aes(y = efq_m)) +
@@ -427,7 +449,8 @@ plot_efq_SRP <- function(blicc_rp, blicc_lx, blicc_ld) {
 #' plot_SPR_contour(eg_rp, eg_ld)
 #'
 plot_SPR_contour <- function(blicc_rp, blicc_ld) {
-  # SPRContour
+  Smx_rp=spr=Lcur=Fcur=`..level..`=NULL  #R CMD Notes
+
   GridN <- 40
   Linf <- mean(blicc_rp$Linf)
   Galpha <- mean(blicc_rp$Galpha)
@@ -522,6 +545,7 @@ plot_SPR_contour <- function(blicc_rp, blicc_ld) {
 #' plot_YPR_contour(eg_rp, eg_ld)
 #'
 plot_YPR_contour <- function(blicc_rp, blicc_ld) {
+  Smx_rp=ypr=F0.1=Lcur=Fcur=`..level..`=NULL  # R CMD Notes
   GridN <- 40
   Linf <- mean(blicc_rp$Linf)
   Galpha <- mean(blicc_rp$Galpha)

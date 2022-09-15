@@ -42,27 +42,25 @@ The model used here does not convert length to age, but instead accounts for mor
 
 The model fits the following 8 parameters:
   - Linf the asymptotic mean length  
-  - Galpha the growth model inverse error parameter ($CV = Galpha^{-0.5}$)
+  - Galpha the growth model inverse error parameter ( $CV = Galpha^{-0.5}$ )  
   - Mk the natural mortality in time units of K, the growth rate  
   - Fk a scale parameter for the fishing mortality in time units of K, the growth rate  
-  - Smx the maximum point for the double-sided normal selectivity model
-  - Ss1 the lower-side slope parameter for the double-sided normal selectivity model (i.e. 1/variance)
-  - Ss2 the upper-side slope parameter for the double-sided normal selectivity model (equal to zero for a flat-topped selectivity.
+  - Smx the maximum point for the double-sided normal selectivity model  
+  - Ss1 the lower-side slope parameter for the double-sided normal selectivity model (i.e. 1/variance)  
+  - Ss2 the upper-side slope parameter for the double-sided normal selectivity model (equal to zero for a flat-topped  selectivity.  
   - phi the over-dispersion parameter of the counts in the length bins for the negative binomial.  
 
 The length catch curve is used to estimate the spawning potential ratio. To do this, estimates of natural mortality, length-weight and maturity are required. These cannot be estimated from a length frequency, so have to be provided as priors from other sources. Being data-limited, only the length-weight exponent parameter (b) and the logistic maturity at length model parameters (length at 50% maturity and logistic steepness) are required. The natural mortality is then inferred relying on life history invariants as suggested by Prince et al. Hordyk et al. (2015?). The additional parameters are:
   - $L_m$ and $L_s$ for the maturity at 50% and maturity steepness for a logistic maturity curve.  
-  - $b$ parameter for the length weight relationship $W=aL^b$
+  - $b$ parameter for the length weight relationship $W=aL^b$  
 
 ## Example  
 
-This is a basic example which shows you how to solve a common problem:  
+In this basic example, there is a single representative sample of lengths from a single gear fishery. The objective is to estimate a simple selectivity based on the double-sided normal function as well as determine the stock status. Because this is data limited, it is also valuable to estimate the uncertainty and evaluative how reliable the result is.  
 
-<<<<<<< HEAD
-```{r example}
-=======
-```{r example, eval=TRUE}
->>>>>>> 75ac5e9f2ad2dfbc56b0c95030bffd74ae792f5b
+The analysis consists of fitting the model to the data, determining the spawning potential ratio reference points, and then the expected catch, selectivity and so on by length. (Note that because the fit uses MCMC, estimation take some time.)  
+
+```{r }
 library("fishblicc")
 ## Prepare some data in the required format
 ld <- blicc_dat(LLB = 10:35,          # Lower boundaries of each length bin
@@ -78,10 +76,27 @@ slim <- blicc_fit(ld)
 rp_df <- blicc_ref_pts(slim, ld)
 ## Get the model expected values by length
 lx_df <- blicc_expect_len(rp_df, ld)
-## Because the fit takes a little time, it might be best to save the results
+## Because the calculation takes a little time, it is best to save the results
 save(ld, slim, rp_df, lx_df, file="fishblicc_analysis.rda") 
+```
+
+This produces the following objects:  
+ - "ld" is the data file containing the length frequency and information for priors used in the fit.  
+ - "slim" is a stanfit object and there are useful tools in the package rstan which will allow you to examine the fit. However, rstan will require that Rtools has also been installed on Windows or Mac OS because it requires access to a C++ compiler.  
+ - "rp_df" is a draws object that can be used by the packages posterior and bayesplot to examine results.  
+ - "lx_df" is a tibble (data frame) that provides expected values by length, such as the length frequency and selectivity.  
+
+The fit results can be summarised in table form.  
+
+
+```{r }
 ## Summarise the results
 summary(rp_df)
+```
+
+There are a number of specialised plotting functions specific to length frequency and yield-per-recruit analysis for convenience. This is a plot showing the observed and expected length frequency, with 80% credible interval for the observations (including the expected variation in the data).  
+
+```{r }
 plot_expected_frequency(rp_df, lx_df, ld) #Plot the results to check the model fit
 ```
 

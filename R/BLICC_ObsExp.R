@@ -40,6 +40,7 @@
 #' }
 #'
 blicc_ref_pts <- function(slimf, blicc_ld) {
+  Linf=Galpha=Mk=Fk=Smx=Ss1=Ss2=.draw=NULL
   glq <-
     statmod::gauss.quad(blicc_ld$NK, kind = "laguerre", alpha = 0.0)
   df <- posterior::as_draws_df(slimf) |>
@@ -118,6 +119,7 @@ blicc_ref_pts <- function(slimf, blicc_ld) {
 #' summary(lx_df)
 #'
 blicc_expect_len <- function(blicc_rp, blicc_ld) {
+  Linf=Galpha=Mk=Fk=Smx=Ss1=Ss2=.draw=expect=NULL
   df <- blicc_rp |>
     dplyr::mutate(expect = purrr::pmap(
       list(Linf, Galpha, Mk, Fk, Smx, Ss1, Ss2),
@@ -190,25 +192,26 @@ blicc_get_expected <-
 #'
 #' For a set of parameter values, returns the expected catch in each length bin
 #' based on the BLICC model. This is the same as the blicc_get_expected()
-#' function, but only returns the expected length frequency.
+#' function, but only returns the expected length frequency. Used for
+#' predictive posterior.
 #'
-#' @export
 #' @inheritParams blicc_get_expected
+#' @param glq  The Gauss-Laguerre nodes and weights: glq <-
+#'  statmod::gauss.quad(blicc_ld$NK, kind = "laguerre", alpha = 0.0)
 #' @return A vector of the expected length bin frequency
 #' @examples
+#' \dontrun{
 #' lfq <- blicc_get_efq(Linf = 32, Galpha = 100, Mk = 1.5, Fk = 1.5, Smx = 24,
 #'                      Ss1 = 0.1, Ss2 = 0.001, blicc_ld = eg_ld)
 #' plot(y = lfq, x = eg_ld$Len)
-#'
+#' }
 blicc_get_efq <-
-  function(Linf, Galpha, Mk, Fk, Smx, Ss1, Ss2, blicc_ld) {
+  function(Linf, Galpha, Mk, Fk, Smx, Ss1, Ss2, blicc_ld, glq) {
     if (is.na(Fk) | is.na(Smx)) {
       return(NA)
     }
     Len <- blicc_ld$Len
     LN <- length(Len)
-    glq <-
-      statmod::gauss.quad(blicc_ld$NK, kind = "laguerre", alpha = 0.0)
     Rsel <- Csel_dsnormal(blicc_ld$LMP, Smx, Ss1, Ss2)
     Fki <- Rsel * Fk
     Zki <- Fki + Mk
@@ -218,3 +221,39 @@ blicc_get_efq <-
     efq <- sum(blicc_ld$fq) * efq / sum(efq) # Normalise
     return(efq)
   }
+
+
+#' A posterior predicted length frequency data set
+#'
+#' For a set of MCMC parameter draws, returns a simulated catch in each
+#' length bin based on the BLICC model. This matrix of simulated data that
+#' might be expected if the model is correct, can be used in the posterior
+#' and bayesplot packages for evaluation.
+#'
+#' @export
+#' @inheritParams blicc_expect_len
+#' @param draws  The number of random draws up to the number of
+#' draws from the MCMC (the default).
+#' @return A matrix with rows equal to draws and columns to length
+#' @examples
+#' yrep <- posterior_predict(blicc_rp = eg_rp, blicc_ld = eg_ld)
+#'
+posterior_predict <- function(blicc_rp, blicc_ld, draws=0) {
+  Linf=Galpha=Mk=Fk=Smx=Ss1=Ss2=NULL
+  if ((draws <= 0) | (draws >= nrow(blicc_rp))) {
+    df <- blicc_rp
+  } else {
+    df <- blicc_rp[sample.int(n=nrow(blicc_rp), size=draws),] }
+
+  glq <- statmod::gauss.quad(blicc_ld$NK, kind = "laguerre", alpha = 0.0)
+  # Vector of expected frequency at length
+  ex <- unlist(purrr::pmap(dplyr::select(df, Linf, Galpha, Mk,
+                                         Fk, Smx, Ss1, Ss2),
+                           blicc_get_efq, blicc_ld = blicc_ld, glq = glq))
+  phi <- rep(df$NB_phi, each = blicc_ld$oBN)
+
+  yrep <- matrix(stats::rnbinom(n=length(ex), mu=ex, size=phi),
+                 ncol=blicc_ld$oBN, byrow=TRUE)
+
+  return(yrep)
+}
