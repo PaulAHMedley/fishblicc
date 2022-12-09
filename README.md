@@ -19,12 +19,18 @@ quantities of interest.
 
 ## Installation
 
-You can install the development version of fishblicc like so:
+You can install the development version of fishblicc:
 
 ``` r
 if (require("remotes")) install.packages("remotes")
-install_github("PaulAHMedley/fishblicc")
+remotes::install_github("PaulAHMedley/fishblicc")
 ```
+
+Unless I can get the winbinary version to work, you will also need to
+have Rtools installed so that the model can compile. Sorry.
+
+Rtools can be downloaded from
+“<https://cran.r-project.org/bin/windows/Rtools/>”
 
 ## Model Description
 
@@ -38,7 +44,8 @@ assumes the data are a snapshot of the catch length composition from a
 fishery in a stationary state. It is suitable for end-of-project
 evaluation of length frequency data that may have been collected over a
 short time period (e.g. a year) or to monitor status of many species
-that may take up a small proportion of the catches.  
+that may take up a small proportion of the catches.
+
 The assessment is carried out in R using Stan (mc-stan.org) to carry out
 the MCMC.
 
@@ -61,7 +68,10 @@ the length at age and variation in individual fish growth is governed by
 their maximum length which is drawn from a gamma probability density
 function (constant CV). The model is flexible enough to include all
 data, so, for example, observed lengths above $L_\infty$ are not
-rejected.
+rejected. The model allows for the application of piece-wise mortality
+across length bins, so changing mortality-at-length, such as that due to
+gear selectivity, can be accommodated. In this implementation, only
+double-sided normal selectivity is modelled.
 
 The model fits the following 8 parameters: - Linf the asymptotic mean
 length  
@@ -85,10 +95,10 @@ to be provided as priors from other sources. Being data-limited, only
 the length-weight exponent parameter (b) and the logistic maturity at
 length model parameters (length at 50% maturity and logistic steepness)
 are required. The natural mortality is then inferred relying on life
-history invariants as suggested by Prince et al. Hordyk et al. (2015?).
+history invariants as suggested by Prince et al. Hordyk et al. (2015).
 The additional parameters are: - $L_m$ and $L_s$ for the maturity at 50%
 and maturity steepness for a logistic maturity curve.  
-- $b$ parameter for the length weight relationship $W=aL^b$
+- $b$ parameter for the length weight relationship $W=aL^b$ .
 
 ## Example
 
@@ -116,16 +126,14 @@ ld <- blicc_dat(LLB = 10:35,          # Lower boundaries of each length bin
           Linf=c(32, 3))  # Maximum mean length normal priors
 ## Fit the model to these data with default settings
 slim <- blicc_fit(ld)
-><> Chain 1: Initial log joint probability = -306.169
+><> Chain 1: Initial log joint probability = -1226.65
 ><> Chain 1:     Iter      log prob        ||dx||      ||grad||       alpha      alpha0  # evals  Notes 
 ><> Chain 1: Exception: neg_binomial_2_lpmf: Location parameter[1] is nan, but must be positive finite! (in 'string', line 328, column 4 to column 52)
 ><> Exception: neg_binomial_2_lpmf: Location parameter[1] is nan, but must be positive finite! (in 'string', line 328, column 4 to column 52)
 ><> Exception: neg_binomial_2_lpmf: Location parameter[1] is nan, but must be positive finite! (in 'string', line 328, column 4 to column 52)
-><> 
-><> Chain 1: Exception: neg_binomial_2_lpmf: Location parameter[1] is nan, but must be positive finite! (in 'string', line 328, column 4 to column 52)
 ><> Exception: neg_binomial_2_lpmf: Location parameter[1] is nan, but must be positive finite! (in 'string', line 328, column 4 to column 52)
 ><> 
-><> Chain 1:      394      -66.4741   1.95901e-05    0.00785845      0.7942     0.07942      524   
+><> Chain 1:      230      -66.4741   2.24801e-05    0.00166428     0.03403           1      293   
 ><> Chain 1: Optimization terminated normally: 
 ><> Chain 1:   Convergence detected: relative gradient magnitude is below tolerance
 ## Calculate reference points - this takes some time
@@ -157,24 +165,24 @@ summary(rp_df)
 ><> # A tibble: 18 × 10
 ><>    variable      mean   median       sd      mad       q5      q95  rhat ess_b…¹
 ><>    <chr>        <dbl>    <dbl>    <dbl>    <dbl>    <dbl>    <dbl> <dbl>   <dbl>
-><>  1 Linf      34.5      3.45e+1  2.09     2.10     3.12e+1  38.2     1.00   1163.
-><>  2 Galpha    97.0      9.39e+1 24.9     23.4      6.25e+1 142.      1.00   1833.
-><>  3 Mk         0.983    9.77e-1  0.0985   0.0974   8.30e-1   1.15    1.00   1903.
-><>  4 Fk         2.86     2.82e+0  0.666    0.688    1.83e+0   3.99    1.01   1044.
-><>  5 Smx       16.5      1.65e+1  0.347    0.327    1.60e+1  17.1     1.01   1043.
-><>  6 Ss1        0.265    2.55e-1  0.0689   0.0614   1.71e-1   0.389   1.00   1142.
-><>  7 Ss2        0.00448  3.78e-3  0.00338  0.00355  3.01e-4   0.0108  1.00    886.
-><>  8 NB_phi   116.       1.04e+2 60.2     46.3      4.75e+1 222.      1.00   1829.
-><>  9 Gbeta      2.81     2.74e+0  0.717    0.666    1.82e+0   4.08    1.00   1846.
-><> 10 SPR        0.0785   5.66e-2  0.0662   0.0408   1.96e-2   0.204   1.00   1087.
-><> 11 lp__     -68.2     -6.79e+1  2.05     1.87    -7.22e+1 -65.5     1.00    901.
-><> 12 F20        1.57     1.48e+0  0.404    0.362    1.10e+0   2.37    1.00   1294.
-><> 13 F30        1.14     1.07e+0  0.308    0.279    7.86e-1   1.75    1.00   1257.
-><> 14 F40        0.852    8.00e-1  0.237    0.219    5.77e-1   1.32    1.00   1236.
-><> 15 F01        1.36     1.27e+0  0.437    0.428    8.30e-1   2.20    1.00   1134.
+><>  1 Linf      34.6      3.45e+1  2.14     2.15     3.12e+1  38.4     1.00    955.
+><>  2 Galpha    98.8      9.52e+1 26.2     26.7      6.16e+1 146.      1.01   2286.
+><>  3 Mk         0.988    9.82e-1  0.0999   0.101    8.36e-1   1.16    1.00   2105.
+><>  4 Fk         2.86     2.82e+0  0.679    0.665    1.81e+0   4.04    1.00   1002.
+><>  5 Smx       16.5      1.65e+1  0.335    0.329    1.60e+1  17.1     1.00   1129.
+><>  6 Ss1        0.267    2.59e-1  0.0669   0.0632   1.72e-1   0.390   1.00   1379.
+><>  7 Ss2        0.00434  3.69e-3  0.00332  0.00355  2.99e-4   0.0106  1.00   1237.
+><>  8 NB_phi   119.       1.06e+2 61.0     49.5      4.73e+1 234.      1.00   1997.
+><>  9 Gbeta      2.86     2.79e+0  0.748    0.771    1.78e+0   4.18    1.01   2408.
+><> 10 SPR        0.0771   5.83e-2  0.0609   0.0408   1.93e-2   0.202   1.00   1151.
+><> 11 lp__     -68.3     -6.80e+1  2.00     1.85    -7.20e+1 -65.7     1.00    887.
+><> 12 F20        1.57     1.47e+0  0.404    0.364    1.11e+0   2.38    1.00   1464.
+><> 13 F30        1.14     1.07e+0  0.308    0.281    7.86e-1   1.75    1.00   1439.
+><> 14 F40        0.848    7.94e-1  0.237    0.220    5.76e-1   1.31    1.00   1422.
+><> 15 F01        1.35     1.26e+0  0.432    0.429    8.19e-1   2.18    1.00   1274.
 ><> 16 S20       NA       NA       NA       NA       NA        NA      NA        NA 
-><> 17 S40       NA       NA       NA       NA       NA        NA      NA        NA 
-><> 18 SMY       25.1      2.50e+1  1.91     1.92     2.20e+1  28.4     1.00   1200.
+><> 17 S40       29.7      2.96e+1  1.46     1.46     2.73e+1  32.1     1.00    942.
+><> 18 SMY       25.1      2.50e+1  1.97     1.99     2.19e+1  28.4     1.00   1032.
 ><> # … with 1 more variable: ess_tail <dbl>, and abbreviated variable name
 ><> #   ¹​ess_bulk
 ```

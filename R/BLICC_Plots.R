@@ -108,7 +108,7 @@ plot_selectivity <- function(blicc_lx, blicc_ld) {
       alpha = 0.7
     ) +
     ggplot2::geom_line(ggplot2::aes(y = sel_m)) +
-    ggplot2::labs(x = "Length (cm)", y = "Selectivity")
+    ggplot2::labs(x = "Length", y = "Selectivity")
 }
 
 
@@ -460,8 +460,8 @@ plot_SPR_contour <- function(blicc_rp, blicc_ld) {
   Smx <- mean(blicc_rp$Smx)
   Ss1 <- mean(blicc_rp$Ss1)
   Ss2 <- mean(blicc_rp$Ss2)
-  F20 <- mean(blicc_rp$F20)
-  F30 <- mean(blicc_rp$F30)
+  F20 <- mean(blicc_rp$F20, na.rm = TRUE)
+  F30 <- mean(blicc_rp$F30, na.rm = TRUE)
 
   glq <-
     statmod::gauss.quad(blicc_ld$NK, kind = "laguerre", alpha = 0.0)
@@ -509,7 +509,7 @@ plot_SPR_contour <- function(blicc_rp, blicc_ld) {
       size = 3
     ) +
     ggplot2::labs(
-      x = "Length at 50% Capture", y = "Fishing Mortality (/k)", colour =
+      x = "Length at full selectivity", y = "Fishing Mortality (/k)", colour =
         "SPR"
     ) +
     ggplot2::geom_contour(ggplot2::aes(colour = ..level..)) +
@@ -555,8 +555,8 @@ plot_YPR_contour <- function(blicc_rp, blicc_ld) {
   Smx <- mean(blicc_rp$Smx)
   Ss1 <- mean(blicc_rp$Ss1)
   Ss2 <- mean(blicc_rp$Ss2)
-  F20 <- mean(blicc_rp$F20)
-  F30 <- mean(blicc_rp$F30)
+  F20 <- mean(blicc_rp$F20, na.rm = TRUE)
+  F30 <- mean(blicc_rp$F30, na.rm = TRUE)
 
   glq <-
     statmod::gauss.quad(blicc_ld$NK, kind = "laguerre", alpha = 0.0)
