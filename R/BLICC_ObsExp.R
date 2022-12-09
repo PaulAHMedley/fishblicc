@@ -29,10 +29,10 @@
 #' the yield or SPR surface must be plotted.
 #'
 #' @export
-#' @param slimf      A stanfit object from the `blicc_fit` function.
+#' @param slimf      An object from the `blicc_fit` or `blicc_mpd` function.
 #' @param blicc_ld   A data list from the `blicc_dat` function.
-#' @return A tibble containing posterior draws of important parameters and
-#' per-recruit reference points
+#' @return A tibble containing posterior draws or mpd point estimates  of
+#' important parameters and per-recruit reference points
 #' @examples
 #' \dontrun{
 #' rp_df <- blicc_ref_pts(eg_slim, eg_ld)
@@ -41,9 +41,23 @@
 #'
 blicc_ref_pts <- function(slimf, blicc_ld) {
   Linf=Galpha=Mk=Fk=Smx=Ss1=Ss2=.draw=NULL
+
+  if (class(slimf)=="stanfit") {
+    df <- posterior::as_draws_df(slimf)
+  } else if (all(class(slimf)==c("tbl_df", "tbl", "data.frame")) &&
+             all(mpd$par==c("Linf", "Galpha", "Mk", "Fk", "Smx", "Ss1", "Ss2",
+                            "NB_phi", "SPR", "lp__"))) {
+    df <- slimf |>
+      select(par, mpd) |>
+      pivot_wider(names_from=par, values_from=mpd)
+  } else {
+    return("Error: parameter slimf must be a stanfit object or mpd data frame")
+  }
+
   glq <-
     statmod::gauss.quad(blicc_ld$NK, kind = "laguerre", alpha = 0.0)
-  df <- posterior::as_draws_df(slimf) |>
+
+  df <- df |>
     dplyr::select(Linf:`.draw`) |>
     dplyr::mutate(
       F20 = purrr::pmap_dbl(
@@ -120,14 +134,16 @@ blicc_ref_pts <- function(slimf, blicc_ld) {
 #'
 blicc_expect_len <- function(blicc_rp, blicc_ld) {
   Linf=Galpha=Mk=Fk=Smx=Ss1=Ss2=.draw=expect=NULL
-  df <- blicc_rp |>
-    dplyr::mutate(expect = purrr::pmap(
-      list(Linf, Galpha, Mk, Fk, Smx, Ss1, Ss2),
-      blicc_get_expected,
-      blicc_ld = blicc_ld
-    )) |>
-    dplyr::select(`.draw`, expect) |>
-    tidyr::unnest(expect)
+  suppressWarnings({
+    df <- blicc_rp |>
+      dplyr::mutate(expect = purrr::pmap(
+        list(Linf, Galpha, Mk, Fk, Smx, Ss1, Ss2),
+        blicc_get_expected,
+        blicc_ld = blicc_ld
+      )) |>
+      dplyr::select(`.draw`, expect) |>
+      tidyr::unnest(expect)
+  })
   return(df)
 }
 
