@@ -20,7 +20,8 @@ The plot shows the YPR surface plotted against the fishing mortality (Fk) and
 the full selectivity (Smx). The current state of the stock is marked as a
 point and the F0.1 reference point is marked as a line. All values are
 calculated as means and uncertainty is not represented to maintain
-simplicity.
+simplicity. The reference line is plotted if it exists within a
+reasonable range of the current estimated status.
 }
 \examples{
 plot_YPR_contour(eg_rp, eg_ld)

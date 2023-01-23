@@ -24,7 +24,8 @@ with selectivity changes required to obtain SPR 20\%, SPR 40\% and the maximum
 yield. The graphs show the expected values and 80\% credible intervals
 compared to current observations, and can be used to assess whether length
 frequencies should be able to detect changes in selectivity to these
-different levels.
+different levels. Note that if reference points do not exist, they are not
+plotted, so some graphs may be blank except for data.
 }
 \examples{
 eg_lx <- blicc_expect_len(eg_rp, eg_ld)

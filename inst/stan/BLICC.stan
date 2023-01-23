@@ -10,10 +10,10 @@
 
 // Fits a length catch curve with with constant mortality within specified length interval (i.e. length bins).
 
+
 //###########################################
 //####  FUNCTIONS   #########################
 //###########################################
-
 
 functions {
 
