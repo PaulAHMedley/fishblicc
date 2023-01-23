@@ -20,7 +20,8 @@ The plot shows the SPR surface plotted against the fishing mortality (Fk) and
 the full selectivity (Smx). The current state of the stock is marked as a
 point and the SPR 40\% reference point is marked as a line.
 All values are calculated as means and uncertainty is not represented to
-maintain simplicity.
+maintain simplicity. The reference line is plotted if it exists within a
+reasonable range of the current estimated status.
 }
 \examples{
 plot_SPR_contour(eg_rp, eg_ld)

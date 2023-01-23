@@ -7,13 +7,13 @@
 blicc_ref_pts(slimf, blicc_ld)
 }
 \arguments{
-\item{slimf}{A stanfit object from the \code{blicc_fit} function.}
+\item{slimf}{An object from the \code{blicc_fit} or \code{blicc_mpd} function.}
 
 \item{blicc_ld}{A data list from the \code{blicc_dat} function.}
 }
 \value{
-A tibble containing posterior draws of important parameters and
-per-recruit reference points
+A tibble containing posterior draws or mpd point estimates  of
+important parameters and per-recruit reference points
 }
 \description{
 The functions returns a tibble of draws from the posterior MCMC stanfit

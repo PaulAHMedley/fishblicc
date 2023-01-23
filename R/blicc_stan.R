@@ -73,7 +73,7 @@ blicc_fit <- function(blicc_ld,
                       nchain = 4,
                       ...) {
 
-options(mc.cores = parallel::detectCores())  # Needed for parallel chains
+  options(mc.cores = parallel::detectCores())  # Needed for parallel chains
 
   #### remove for the package version
   # Test version

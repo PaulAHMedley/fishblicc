@@ -40,16 +40,18 @@
 #' }
 #'
 blicc_ref_pts <- function(slimf, blicc_ld) {
-  Linf=Galpha=Mk=Fk=Smx=Ss1=Ss2=.draw=NULL
+  Linf=Galpha=Mk=Fk=Smx=Ss1=Ss2=mpd=par=.draw=NULL
 
-  if (class(slimf)=="stanfit") {
-    df <- posterior::as_draws_df(slimf)
+  if (class(slimf)[1] == "stanfit") {
+    df <- posterior::as_draws_df(slimf) |>
+      dplyr::select(Linf:`.draw`)
   } else if (all(class(slimf)==c("tbl_df", "tbl", "data.frame")) &&
-             all(mpd$par==c("Linf", "Galpha", "Mk", "Fk", "Smx", "Ss1", "Ss2",
+             all(slimf$par==c("Linf", "Galpha", "Mk", "Fk", "Smx", "Ss1", "Ss2",
                             "NB_phi", "SPR", "lp__"))) {
     df <- slimf |>
-      select(par, mpd) |>
-      pivot_wider(names_from=par, values_from=mpd)
+      dplyr::select(par, mpd) |>
+      tidyr::pivot_wider(names_from=par, values_from=mpd) |>
+      dplyr::mutate(`.draw` = 0)
   } else {
     return("Error: parameter slimf must be a stanfit object or mpd data frame")
   }
@@ -58,7 +60,6 @@ blicc_ref_pts <- function(slimf, blicc_ld) {
     statmod::gauss.quad(blicc_ld$NK, kind = "laguerre", alpha = 0.0)
 
   df <- df |>
-    dplyr::select(Linf:`.draw`) |>
     dplyr::mutate(
       F20 = purrr::pmap_dbl(
         list(Smx, Linf, Galpha, Mk, Ss1, Ss2),

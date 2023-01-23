@@ -1,7 +1,3 @@
-# ><> <>< ><> <>< ><> <>< ><> <>< ><> <>< ><> <>< ><> <><
-# PLOTTING FUNCTIONS
-# ><> <>< ><> <>< ><> <>< ><> <>< ><> <>< ><> <>< ><> <><
-
 # BLICC Plotting Functions ------------------------------------------------
 
 
@@ -24,55 +20,89 @@
 #' plot_expected_frequency(eg_rp, eg_lx, eg_ld)
 #'
 plot_expected_frequency <- function(blicc_rp, blicc_lx, blicc_ld) {
-  # Not necessary but stops CMD check notes
-  .draw=Lgroup=LMP=fq=NB_phi=NULL
+  .draw=Lgroup=LMP=fq=NB_phi=NULL  # Not necessary but stops CMD check notes
   efq=fq_lo=fq_hi=efq_m=efq_lo=efq_hi=dat_lo=dat_hi=NULL
-  df1 <- blicc_rp |>
-    dplyr::select(.draw, NB_phi) |>
-    dplyr::left_join(blicc_lx, by = ".draw") |>
-    dplyr::select(.draw, Lgroup, efq, NB_phi) |>
-    dplyr::mutate(
-      fq_lo = stats::qnbinom(0.1, size = NB_phi, mu = efq),
-      fq_hi = stats::qnbinom(0.9, size = NB_phi, mu = efq)
-    ) |>
-    dplyr::group_by(Lgroup) |>
-    dplyr::summarise(
-      efq_m = mean(efq),
-      efq_lo = stats::quantile(efq, probs = c(0.1), names = F),
-      efq_hi = stats::quantile(efq, probs = c(0.9), names = F),
-      dat_lo = stats::quantile(fq_lo, probs = c(0.1), names = F),
-      dat_hi = stats::quantile(fq_hi, probs = c(0.9), names = F),
-    ) |>
-    dplyr::ungroup() |>
-    dplyr::mutate(LMP = blicc_ld$LMP[as.integer(Lgroup)])
 
-  df2 <- tibble::tibble(LMP = blicc_ld$LMP, fq = blicc_ld$fq)
+  if (nrow(blicc_rp)==1) {
+    df1 <- blicc_rp |>
+      dplyr::select(.draw, NB_phi) |>
+      dplyr::left_join(blicc_lx, by = ".draw") |>
+      dplyr::select(.draw, Lgroup, efq, NB_phi) |>
+      dplyr::mutate(
+        dat_lo = stats::qnbinom(0.1, size = NB_phi, mu = efq),
+        dat_hi = stats::qnbinom(0.9, size = NB_phi, mu = efq)
+      ) |>
+      dplyr::mutate(LMP = blicc_ld$LMP[as.integer(Lgroup)])
 
-  ggplot2::ggplot(df1, ggplot2::aes(x = LMP)) +
-    ggplot2::geom_col(
-      data = df2,
-      ggplot2::aes(x = LMP, y = fq),
-      fill = "lightblue",
-      alpha = 0.5
-    ) +
-    ggplot2::geom_point(
-      data = df2,
-      ggplot2::aes(x = LMP, y = fq),
-      shape = 95,
-      colour = "black"
-    ) +
-    ggplot2::geom_line(ggplot2::aes(y = efq_m)) +
-    ggplot2::geom_ribbon(ggplot2::aes(ymin = efq_lo, ymax = efq_hi),
-      fill = "blue",
-      alpha = 0.3
-    ) +
-    ggplot2::geom_ribbon(ggplot2::aes(ymin = dat_lo, ymax = dat_hi),
-      fill = "black",
-      alpha = 0.2
-    ) +
-    ggplot2::labs(x = "Length", y = "Frequency") +
-    ggplot2::geom_hline(yintercept = 0)
-}
+    df2 <- tibble::tibble(LMP = blicc_ld$LMP, fq = blicc_ld$fq)
+
+    ggplot2::ggplot(df1, ggplot2::aes(x = LMP)) +
+      ggplot2::geom_col(
+        data = df2,
+        ggplot2::aes(x = LMP, y = fq),
+        fill = "lightblue",
+        alpha = 0.5
+      ) +
+      ggplot2::geom_point(
+        data = df2,
+        ggplot2::aes(x = LMP, y = fq),
+        shape = 95,
+        colour = "black"
+      ) +
+      ggplot2::geom_line(ggplot2::aes(y = efq)) +
+      ggplot2::geom_ribbon(ggplot2::aes(ymin = dat_lo, ymax = dat_hi),
+                           fill = "black",
+                           alpha = 0.2) +
+      ggplot2::labs(x = "Length", y = "Frequency") +
+      ggplot2::geom_hline(yintercept = 0)
+
+  } else {
+    df1 <- blicc_rp |>
+      dplyr::select(.draw, NB_phi) |>
+      dplyr::left_join(blicc_lx, by = ".draw") |>
+      dplyr::select(.draw, Lgroup, efq, NB_phi) |>
+      dplyr::mutate(
+        fq_lo = stats::qnbinom(0.1, size = NB_phi, mu = efq),
+        fq_hi = stats::qnbinom(0.9, size = NB_phi, mu = efq)
+      ) |>
+      dplyr::group_by(Lgroup) |>
+      dplyr::summarise(
+        efq_m = mean(efq),
+        efq_lo = stats::quantile(efq, probs = c(0.1), names = F),
+        efq_hi = stats::quantile(efq, probs = c(0.9), names = F),
+        dat_lo = stats::quantile(fq_lo, probs = c(0.1), names = F),
+        dat_hi = stats::quantile(fq_hi, probs = c(0.9), names = F),
+      ) |>
+      dplyr::ungroup() |>
+      dplyr::mutate(LMP = blicc_ld$LMP[as.integer(Lgroup)])
+
+    df2 <- tibble::tibble(LMP = blicc_ld$LMP, fq = blicc_ld$fq)
+
+    ggplot2::ggplot(df1, ggplot2::aes(x = LMP)) +
+      ggplot2::geom_col(
+        data = df2,
+        ggplot2::aes(x = LMP, y = fq),
+        fill = "lightblue",
+        alpha = 0.5
+      ) +
+      ggplot2::geom_point(
+        data = df2,
+        ggplot2::aes(x = LMP, y = fq),
+        shape = 95,
+        colour = "black"
+      ) +
+      ggplot2::geom_line(ggplot2::aes(y = efq_m)) +
+      ggplot2::geom_ribbon(ggplot2::aes(ymin = efq_lo, ymax = efq_hi),
+                           fill = "blue",
+                           alpha = 0.3) +
+      ggplot2::geom_ribbon(ggplot2::aes(ymin = dat_lo, ymax = dat_hi),
+                           fill = "black",
+                           alpha = 0.2) +
+      ggplot2::labs(x = "Length", y = "Frequency") +
+      ggplot2::geom_hline(yintercept = 0)
+  }
+
+  }
 
 
 #' Plot selectivity and 50% and 80% credible intervals by length
@@ -122,7 +152,9 @@ plot_selectivity <- function(blicc_lx, blicc_ld) {
 #'
 plot_SPR_density <- function(blicc_rp) {
   SPR=NULL
-
+  if (nrow(blicc_rp) <= 100) {
+    return("To obtain a density, you will need to obtain sufficient values (>100) from MCMC.")
+  }
   ggplot2::ggplot(blicc_rp, ggplot2::aes(SPR)) +
     ggplot2::geom_density(fill = "lightblue") +
     ggplot2::geom_vline(ggplot2::aes(xintercept = 0.2),
@@ -149,6 +181,9 @@ plot_SPR_density <- function(blicc_rp) {
 #'
 plot_FkF40_density <- function(blicc_rp) {
   Fk=F40=NULL # Not necessary but stops CMD check notes
+  if (nrow(blicc_rp) <= 100) {
+    return("To obtain a density, you will need to obtain sufficient values (>100) from MCMC.")
+  }
 
   StatAreaUnderDensity <- ggplot2::ggproto(
     "StatAreaUnderDensity",
@@ -215,7 +250,8 @@ plot_FkF40_density <- function(blicc_rp) {
 #' graphs show the expected values and 80% credible intervals compared to
 #' current observations, and can be used to assess whether length frequencies
 #' should be able to detect changes in fishing mortality to these different
-#' levels.
+#' levels. Note that if reference points do not exist, they are not
+#' plotted, so some graphs may be blank except for data.
 #'
 #' @export
 #' @inheritParams plot_expected_frequency
@@ -272,8 +308,8 @@ plot_efq_FRP <- function(blicc_rp, blicc_lx, blicc_ld) {
     dplyr::group_by(Harvest_Level, Lgroup) |>
     dplyr::summarise(
       efq_m = mean(efq),
-      dat_lo = stats::quantile(fq_lo, probs = c(0.1), names = F),
-      dat_hi = stats::quantile(fq_hi, probs = c(0.9), names = F),
+      dat_lo = stats::quantile(fq_lo, probs = c(0.1), na.rm = T, names = F),
+      dat_hi = stats::quantile(fq_hi, probs = c(0.9), na.rm = T, names = F),
       N = dplyr::n()
     ) |>
     dplyr::ungroup() |>
@@ -327,7 +363,8 @@ plot_efq_FRP <- function(blicc_rp, blicc_lx, blicc_ld) {
 #' yield. The graphs show the expected values and 80% credible intervals
 #' compared to current observations, and can be used to assess whether length
 #' frequencies should be able to detect changes in selectivity to these
-#' different levels.
+#' different levels. Note that if reference points do not exist, they are not
+#' plotted, so some graphs may be blank except for data.
 #'
 #' @export
 #' @inheritParams plot_expected_frequency
@@ -386,8 +423,8 @@ plot_efq_SRP <- function(blicc_rp, blicc_lx, blicc_ld) {
     dplyr::group_by(Selectivity, Lgroup) |>
     dplyr::summarise(
       efq_m = mean(efq),
-      dat_lo = stats::quantile(fq_lo, probs = c(0.1), names = F),
-      dat_hi = stats::quantile(fq_hi, probs = c(0.9), names = F),
+      dat_lo = stats::quantile(fq_lo, probs = c(0.1), na.rm = T, names = F),
+      dat_hi = stats::quantile(fq_hi, probs = c(0.9), na.rm = T, names = F),
       N = dplyr::n()
     ) |>
     dplyr::ungroup() |>
@@ -440,7 +477,8 @@ plot_efq_SRP <- function(blicc_rp, blicc_lx, blicc_ld) {
 #' the full selectivity (Smx). The current state of the stock is marked as a
 #' point and the SPR 40% reference point is marked as a line.
 #' All values are calculated as means and uncertainty is not represented to
-#' maintain simplicity.
+#' maintain simplicity. The reference line is plotted if it exists within a
+#' reasonable range of the current estimated status.
 #'
 #' @export
 #' @inheritParams plot_expected_frequency
@@ -454,7 +492,7 @@ plot_SPR_contour <- function(blicc_rp, blicc_ld) {
   GridN <- 40
   Linf <- mean(blicc_rp$Linf)
   Galpha <- mean(blicc_rp$Galpha)
-  Gbeta <- mean(blicc_rp$Gbeta)
+  Gbeta <- Galpha/Linf
   Mk <- mean(blicc_rp$Mk)
   Fk <- mean(blicc_rp$Fk)
   Smx <- mean(blicc_rp$Smx)
@@ -472,7 +510,7 @@ plot_SPR_contour <- function(blicc_rp, blicc_ld) {
     fSPR(0, Galpha, Gbeta, Mk, RSel = rep(0, length(Len)),
          Len, mb, glq) # Unexploited SPR
 
-  MaxF <- 2 * max(Fk, F20)
+  MaxF <- 2 * max(Fk, F20, na.rm = T)
   mSmx <- seq(min(Len - 1), Linf,
     length.out = GridN
   )
@@ -498,7 +536,7 @@ plot_SPR_contour <- function(blicc_rp, blicc_ld) {
                                         Gbeta, Mk, Ss1, Ss2, Len, LMP, mb, glq)
                                   / SPR0)
 
-  ggplot2::ggplot(SPRCurve, ggplot2::aes(x = Smx, y = mF, z = spr)) +
+  cp <- ggplot2::ggplot(SPRCurve, ggplot2::aes(x = Smx, y = mF, z = spr)) +
     ggplot2::geom_point(
       tibble::tibble(
         Lcur = Smx,
@@ -512,21 +550,26 @@ plot_SPR_contour <- function(blicc_rp, blicc_ld) {
       x = "Length at full selectivity", y = "Fishing Mortality (/k)", colour =
         "SPR"
     ) +
-    ggplot2::geom_contour(ggplot2::aes(colour = ..level..)) +
-    ggplot2::geom_line(
-      data = SPRRP,
-      ggplot2::aes(x = Smx_rp, y = F30),
-      colour = "darkred",
-      size = 2,
-      inherit.aes = F
-    ) +
-    ggplot2::annotate(
-      "text",
-      x = max(SPRRP$Smx_rp) + 0.5,
-      y = max(SPRRP$F30) + 0.3,
-      label = "SPR30",
-      colour = "darkred"
-    )
+    ggplot2::geom_contour(ggplot2::aes(colour = ..level..))
+
+  if (nrow(SPRRP) > 0) {   # Reference points exist / can be plotted
+    cp <- cp +
+      ggplot2::geom_line(
+        data = SPRRP,
+        ggplot2::aes(x = Smx_rp, y = F30),
+        colour = "darkred",
+        size = 2,
+        inherit.aes = F
+      ) +
+      ggplot2::annotate(
+        "text",
+        x = max(SPRRP$Smx_rp) + 0.5,
+        y = max(SPRRP$F30) + 0.3,
+        label = "SPR30",
+        colour = "darkred"
+      )
+  }
+  return(cp)
 }
 
 
@@ -536,7 +579,8 @@ plot_SPR_contour <- function(blicc_rp, blicc_ld) {
 #' the full selectivity (Smx). The current state of the stock is marked as a
 #' point and the F0.1 reference point is marked as a line. All values are
 #' calculated as means and uncertainty is not represented to maintain
-#' simplicity.
+#' simplicity. The reference line is plotted if it exists within a
+#' reasonable range of the current estimated status.
 #'
 #' @export
 #' @inheritParams plot_expected_frequency
@@ -549,7 +593,7 @@ plot_YPR_contour <- function(blicc_rp, blicc_ld) {
   GridN <- 40
   Linf <- mean(blicc_rp$Linf)
   Galpha <- mean(blicc_rp$Galpha)
-  Gbeta <- mean(blicc_rp$Gbeta)
+  Gbeta <- Galpha/Linf
   Mk <- mean(blicc_rp$Mk)
   Fk <- mean(blicc_rp$Fk)
   Smx <- mean(blicc_rp$Smx)
@@ -564,7 +608,7 @@ plot_YPR_contour <- function(blicc_rp, blicc_ld) {
   LMP <- blicc_ld$LMP
   weight <- weight_at_length(blicc_ld)
 
-  MaxF <- 2 * max(Fk, F20)
+  MaxF <- 2 * max(Fk, F20, na.rm = T)
   mSmx <- seq(min(Len - 1), Linf,
     length.out = GridN
   )
@@ -579,7 +623,7 @@ plot_YPR_contour <- function(blicc_rp, blicc_ld) {
     dplyr::mutate(ypr = purrr::map2_dbl(Smx, mF, fYPR2, Galpha, Gbeta, Mk,
                                         Ss1, Ss2, Len, LMP, weight, glq))
 
-  ggplot2::ggplot(YPRCurve, ggplot2::aes(x = Smx, y = mF, z = ypr)) +
+  cp <- ggplot2::ggplot(YPRCurve, ggplot2::aes(x = Smx, y = mF, z = ypr)) +
     ggplot2::geom_point(
       tibble::tibble(Lcur = Smx, Fcur = Fk),
       mapping = ggplot2::aes(x = Lcur, y = Fcur),
@@ -590,19 +634,24 @@ plot_YPR_contour <- function(blicc_rp, blicc_ld) {
       x = "Length at full selectivity", y = "Fishing Mortality (/k)", colour =
         "Relative Yield"
     ) +
-    ggplot2::geom_contour(ggplot2::aes(colour = ..level..)) +
-    ggplot2::geom_line(
-      data = YPRRP,
-      ggplot2::aes(x = Smx_rp, y = F0.1),
-      colour = "darkred",
-      size = 2,
-      inherit.aes = F
-    ) +
-    ggplot2::annotate(
-      "text",
-      x = max(YPRRP$Smx_rp) + 0.5,
-      y = max(YPRRP$F0.1) + 0.3,
-      label = "F0.1",
-      colour = "darkred"
-    )
+    ggplot2::geom_contour(ggplot2::aes(colour = ..level..))
+
+  if (nrow(YPRRP) > 0) {   # Reference points exist / can be plotted
+    cp <- cp +
+      ggplot2::geom_line(
+        data = YPRRP,
+        ggplot2::aes(x = Smx_rp, y = F0.1),
+        colour = "darkred",
+        size = 2,
+        inherit.aes = F
+        ) +
+      ggplot2::annotate(
+        "text",
+        x = max(YPRRP$Smx_rp) + 0.5,
+        y = max(YPRRP$F0.1) + 0.3,
+        label = "F0.1",
+        colour = "darkred"
+      )
+  }
+  return(cp)
 }
