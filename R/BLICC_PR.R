@@ -9,8 +9,162 @@
 # This ensures consistency between the model used
 # to estimate the parameters and that used to calculate the reference points.
 
+# Recalculate SPR
+
+
+#' Calculate the SPR under with the current fishing mortality
+#'
+#' The function calculates the spawning potential ratio (SPR) based on
+#' the provided parameter set. The SPR is calculated as a ratio between the
+#' spawning biomass per recruit for a particular fishing mortality divided
+#' by the spawning biomass per recruit with no fishing.
+#'
+#' @inheritParams blicc_get_expected
+#' @Gbeta The Gamma distribution parameter for the growth model (Galpha/Linf)
+#' @return The spawning potential ratio
+#' @noRd
+#'
+Calc_SPR <-
+  function(Galpha,
+           Gbeta,
+           Mk,
+           Fk,
+           Sm,
+           blicc_ld) {
+    Rsel <- RSelectivities(Sm, blicc_ld)
+    SPR <- fSPR(Galpha, Gbeta, Mk, Fk, Rsel, blicc_ld)
+    SPR0 <- RSPR_0(Galpha, Gbeta, Mk, blicc_ld) # Unexploited SPR
+    return(SPR/SPR0)
+  }
 
 # Solve For Reference Points ----------------------------------------------
+
+
+#' Solve for a fishing mortality which produces the target SPR
+#'
+#' The function finds the fishing mortality that gives the `tarSPR` spawning
+#' potential ratio (SPR). The SPR is calculated as a ratio between the
+#' spawning biomass per recruit for a particular fishing mortality divided
+#' by the spawning biomass per recruit with no fishing. The method used
+#' should generally work for sensible reference point target.
+#'
+#' However, note that fishing mortality estimate may not be finite,
+#' dependent on the selectivity.
+#'
+#' @inheritParams blicc_get_expected
+#' @param  tarSPR target SPR reference point: usually 0.2, 0.3 or 0.4
+#' @param vdir  A search direction vector with maximum value 1 and
+#' minimum 0 applied to changes across gears.
+#' @return Spawning potential ratio per-recruit fishing mortalities consistent
+#' with parameters and reference point
+#' @noRd
+#'
+FSPR_solve <-
+  function(Linf,
+           Galpha,
+           Mk,
+           Fk,
+           Sm,
+           tarSPR,
+           vdir,
+           blicc_ld) {
+
+    SRP_eval <- function(dF) {
+      vFk <- (1.0 + vdir*dF)*Fk
+      SPR <- fSPR(Galpha, Gbeta, Mk, vFk, Rsel, blicc_ld)
+      return(SPR / SPR0 - tarSPR)
+    }
+
+    vdir <- vdir[blicc_ld$Fkg>0]
+    maxval <- (30/max(Fk[which.max(vdir)]) - 1)
+    Gbeta <- Galpha / Linf
+    Rsel <- RSelectivities(Sm, blicc_ld)
+    SPR0 <- RSPR_0(Galpha, Gbeta, Mk, blicc_ld) # Unexploited SPR
+    min_SRP <- SRP_eval(-1)
+    if (min_SRP < 0) return(NA)  # Needs to > tarSPR
+    max_SRP <- SRP_eval(maxval)
+
+    if (is.na(max_SRP) | max_SRP > 0) {
+      return(NA)
+    }
+    dF <- stats::uniroot(f = SRP_eval,
+                         interval = c(-1, maxval))$root
+    return((1.0 + vdir*dF)*Fk)
+  }
+
+
+#' Solve for a selectivity mode which produces the target SPR
+#'
+#' The function finds the selectivity location parameters (Smx) that gives
+#' the `tarSPR` spawning potential ratio (SPR).
+#'
+#' Calculates the adjusted location selectivity parameters to achieve a
+#' target spawning potential ratio. This should often work for sensible
+#' reference point target. However, note that selectivity may not achieve any
+#' particular reference point if the fishing mortality is too low. In these
+#' cases, `NA` is returned.
+#'
+#' @inheritParams FSPR_solve
+#' @return The selectivity parameter vector with modes (full selectivity)
+#' adjusted to achieve the target SPR. NA indicates this target cannot
+#' be achieved.
+#' @noRd
+#'
+SSPR_solve <-
+  function(Linf,
+           Galpha,
+           Mk,
+           Fk,
+           Sm,
+           tarSPR,
+           vdir,
+           blicc_ld) {
+
+    SRP_eval <- function(dL) {
+      vSm[indx] <- (1 + vdir*dL)*Sm[indx]
+      Rsel <- RSelectivities(vSm, blicc_ld)
+      SPR <- fSPR(Galpha, Gbeta, Mk, Fk, Rsel, blicc_ld)
+      return(SPR / SPR0 - tarSPR)
+    }
+
+    maxdL <- Linf[1]/max(Sm[blicc_ld$Spar[which.max(vdir), 1]]) - 1
+    vdir <- vdir[blicc_ld$Fkg>0]
+    Gbeta <- Galpha / Linf
+    vSm <- Sm
+    SPR0 <- RSPR_0(Galpha, Gbeta, Mk, blicc_ld) # Unexploited SPR
+    indx <- with(blicc_ld, as.vector(t(Spar[Fkg>0, 1])))
+
+    # First need to bracket tarSPR
+    S2 <- maxdL
+    V2 <- SRP_eval(S2)
+    if (V2 < 0) {
+      S1 <- maxdL
+      V1 <- V2
+      S2 <-
+        Linf * (1 + 5 / sqrt(Galpha)) # A length that fish do not grow to
+      S2 <- S2/max(Sm[blicc_ld$Spar[which.max(vdir),1]]) - 1
+      V2 <- SRP_eval(S2)
+      if (V2 < 0) {
+        return(NA)
+      }
+    } else {
+      # V2 > 0
+      mindL <- blicc_ld$Len[1]/max(Sm[blicc_ld$Spar[which.max(vdir),1]]) - 1
+      S1 <- blicc_ld$Lm/max(Sm[blicc_ld$Spar[which.max(vdir),1]]) - 1
+      V1 <- SRP_eval(S1)
+      while ((V1 > 0) & (S1 >= mindL)) {
+        S1 <- S1 - 0.1
+        V1 <- SRP_eval(S1)
+      }
+      if (V1 > 0) {
+        return(NA)
+      }
+    }
+    dL <- stats::uniroot(f = SRP_eval,
+                         interval = c(S1, S2))$root
+    vSm[indx] <- (1 + vdir*dL)*Sm[indx]
+    return(vSm)
+  }
 
 
 #' Find the standard yield-per-recruit fishing mortality reference point F0.1
@@ -19,166 +173,48 @@
 #' 10% of initial slope. The function solves for F0.1 using a simple
 #' linear approximation to slope at the origin and at each point on the curve.
 #'
-#' @inheritParams blicc_get_expected
-#' @param  glq  a list of `nodes` and `weights` for the
-#' Gauss-Laguerre rule (see `statmod::gauss.quad()`)
+#' @inheritParams FSPR_solve
 #' @return F0.1 per-recruit fishing mortality reference point
 #'
 F01_solve <-
-  function(Smx,
-           Linf,
+  function(Linf,
            Galpha,
            Mk,
-           Ss1,
-           Ss2,
-           blicc_ld,
-           glq) {
-    maxval <- 30
-    fYPRF01 <- function(mF) {
+           Fk,
+           Sm,
+           vdir,
+           blicc_ld) {
+    fYPRF01 <- function(dF) {
+      vFk <- (1.0 + vdir*dF)*Fk
+      vFkd <- (1.0 + vdir*(dF+0.01))*Fk
       # Crude approx: slope=(y2-y1)/(x2-x1). constant (x2-x1) so ignore
       slope <-
         (
-          fYPR(mF + 0.01, Galpha, Gbeta, Mk, Sel, Len, weight, glq) -
-            fYPR(mF, Galpha, Gbeta, Mk, Sel, Len, weight, glq)
+          fYPR(Galpha, Gbeta, Mk, vFkd, Rsel, blicc_ld) -
+            fYPR(Galpha, Gbeta, Mk, vFk, Rsel, blicc_ld)
         )
       return(slope - slope01)
     }
 
+    vdir <- vdir[blicc_ld$Fkg>0]
+    maxval <- (30/max(Fk[which.max(vdir)]) - 1)
     Gbeta <- Galpha / Linf
-    Len <- blicc_ld$Len
-    weight <- weight_at_length(blicc_ld)
-    Sel <- Csel_dsnormal(blicc_ld$LMP, Smx, Ss1, Ss2)
+    Rsel <- RSelectivities(Sm, blicc_ld)
+
+    vFk <- (1.0 - vdir)*Fk
+    vFkd <- (1.0 - vdir*0.99)*Fk
     slope01 <-
       0.1 * (
-        fYPR(0.01, Galpha, Gbeta, Mk, Sel, Len, weight, glq) -
-          fYPR(0, Galpha, Gbeta, Mk, Sel, Len, weight, glq)
+        fYPR(Galpha, Gbeta, Mk, vFkd, Rsel, blicc_ld) -
+          fYPR(Galpha, Gbeta, Mk, vFk, Rsel, blicc_ld)
       )
     if (fYPRF01(maxval) > 0) {
       return(NA)
     }
-
-    return(stats::uniroot(f = fYPRF01,
-                          interval = c(0, maxval))$root)
+    dF <- stats::uniroot(f = fYPRF01,
+                         interval = c(-1, maxval))$root
+    return((1.0 + vdir*dF)*Fk)
   }
-
-
-#' Solve for a fishing mortality which produces the target SPR
-#'
-#' The function finds the fishing mortality that gives the `tarSPR` spawning
-#' potential ratio (SPR).
-#'
-#' calculates spawning biomass per recruit (Spawning Potential Ratio / SPR).
-#' This should generally work for sensible reference point target.
-#' However, note that fishing mortality estimate
-#' may not be finite, dependent on the selectivity.
-#'
-#' @inheritParams F01_solve
-#' @param  tarSPR target SPR reference point: usually 0.2, 0.3 or 0.4
-#' @return Spawning potential ratio per-recruit fishing mortality consistent
-#' with parameters and reference point
-#' @noRd
-#'
-FSPR_solve <-
-  function(Smx,
-           Linf,
-           Galpha,
-           Mk,
-           Ss1,
-           Ss2,
-           tarSPR,
-           blicc_ld,
-           glq) {
-    maxval <- 30
-    SRP_eval <- function(mF) {
-      return(fSPR(mF, Galpha, Gbeta, Mk, Sel, Len, mb, glq) / SPR0 - tarSPR)
-    }
-
-    Gbeta <- Galpha / Linf
-    Len <- blicc_ld$Len
-    Sel <- Csel_dsnormal(blicc_ld$LMP, Smx, Ss1, Ss2)
-    mb <- mature_biomass_at_length(blicc_ld)
-    SPR0 <-
-      fSPR(0, Galpha, Gbeta, Mk, Sel, Len, mb, glq) # Unexploited SPR
-    max_SRP <- SRP_eval(maxval)
-
-    if (is.na(max_SRP) | max_SRP > 0) {
-      return(NA)
-    }
-
-    return(stats::uniroot(f = SRP_eval,
-                          interval = c(0, maxval))$root)
-  }
-
-
-#' Solve for a selectivity mode which produces the target SPR
-#'
-#' The function finds the selectivity mode (Smx) that gives the `tarSPR`
-#' spawning potential ratio (SPR).
-#'
-#' Calculates spawning biomass per recruit.
-#' This should often work for sensible reference point target. However, note
-#' that selectivity may not achieve any particular reference point if the
-#' fishing mortality is too low. In these cases, NA is returned.
-#'
-#' @inheritParams blicc_get_expected
-#' @param  tarSPR target SPR reference point: usually 0.2, 0.3 or 0.4
-#' @param  glq  a list of `nodes` and `weights` for the Gauss-Laguerre rule
-#' (see `statmod::gauss.quad()`)
-#' @return Selectivity mode (full selectivity) achieving the target SPR.
-#' NA indicates this target cannot be achieved.
-#' @noRd
-#'
-SSPR_solve <-
-  function(Fk,
-           Linf,
-           Galpha,
-           Mk,
-           Ss1,
-           Ss2,
-           tarSPR,
-           blicc_ld,
-           glq) {
-    SRP_eval <- function(Smx) {
-      return(fSPR2(Smx, Fk, Galpha, Gbeta, Mk,
-                   Ss1, Ss2, Len, LMP, mb, glq) /
-               SPR0 - tarSPR)
-    }
-    Gbeta <- Galpha / Linf
-    Len <- blicc_ld$Len
-    LMP <- blicc_ld$LMP
-    mb <- mature_biomass_at_length(blicc_ld)
-    SPR0 <-
-      fSPR(0, Galpha, Gbeta, Mk,
-           RSel = rep(0, blicc_ld$oBN), Len, mb, glq) # Unexploited SPR
-
-    # First need to bracket tarSPR
-    S2 <- Linf
-    V2 <- SRP_eval(S2)
-    if (V2 < 0) {
-      S1 <- Linf
-      V1 <- V2
-      S2 <-
-        Linf * (1 + 5 / sqrt(Galpha)) # A length that fish do not grow to
-      V2 <- SRP_eval(S2)
-      if (V2 < 0) {
-        return(NA)
-      }
-    } else {
-      # V2 > 0
-      S1 <- blicc_ld$Lm
-      V1 <- SRP_eval(S1)
-      while ((V1 > 0) & (S1 >= Len[1])) {
-        S1 <- S1 - 1.0
-        V1 <- SRP_eval(S1)
-      }
-      if (V1 > 0) {
-        return(NA)
-      }
-    }
-    return(stats::uniroot(f = SRP_eval,
-                          interval = c(S1, S2))$root)
-  }
-
 
 #' Solve for a selectivity mode which produces maximum yield
 #'
@@ -189,34 +225,35 @@ SSPR_solve <-
 #' This should generally work because there must be a maximum yield between
 #' the extreme lengths (0 and Linf).
 #'
-#' @inheritParams SSPR_solve
+#' @inheritParams FSPR_solve
 #' @return maximum yield point for the selectivity mode
 #' @noRd
 #'
 SMY_solve <-
-  function(Fk, Linf, Galpha, Mk, Ss1, Ss2, blicc_ld, glq) {
+  function(Linf, Galpha, Mk, Fk, Sm, vdir, blicc_ld) {
+
+    YPR_S <- function(dL) {
+      vSm[indx] <- (1 + vdir*dL)*Sm[indx]
+      Rsel <- RSelectivities(vSm, blicc_ld)
+      Yield <- fYPR(Galpha, Gbeta, Mk, Fk, Rsel, blicc_ld)
+      return(Yield)
+    }
     Gbeta <- Galpha / Linf
-    Len <- blicc_ld$Len
-    LMP <- blicc_ld$LMP
-    weight <- weight_at_length(blicc_ld)
+    vSm <- Sm
+    # index location parameters for gears contributing to fishing mortality
+    indx <- with(blicc_ld, as.vector(t(Spar[Fkg>0, 1])))
+    maxdL <- Linf/max(Sm[blicc_ld$Spar[which.max(vdir),1]]) - 1
+    vdir <- vdir[blicc_ld$Fkg>0]
+
     res <- stats::optimize(
-      fYPR2,
-      lower = 0,
-      upper = Linf,
+      YPR_S,
+      lower = -1,
+      upper = maxdL,
       maximum = TRUE,
-      tol = 1.0e-5,
-      Fk = Fk,
-      Galpha = Galpha,
-      Gbeta = Gbeta,
-      Mk = Mk,
-      Ss1 = Ss1,
-      Ss2 = Ss2,
-      Len = Len,
-      LMP = LMP,
-      weight = weight,
-      glq = glq
-    )
-    return(res$maximum)
+      tol = 1.0e-5)
+
+    vSm[indx] <- (1 + vdir*res$maximum)*Sm[indx]
+    return(vSm)
   }
 
 
@@ -224,66 +261,32 @@ SMY_solve <-
 #'
 #' Used to evaluate the YPR for different values of Fk.
 #'
-#' @inheritParams F01_solve
-#' @param Fk     Fishing mortality (per unit growth rate K)
+#' @inheritParams FSPR_solve
 #' @param Gbeta  Rate parameter for the Gamma distribution growth variability
 #' (=Galpha/Linf)
 #' @param RSel   Vector of selectivity from function `Rsel_dsnormal()` or
 #' another source
-#' @param Len    Vector of lower length boundaries for the length bins
-#' @param weight Vector of weights from `weight_at_length()` function
 #' @return yield-per-recruit
 #' @noRd
 #'
-fYPR <- function(Fk, Galpha, Gbeta, Mk, RSel, Len, weight, glq) {
-  LN <- length(Len)
-  Fki <- RSel * Fk
-  Zki <- Fki + Mk
-  Rsurv <-
-    CSurvival_Est(glq$nodes, glq$weights, Len, Zki, Galpha, Gbeta)
-  N_L <- CNinInterval(Rsurv, Zki)
-  efq <- N_L * Fki # Catch
-  Yield <- sum(efq * weight)
+fYPR <- function(Galpha, Gbeta, Mk, Fk, Rsel, blicc_ld) {
+  Zki <- Mk * blicc_ld$M_L
+  Fki <- list()
+  for (gi in 1:blicc_ld$NG) {
+    if (blicc_ld$Fkg[gi] > 0) {
+      Fki[[gi]] <- Rsel[[gi]] * Fk[blicc_ld$Fkg[gi]]
+      Zki <- Zki + Fki[[gi]]      # Total mortality
+    }
+  }
+
+  N_L <- CPop_Len(blicc_ld$gl_nodes, blicc_ld$gl_weights, blicc_ld$Len, Zki, Galpha, Gbeta)
+  Yield <- 0
+  for (gi in 1:blicc_ld$NG) {
+    if (blicc_ld$Fkg[gi] > 0)
+      Yield <- Yield + sum(N_L * Fki[[gi]] * blicc_ld$wt_L)
+  }
   return(Yield)
 }
-
-
-#' Yield per recruit with variable selectivity
-#'
-#' Used to evaluate the YPR for different values of Fk and Smx.
-#'
-#' @inheritParams fYPR
-#' @param  Smx      Mode of the normal selectivity function (full selectivity)
-#' @param  Ss1      Left side slope, parameterized as 1/sigma^2
-#' @param  Ss2      Right side slope, parameterized as 1/sigma^2. Zero implies
-#' flat-topped selectivity
-#' @param  LMP    Vector of length bin mid-points to calculate selectivity
-#' @return yield-per-recruit
-#' @noRd
-#'
-fYPR2 <-
-  function(Smx,
-           Fk,
-           Galpha,
-           Gbeta,
-           Mk,
-           Ss1,
-           Ss2,
-           Len,
-           LMP,
-           weight,
-           glq) {
-    LN <- length(Len)
-    RSel <- Csel_dsnormal(LMP, Smx, Ss1, Ss2)
-    Fki <- RSel * Fk
-    Zki <- Fki + Mk
-    Rsurv <-
-      CSurvival_Est(glq$nodes, glq$weights, Len, Zki, Galpha, Gbeta)
-    N_L <- CNinInterval(Rsurv, Zki)
-    efq <- N_L * Fki # Catch
-    Yield <- sum(efq * weight)
-    return(Yield)
-  }
 
 
 #' Spawning biomass per recruit with variable fishing mortality
@@ -291,48 +294,20 @@ fYPR2 <-
 #' Used to evaluate the SPR for different values of Fk.
 #'
 #' @inheritParams fYPR
-#' @param mb   Vector of mature biomass from `mature_biomass_at_length()` function
 #' @return spawning biomass per recruit
 #' @noRd
 #'
-fSPR <- function(Fk, Galpha, Gbeta, Mk, RSel, Len, mb, glq) {
+fSPR <- function(Galpha, Gbeta, Mk, Fk, Rsel, blicc_ld) {
   # Spawning potential ratio
-  LN <- length(Len)
-  Zki <- RSel * Fk + Mk
-  Rsurv <-
-    CSurvival_Est(glq$nodes, glq$weights, Len, Zki, Galpha, Gbeta)
-  N_L <- CNinInterval(Rsurv, Zki)
-  return(sum(N_L * mb))
+  Zki <- Mk * blicc_ld$M_L
+  for (gi in 1:blicc_ld$NG) {
+    if (blicc_ld$Fkg[gi] > 0) {
+      Zki <- Zki + Rsel[[gi]] * Fk[blicc_ld$Fkg[gi]]      # Total mortality
+    }
+  }
+
+  N_L <- CPop_Len(blicc_ld$gl_nodes, blicc_ld$gl_weights, blicc_ld$Len, Zki, Galpha, Gbeta)
+  return(sum(N_L * blicc_ld$ma_L))
 }
 
 
-#' Spawning biomass per recruit with variable selectivity
-#'
-#' Used to evaluate the SPR for different values of Fk and Smx.
-#'
-#' @inheritParams fYPR2
-#' @param mb Vector of mature biomass from `mature_biomass_at_length()` function
-#' @return   spawning biomass per recruit
-#' @noRd
-#'
-fSPR2 <-
-  function(Smx,
-           Fk,
-           Galpha,
-           Gbeta,
-           Mk,
-           Ss1,
-           Ss2,
-           Len,
-           LMP,
-           mb,
-           glq) {
-    # Spawning potential ratio
-    LN <- length(Len)
-    RSel <- Csel_dsnormal(LMP, Smx, Ss1, Ss2)
-    Zki <- RSel * Fk + Mk
-    Rsurv <-
-      CSurvival_Est(glq$nodes, glq$weights, Len, Zki, Galpha, Gbeta)
-    N_L <- CNinInterval(Rsurv, Zki)
-    return(sum(N_L * mb))
-  }

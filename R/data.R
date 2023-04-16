@@ -65,7 +65,7 @@
 #'  \item{Smx}{Selectivity mode (full selectivity)}
 #'  \item{Ss1}{Left slope for the double normal selectivity (=1/sigma^2)}
 #'  \item{Ss2}{Right slope for the double normal selectivity (=1/sigma^2)}
-#'  \item{NB_phi}{Negative binomial parameter: Excess variance comapred to the Poisson}
+#'  \item{NB_phi}{Negative binomial parameter: Excess variance compared to the Poisson}
 #'  \item{Gbeta}{Gamma distribution "rate" parameter: (=Galpha/Linf)}
 #'  \item{SPR}{Spawning potential ratio}
 #'  \item{lp__}{Log posterior probability for the draw}

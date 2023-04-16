@@ -1,6 +1,57 @@
 # BLICC Plotting Functions ------------------------------------------------
 
 
+#' Parse the gear parameter, converting to an integer
+#'
+#' The gear parameter is converted to an integer index of the gear, or `NA`
+#' is returned after outputing an error message.
+#'
+#' @param Gear      A number or string representing a valid gear in the model
+#' @param blicc_ld  A data list from the `blicc_dat` function.
+#' @return Integer gear index or NA if no gear can be specified
+#' @noRd
+#'
+parse_gear <- function(Gear, blicc_ld) {
+
+  if (blicc_ld$NG == 1) {
+    return(1)
+  } else {
+    if (any(is.na(Gear))) {
+      # print(
+      #   paste0(
+      #     "Error: Gears must be specified that exactly matches a gear name or be an integer between 1 and ",
+      #     as.character(blicc_ld$NG)))
+      # return(NA)
+      stop(paste0(
+        "Error: Gears must be specified that exactly matches a gear name or be an integer between 1 and ",
+        as.character(blicc_ld$NG)))
+    } else {
+      if (is.character(Gear[1])) {
+        Gear <- match(Gear, blicc_ld$gname)
+        if (any(is.na(Gear))) {
+          print(
+            paste0(
+              "Error: Specified gears must exactly match a gear name or be an integer between 1 and ",
+              as.character(blicc_ld$NG)
+            )
+          )
+          return(NA)
+        }
+      }
+      Gear <- as.integer(Gear)
+      if ( ! all(between(Gear, 1, blicc_ld$NG))) {
+        print(paste0(
+          "Error: Specified gear must be between 1 and ",
+          as.character(blicc_ld$NG)
+        ))
+        return(NA)
+      }
+      return(Gear)
+    }
+  }
+}
+
+
 #' Plot the observed and expected frequency data
 #'
 #' The graph shows the observed frequency and the expected frequency together
@@ -10,99 +61,145 @@
 #' expected within these bounds.
 #'
 #' @export
-#' @param blicc_rp  A posterior draws and reference points tibble
+#' @param blicc_rp  A list of posterior draws, reference points with
+#' associated direction, the data object and expected lengths
 #' from `blicc_ref_pts` function.
-#' @param blicc_lx  A tibble from `blicc_expect_len` function.
-#' @param blicc_ld  A data list from the `blicc_dat` function.
 #' @return ggplot geom object plotting observed and expected frequency
 #' @examples
 #' eg_lx <- blicc_expect_len(eg_rp, eg_ld)
 #' plot_expected_frequency(eg_rp, eg_lx, eg_ld)
 #'
-plot_expected_frequency <- function(blicc_rp, blicc_lx, blicc_ld) {
-  .draw=Lgroup=LMP=fq=NB_phi=NULL  # Not necessary but stops CMD check notes
-  efq=fq_lo=fq_hi=efq_m=efq_lo=efq_hi=dat_lo=dat_hi=NULL
+plot_expected_frequency <-
+  function(blicc_rp, Gear = NA) {
+    .draw = Lgroup = LMP = fq = NB_phi = NULL  # Not necessary but stops CMD check notes
+    efq = fq_lo = fq_hi = efq_m = efq_lo = efq_hi = dat_lo = dat_hi = NULL
 
-  if (nrow(blicc_rp)==1) {
-    df1 <- blicc_rp |>
-      dplyr::select(.draw, NB_phi) |>
-      dplyr::left_join(blicc_lx, by = ".draw") |>
-      dplyr::select(.draw, Lgroup, efq, NB_phi) |>
-      dplyr::mutate(
-        dat_lo = stats::qnbinom(0.1, size = NB_phi, mu = efq),
-        dat_hi = stats::qnbinom(0.9, size = NB_phi, mu = efq)
-      ) |>
-      dplyr::mutate(LMP = blicc_ld$LMP[as.integer(Lgroup)])
+    rp_df <- blicc_rp$rp_df
+    blicc_ld <- blicc_rp$ld
+    blicc_lx <- blicc_rp$lx_df
 
-    df2 <- tibble::tibble(LMP = blicc_ld$LMP, fq = blicc_ld$fq)
+    Gear <- parse_gear(Gear, blicc_ld)
+    # if (any(is.na(Gear))) return()
 
-    ggplot2::ggplot(df1, ggplot2::aes(x = LMP)) +
+    gear2plot <- blicc_ld$gname[Gear]
+    blicc_lx <- blicc_lx |>
+      dplyr::filter(Sgroup %in% gear2plot)
+
+    dat_df <- with(blicc_ld, tibble::tibble(Sgroup = rep(gname, each=NB),
+                                            Lgroup = factor(rep(Len, NG)),
+                                            LMP = rep(LMP, NG),
+                                            ofq = unlist(fq)))
+
+    if (nrow(rp_df) == 1) {
+      # MPD estimate
+      MCMC_draws <- FALSE
+      df1 <- rp_df |>
+        dplyr::select(.draw, NB_phi) |>
+        dplyr::right_join(blicc_lx, by = ".draw") |>
+        dplyr::select(.draw, Sgroup, Lgroup, efq_m=efq, NB_phi) |>
+        dplyr::mutate(
+          dat_lo = stats::qnbinom(0.1, size = NB_phi, mu = efq_m),
+          dat_hi = stats::qnbinom(0.9, size = NB_phi, mu = efq_m)
+        ) |>
+        dplyr::left_join(dat_df, by=c("Sgroup", "Lgroup"))
+    } else {
+      MCMC_draws <- TRUE
+      suppressWarnings(
+        df1 <- rp_df |>
+          dplyr::select(.draw, NB_phi) |>
+          dplyr::left_join(blicc_lx, by = ".draw") |>
+          dplyr::select(.draw, Sgroup, Lgroup, efq, NB_phi) |>
+          dplyr::mutate(
+            fq_lo = stats::qnbinom(0.1, size = NB_phi, mu = efq),
+            fq_hi = stats::qnbinom(0.9, size = NB_phi, mu = efq)
+          ) |>
+          dplyr::group_by(Sgroup, Lgroup) |>
+          dplyr::summarise(
+            efq_m = mean(efq),
+            efq_lo = stats::quantile(efq, probs = c(0.1), names = F),
+            efq_hi = stats::quantile(efq, probs = c(0.9), names = F),
+            dat_lo = stats::quantile(fq_lo, probs = c(0.1), names = F),
+            dat_hi = stats::quantile(fq_hi, probs = c(0.9), names = F),
+          ) |>
+          dplyr::ungroup() |>
+          dplyr::left_join(dat_df, by=c("Sgroup", "Lgroup"))
+      )
+    }
+
+    gp <- ggplot2::ggplot(df1, ggplot2::aes(x = LMP)) +
       ggplot2::geom_col(
-        data = df2,
-        ggplot2::aes(x = LMP, y = fq),
+        ggplot2::aes(x = LMP, y = ofq),
         fill = "lightblue",
         alpha = 0.5
       ) +
       ggplot2::geom_point(
-        data = df2,
-        ggplot2::aes(x = LMP, y = fq),
-        shape = 95,
+        ggplot2::aes(x = LMP, y = ofq),
+        shape = "-",
         colour = "black"
       ) +
-      ggplot2::geom_line(ggplot2::aes(y = efq)) +
-      ggplot2::geom_ribbon(ggplot2::aes(ymin = dat_lo, ymax = dat_hi),
-                           fill = "black",
-                           alpha = 0.2) +
+      ggplot2::geom_line(ggplot2::aes(y = efq_m))
+
+    if (MCMC_draws) {
+      gp <- gp +ggplot2::geom_ribbon(
+        ggplot2::aes(ymin = efq_lo, ymax = efq_hi),
+        fill = "blue",
+        alpha = 0.3
+      ) }
+
+    gp <- gp +
+      ggplot2::geom_ribbon(
+        ggplot2::aes(ymin = dat_lo, ymax = dat_hi),
+        fill = "black",
+        alpha = 0.2
+      ) +
       ggplot2::labs(x = "Length", y = "Frequency") +
       ggplot2::geom_hline(yintercept = 0)
 
-  } else {
-    df1 <- blicc_rp |>
-      dplyr::select(.draw, NB_phi) |>
-      dplyr::left_join(blicc_lx, by = ".draw") |>
-      dplyr::select(.draw, Lgroup, efq, NB_phi) |>
-      dplyr::mutate(
-        fq_lo = stats::qnbinom(0.1, size = NB_phi, mu = efq),
-        fq_hi = stats::qnbinom(0.9, size = NB_phi, mu = efq)
-      ) |>
-      dplyr::group_by(Lgroup) |>
-      dplyr::summarise(
-        efq_m = mean(efq),
-        efq_lo = stats::quantile(efq, probs = c(0.1), names = F),
-        efq_hi = stats::quantile(efq, probs = c(0.9), names = F),
-        dat_lo = stats::quantile(fq_lo, probs = c(0.1), names = F),
-        dat_hi = stats::quantile(fq_hi, probs = c(0.9), names = F),
-      ) |>
-      dplyr::ungroup() |>
-      dplyr::mutate(LMP = blicc_ld$LMP[as.integer(Lgroup)])
-
-    df2 <- tibble::tibble(LMP = blicc_ld$LMP, fq = blicc_ld$fq)
-
-    ggplot2::ggplot(df1, ggplot2::aes(x = LMP)) +
-      ggplot2::geom_col(
-        data = df2,
-        ggplot2::aes(x = LMP, y = fq),
-        fill = "lightblue",
-        alpha = 0.5
-      ) +
-      ggplot2::geom_point(
-        data = df2,
-        ggplot2::aes(x = LMP, y = fq),
-        shape = 95,
-        colour = "black"
-      ) +
-      ggplot2::geom_line(ggplot2::aes(y = efq_m)) +
-      ggplot2::geom_ribbon(ggplot2::aes(ymin = efq_lo, ymax = efq_hi),
-                           fill = "blue",
-                           alpha = 0.3) +
-      ggplot2::geom_ribbon(ggplot2::aes(ymin = dat_lo, ymax = dat_hi),
-                           fill = "black",
-                           alpha = 0.2) +
-      ggplot2::labs(x = "Length", y = "Frequency") +
-      ggplot2::geom_hline(yintercept = 0)
+    if (length(Gear) > 1) {
+      gp <- gp + facet_wrap(vars(Sgroup),
+                            ncol=2,
+                            scales="free_y")
+    } else {
+      gp <- gp + ggplot2::ggtitle(gear2plot)
+    }
+    return(gp)
   }
 
-  }
+#' Plot standardised residuals against length
+#'
+#' The graph shows the standardised residuals plotted against length for all
+#' gears combined, separated by colour. Due to the variance weighting, outliers
+#' can be expected at the tails of the frequency.
+#'
+#' @export
+#' @inheritParams plot_expected_frequency
+#' @return ggplot geom object plotting standardised residuals
+#' @examples
+#' eg_lx <- blicc_expect_len(eg_rp, eg_ld)
+#' plot_residuals(eg_rp, eg_lx, eg_ld)
+#'
+plot_residuals <- function(blicc_rp) {
+
+  blicc_ld <- blicc_rp$ld
+  blicc_lx <- blicc_rp$lx_df
+  dat_df <- with(blicc_ld, tibble::tibble(Sgroup = rep(gname, each=NB),
+                                          Lgroup = factor(rep(Len, NG)),
+                                          LMP = rep(LMP, NG),
+                                          ofq = unlist(fq)))
+  df1 <- blicc_rp$rp_df |>
+    dplyr::select(.draw, NB_phi) |>
+    dplyr::right_join(blicc_lx, by = ".draw") |>
+    dplyr::select(.draw, Sgroup, Lgroup, efq, NB_phi) |>
+    dplyr::left_join(dat_df, by=c("Sgroup", "Lgroup")) |>
+    dplyr::mutate(
+      std_res = (ofq - efq) / sqrt(efq + (efq^2)/NB_phi))
+
+  gp <- ggplot2::ggplot(df1, ggplot2::aes(x = LMP, y = std_res, colour=Sgroup)) +
+    ggplot2::geom_point() +
+    ggplot2::labs(x = "Length", y = "Standardised Residuals", colour="Gear") +
+    ggplot2::geom_hline(yintercept = 0)
+  return(gp)
+}
 
 
 #' Plot selectivity and 50% and 80% credible intervals by length
@@ -114,31 +211,28 @@ plot_expected_frequency <- function(blicc_rp, blicc_lx, blicc_ld) {
 #' eg_lx <- blicc_expect_len(eg_rp, eg_ld)
 #' plot_selectivity(eg_lx, eg_ld)
 #'
-plot_selectivity <- function(blicc_lx, blicc_ld) {
+plot_selectivity <- function(blicc_rp) {
   Lgroup=sel=LMP=sel_01=sel_90=sel_25=sel_75=sel_m=NULL
-  blicc_lx |>
-    dplyr::select(Lgroup, sel) |>
-    dplyr::group_by(Lgroup) |>
+
+  blicc_ld <- blicc_rp$ld
+  blicc_lx <- blicc_rp$lx_df
+  gp <- blicc_lx |>
+    dplyr::select(Sgroup, Lgroup, sel) |>
+    dplyr::group_by(Sgroup, Lgroup) |>
     dplyr::summarise(
       sel_m = mean(sel),
-      sel_01 = stats::quantile(sel, probs = c(0.10), names = F),
-      sel_25 = stats::quantile(sel, probs = c(0.25), names = F),
-      sel_75 = stats::quantile(sel, probs = c(0.75), names = F),
+      sel_10 = stats::quantile(sel, probs = c(0.10), names = F),
       sel_90 = stats::quantile(sel, probs = c(0.90), names = F),
     ) |>
     dplyr::ungroup() |>
     dplyr::mutate(LMP = blicc_ld$LMP[as.integer(Lgroup)]) |>
-    ggplot2::ggplot(ggplot2::aes(x = LMP)) +
-    ggplot2::geom_ribbon(ggplot2::aes(ymin = sel_01, ymax = sel_90),
-      fill = "#546E8A",
-      alpha = 0.7
-    ) +
-    ggplot2::geom_ribbon(ggplot2::aes(ymin = sel_25, ymax = sel_75),
-      fill = "#B0BED5",
-      alpha = 0.7
+    ggplot2::ggplot(ggplot2::aes(x = LMP, fill=Sgroup, colour=Sgroup)) +
+    ggplot2::geom_ribbon(ggplot2::aes(ymin = sel_10, ymax = sel_90),
+                         alpha = 0.5
     ) +
     ggplot2::geom_line(ggplot2::aes(y = sel_m)) +
-    ggplot2::labs(x = "Length", y = "Selectivity")
+    ggplot2::labs(x = "Length", y = "Selectivity", fill="Gear", colour="Gear")
+  return(gp)
 }
 
 
@@ -152,18 +246,19 @@ plot_selectivity <- function(blicc_lx, blicc_ld) {
 #'
 plot_SPR_density <- function(blicc_rp) {
   SPR=NULL
-  if (nrow(blicc_rp) <= 100) {
-    return("To obtain a density, you will need to obtain sufficient values (>100) from MCMC.")
+  rp_df <- blicc_rp$rp_df
+  if (nrow(rp_df) <= 100) {
+    stop("To obtain a density, you will need to obtain sufficient values (>100) from MCMC.")
   }
-  ggplot2::ggplot(blicc_rp, ggplot2::aes(SPR)) +
+  ggplot2::ggplot(rp_df, ggplot2::aes(SPR)) +
     ggplot2::geom_density(fill = "lightblue") +
     ggplot2::geom_vline(ggplot2::aes(xintercept = 0.2),
-      colour = "red",
-      linetype = 2
+                        colour = "red",
+                        linetype = 2
     ) +
     ggplot2::geom_vline(ggplot2::aes(xintercept = 0.4),
-      colour = "green",
-      linetype = 2
+                        colour = "green",
+                        linetype = 2
     ) +
     ggplot2::coord_cartesian(xlim = c(0, 1)) +
     ggplot2::labs(x = "Spawning Potential Ratio", y = "Probability Density")
@@ -181,8 +276,19 @@ plot_SPR_density <- function(blicc_rp) {
 #'
 plot_FkF40_density <- function(blicc_rp) {
   Fk=F40=NULL # Not necessary but stops CMD check notes
-  if (nrow(blicc_rp) <= 100) {
-    return("To obtain a density, you will need to obtain sufficient values (>100) from MCMC.")
+
+  suppressWarnings(
+    rp_df <- blicc_rp$rp_df |>
+      dplyr::select(Fk, F40) |>
+      dplyr::mutate(id=row_number()) |>
+      tidyr::unnest(cols=c(Fk, F40)) |>
+      dplyr::mutate(`Fk/F40` = Fk/F40) |>
+      dplyr::group_by(id) |>
+      dplyr::summarise(`Fk/F40` = mean(`Fk/F40`)) |>
+      dplyr::ungroup()
+  )
+  if (nrow(rp_df) <= 100) {
+    stop("To obtain a density, you will need to obtain sufficient values (>100) from MCMC.")
   }
 
   StatAreaUnderDensity <- ggplot2::ggproto(
@@ -195,10 +301,10 @@ plot_FkF40_density <- function(blicc_rp) {
                              n = 50) {
       fun <- stats::approxfun(stats::density(data$x))
       ggplot2::StatFunction$compute_group(data,
-        scales,
-        fun = fun,
-        xlim = xlim,
-        n = n
+                                          scales,
+                                          fun = fun,
+                                          xlim = xlim,
+                                          n = n
       )
     }
   )
@@ -224,21 +330,35 @@ plot_FkF40_density <- function(blicc_rp) {
       params = list(xlim = xlim, n = n, ...)
     )
   }
-  ggplot2::ggplot(blicc_rp, ggplot2::aes(Fk / F40)) +
-    ggplot2::geom_density(fill = "#A11826") +
+
+  fq_good <- sum(rp_df$`Fk/F40` <= 1.0)
+
+  if (fq_good==nrow(rp_df)) {
+    gp <- ggplot2::ggplot(rp_df, ggplot2::aes(`Fk/F40`)) +
+      ggplot2::geom_density(fill = "#204030")
+  } else if (fq_good==0) {
+    gp <- ggplot2::ggplot(rp_df, ggplot2::aes(`Fk/F40`)) +
+      ggplot2::geom_density(fill = "#951826")
+  } else {
+    gp <- ggplot2::ggplot(rp_df, ggplot2::aes(`Fk/F40`)) +
+      ggplot2::geom_density(fill = "#951826") +
+      stat_aud(
+        geom = "area",
+        ggplot2::aes(fill = "good"),
+        xlim = c(0, 1),
+        alpha = 1.0,
+        show.legend = FALSE
+      )  +
+      ggplot2::scale_fill_manual(values = c("good" = "#204030"))
+  }
+
+  gp <- gp +
     ggplot2::geom_vline(ggplot2::aes(xintercept = 1.0),
-      colour = "green",
-      linetype = 1
+                        colour = "green",
+                        linetype = 1
     ) +
-    stat_aud(
-      geom = "area",
-      ggplot2::aes(fill = "good"),
-      xlim = c(0, 1),
-      alpha = 1.0,
-      show.legend = FALSE
-    ) +
-    ggplot2::scale_fill_manual(values = c("good" = "#204030")) +
     ggplot2::labs(y = "Probability Density")
+  return(gp)
 }
 
 
@@ -260,40 +380,53 @@ plot_FkF40_density <- function(blicc_rp) {
 #' eg_lx <- blicc_expect_len(eg_rp, eg_ld)
 #' plot_efq_FRP(eg_rp, eg_lx, eg_ld)
 #'
-plot_efq_FRP <- function(blicc_rp, blicc_lx, blicc_ld) {
+plot_efq_FRP <- function(blicc_rp, Gear=NA) {
   # Not necessary but stops CMD check notes
-  Linf=Galpha=Mk=Fk=Smx=Ss1=Ss2=NB_phi=NULL
+  Linf=Galpha=Mk=Fk=Sm=NB_phi=NULL
   .draw=Lgroup=Current=SPR20=SPR40=SMY=LMP=fq=Harvest_Level=NULL
   F20=F30=F40=efq=fq_lo=fq_hi=N=efq_m=dat_lo=dat_hi=lab=x=y=NULL
 
-  glq <- statmod::gauss.quad(blicc_ld$NK, kind = "laguerre", alpha = 0.0)
-  df <- blicc_rp |>
-    dplyr::mutate(Lgroup = list(factor(blicc_ld$Len))) |>
-    dplyr::mutate(
-      SPR20 = purrr::pmap(
-        list(Linf, Galpha, Mk, F20, Smx, Ss1, Ss2),
-        blicc_get_efq,
-        blicc_ld = blicc_ld,
-        glq
-      ),
-      SPR30 = purrr::pmap(
-        list(Linf, Galpha, Mk, F30, Smx, Ss1, Ss2),
-        blicc_get_efq,
-        blicc_ld = blicc_ld,
-        glq
-      ),
-      SPR40 = purrr::pmap(
-        list(Linf, Galpha, Mk, F40, Smx, Ss1, Ss2),
-        blicc_get_efq,
-        blicc_ld = blicc_ld,
-        glq
+  blicc_ld <- blicc_rp$ld
+  blicc_lx <- blicc_rp$lx_df
+
+  Gear <- parse_gear(Gear, blicc_ld)
+  if (is.na(Gear)) return()
+
+  gear2plot <- blicc_ld$gname[Gear]
+  blicc_lx <- blicc_lx |>
+    dplyr::filter(Sgroup == gear2plot)
+
+  df_dat <- tibble::tibble(LMP = blicc_ld$LMP, fq = blicc_ld$fq[[Gear]])
+
+  suppressWarnings(
+    df <- blicc_rp$rp_df |>
+      dplyr::mutate(Lgroup = list(factor(blicc_ld$Len))) |>
+      dplyr::mutate(
+        SPR20 = purrr::pmap(
+          list(Linf, Galpha, Mk, F20, Sm),
+          blicc_get_efq,
+          Gear_i = Gear,
+          blicc_ld = blicc_ld
+        ),
+        SPR30 = purrr::pmap(
+          list(Linf, Galpha, Mk, F30, Sm),
+          blicc_get_efq,
+          Gear_i = Gear,
+          blicc_ld = blicc_ld
+        ),
+        SPR40 = purrr::pmap(
+          list(Linf, Galpha, Mk, F40, Sm),
+          blicc_get_efq,
+          Gear_i = Gear,
+          blicc_ld = blicc_ld
+        )
+      ) |>
+      dplyr::select(`.draw`, NB_phi, Lgroup, SPR20:SPR40) |>
+      tidyr::unnest(Lgroup:SPR40) |>
+      dplyr::left_join(dplyr::select(blicc_lx, .draw, Lgroup, Current = efq),
+                       by = c(".draw", "Lgroup")
       )
-    ) |>
-    dplyr::select(`.draw`, NB_phi, Lgroup, SPR20:SPR40) |>
-    tidyr::unnest(Lgroup:SPR40) |>
-    dplyr::left_join(dplyr::select(blicc_lx, .draw, Lgroup, Current = efq),
-      by = c(".draw", "Lgroup")
-    )
+  )
 
   df1 <- df |>
     tidyr::pivot_longer(
@@ -325,25 +458,23 @@ plot_efq_FRP <- function(blicc_rp, blicc_lx, blicc_ld) {
       y = max(df1$dat_hi)
     )
 
-  df2 <- tibble::tibble(LMP = blicc_ld$LMP, fq = blicc_ld$fq)
-
   ggplot2::ggplot(df1, ggplot2::aes(x = LMP)) +
     ggplot2::geom_col(
-      data = df2,
+      data = df_dat,
       ggplot2::aes(x = LMP, y = fq),
       fill = "lightblue",
       alpha = 0.5
     ) +
     ggplot2::geom_point(
-      data = df2,
+      data = df_dat,
       ggplot2::aes(x = LMP, y = fq),
       shape = 95,
       colour = "black"
     ) +
     ggplot2::geom_line(ggplot2::aes(y = efq_m)) +
     ggplot2::geom_ribbon(ggplot2::aes(ymin = dat_lo, ymax = dat_hi),
-      fill = "black",
-      alpha = 0.2
+                         fill = "black",
+                         alpha = 0.2
     ) +
     ggplot2::geom_text(
       data = txt_df,
@@ -351,7 +482,7 @@ plot_efq_FRP <- function(blicc_rp, blicc_lx, blicc_ld) {
       size = 2.5
     ) +
     ggplot2::facet_wrap(ggplot2::vars(Harvest_Level), nrow = 2) +
-    ggplot2::labs(x = "Length", y = "Frequency") +
+    ggplot2::labs(x = "Length", y = "Frequency", title = gear2plot) +
     ggplot2::geom_hline(yintercept = 0)
 }
 
@@ -374,41 +505,54 @@ plot_efq_FRP <- function(blicc_rp, blicc_lx, blicc_ld) {
 #' eg_lx <- blicc_expect_len(eg_rp, eg_ld)
 #' plot_efq_SRP(eg_rp, eg_lx, eg_ld)
 #'
-plot_efq_SRP <- function(blicc_rp, blicc_lx, blicc_ld) {
-  Linf=Galpha=Mk=Fk=Smx=Ss1=Ss2=NB_phi=NULL
+plot_efq_SRP <- function(blicc_rp, Gear=NA) {
+  Linf=Galpha=Mk=Fk=Sm=NB_phi=NULL
   .draw=Lgroup=Current=SPR20=SPR40=LMP=fq=Harvest_Level=NULL
   S20=S40=SMY=efq=fq_lo=fq_hi=N=efq_m=dat_lo=dat_hi=lab=x=y=NULL
 
-  Max_Yield=Selectivity=NULL
-  glq <- statmod::gauss.quad(blicc_ld$NK, kind = "laguerre", alpha = 0.0)
-  df <- blicc_rp |>
-    dplyr::mutate(Lgroup = list(factor(blicc_ld$Len))) |>
-    dplyr::mutate(
-      SPR20 = purrr::pmap(
-        list(Linf, Galpha, Mk, Fk, S20, Ss1, Ss2),
-        blicc_get_efq,
-        blicc_ld = blicc_ld,
-        glq
-      ),
-      SPR40 = purrr::pmap(
-        list(Linf, Galpha, Mk, Fk, S40, Ss1, Ss2),
-        blicc_get_efq,
-        blicc_ld = blicc_ld,
-        glq
-      ),
-      Max_Yield = purrr::pmap(
-        list(Linf, Galpha, Mk, Fk, SMY, Ss1, Ss2),
-        blicc_get_efq,
-        blicc_ld = blicc_ld,
-        glq
-      )
-    ) |>
-    dplyr::select(`.draw`, NB_phi, Lgroup, SPR20:Max_Yield) |>
-    tidyr::unnest(Lgroup:Max_Yield) |>
-    dplyr::left_join(dplyr::select(blicc_lx, .draw, Lgroup, Current = efq),
-      by = c(".draw", "Lgroup")
-    )
+  blicc_ld <- blicc_rp$ld
+  blicc_lx <- blicc_rp$lx_df
 
+  Max_Yield=Selectivity=NULL
+  blicc_ld <- blicc_rp$ld
+  Gear <- parse_gear(Gear, blicc_ld)
+  if (is.na(Gear)) return()
+
+  gear2plot <- blicc_ld$gname[Gear]
+  blicc_lx <- blicc_lx |>
+    dplyr::filter(Sgroup == gear2plot)
+
+  df_dat <- tibble::tibble(LMP = blicc_ld$LMP, fq = blicc_ld$fq[[Gear]])
+
+  suppressWarnings(
+    df <- blicc_rp$rp_df |>
+      dplyr::mutate(Lgroup = list(factor(blicc_ld$Len))) |>
+      dplyr::mutate(
+        SPR20 = purrr::pmap(
+          list(Linf, Galpha, Mk, Fk, S20),
+          blicc_get_efq,
+          Gear_i = Gear,
+          blicc_ld = blicc_ld
+        ),
+        SPR40 = purrr::pmap(
+          list(Linf, Galpha, Mk, Fk, S40),
+          blicc_get_efq,
+          Gear_i = Gear,
+          blicc_ld = blicc_ld
+        ),
+        Max_Yield = purrr::pmap(
+          list(Linf, Galpha, Mk, Fk, SMY),
+          blicc_get_efq,
+          Gear_i = Gear,
+          blicc_ld = blicc_ld
+        )
+      ) |>
+      dplyr::select(`.draw`, NB_phi, Lgroup, SPR20:Max_Yield) |>
+      tidyr::unnest(Lgroup:Max_Yield) |>
+      dplyr::left_join(dplyr::select(blicc_lx, .draw, Lgroup, Current = efq),
+                       by = c(".draw", "Lgroup")
+      )
+  )
   df1 <- df |>
     tidyr::pivot_longer(
       cols = SPR20:Current,
@@ -440,25 +584,23 @@ plot_efq_SRP <- function(blicc_rp, blicc_lx, blicc_ld) {
       y = max(df1$dat_hi)
     )
 
-  df2 <- tibble::tibble(LMP = blicc_ld$LMP, fq = blicc_ld$fq)
-
   ggplot2::ggplot(df1, ggplot2::aes(x = LMP)) +
     ggplot2::geom_col(
-      data = df2,
+      data = df_dat,
       ggplot2::aes(x = LMP, y = fq),
       fill = "lightblue",
       alpha = 0.5
     ) +
     ggplot2::geom_point(
-      data = df2,
+      data = df_dat,
       ggplot2::aes(x = LMP, y = fq),
       shape = 95,
       colour = "black"
     ) +
     ggplot2::geom_line(ggplot2::aes(y = efq_m)) +
     ggplot2::geom_ribbon(ggplot2::aes(ymin = dat_lo, ymax = dat_hi),
-      fill = "black",
-      alpha = 0.2
+                         fill = "black",
+                         alpha = 0.2
     ) +
     ggplot2::geom_text(
       data = txt_df,
@@ -466,7 +608,7 @@ plot_efq_SRP <- function(blicc_rp, blicc_lx, blicc_ld) {
       size = 2.5
     ) +
     ggplot2::facet_wrap(ggplot2::vars(Selectivity), nrow = 2) +
-    ggplot2::labs(x = "Length", y = "Frequency") +
+    ggplot2::labs(x = "Length", y = "Frequency", title = gear2plot) +
     ggplot2::geom_hline(yintercept = 0)
 }
 
@@ -486,71 +628,93 @@ plot_efq_SRP <- function(blicc_rp, blicc_lx, blicc_ld) {
 #' @examples
 #' plot_SPR_contour(eg_rp, eg_ld)
 #'
-plot_SPR_contour <- function(blicc_rp, blicc_ld) {
+plot_SPR_contour <- function(blicc_rp) {
   Smx_rp=spr=Lcur=Fcur=`..level..`=NULL  #R CMD Notes
 
+  fSPR2 <- function(dF, dL) {
+    vFk <- (1 + svdir*dF)*Fk
+    vSm[indx] <- (1 + svdir*dL)*Sm[indx]
+    Rsel <- RSelectivities(vSm, blicc_ld)
+    res <- RPop_F(Galpha, Gbeta, Mk, vFk, Rsel, blicc_ld)
+    return(sum(res$N_L * blicc_ld$ma_L / SPR0))
+  }
+
+  blicc_ld <- blicc_rp$ld
+
   GridN <- 40
-  Linf <- mean(blicc_rp$Linf)
-  Galpha <- mean(blicc_rp$Galpha)
+  Linf <- mean(blicc_rp$rp_df$Linf)
+  Galpha <- mean(blicc_rp$rp_df$Galpha)
   Gbeta <- Galpha/Linf
-  Mk <- mean(blicc_rp$Mk)
-  Fk <- mean(blicc_rp$Fk)
-  Smx <- mean(blicc_rp$Smx)
-  Ss1 <- mean(blicc_rp$Ss1)
-  Ss2 <- mean(blicc_rp$Ss2)
-  F20 <- mean(blicc_rp$F20, na.rm = TRUE)
-  F30 <- mean(blicc_rp$F30, na.rm = TRUE)
+  Mk <- mean(blicc_rp$rp_df$Mk)
+  Fk <- as.vector(tapply(X=unlist(pull(blicc_rp$rp_df, Fk)),
+                         INDEX=rep(1:blicc_ld$NF, nrow(blicc_rp$rp_df)),
+                         FUN=mean))
+  Sm <- as.vector(tapply(X=unlist(pull(blicc_rp$rp_df, Sm)),
+                         INDEX=rep(1:blicc_ld$NP, nrow(blicc_rp$rp_df)),
+                         FUN=mean))
+  F20 <- tapply(X=unlist(pull(blicc_rp$rp_df, F20)),
+                INDEX=rep(1:blicc_ld$NF, nrow(blicc_rp$rp_df)),
+                FUN=mean, na.rm = TRUE)
+  F30 <- tapply(X=unlist(pull(blicc_rp$rp_df, F30)),
+                INDEX=rep(1:blicc_ld$NF, nrow(blicc_rp$rp_df)),
+                FUN=mean, na.rm = TRUE)
 
-  glq <-
-    statmod::gauss.quad(blicc_ld$NK, kind = "laguerre", alpha = 0.0)
-  Len <- blicc_ld$Len
-  LMP <- blicc_ld$LMP
-  mb <- mature_biomass_at_length(blicc_ld)
+  # Decide reference gear on highest fishing mortality to be controlled
+  Gear_i <- which.max(Fk * unname(blicc_rp$vdir[blicc_ld$Fkg > 0]))
+  gear2plot <- blicc_ld$gname[Gear_i]
+
   SPR0 <-
-    fSPR(0, Galpha, Gbeta, Mk, RSel = rep(0, length(Len)),
-         Len, mb, glq) # Unexploited SPR
+    RSPR_0(Galpha, Gbeta, Mk, blicc_ld) # Unexploited SPR
 
-  MaxF <- 2 * max(Fk, F20, na.rm = T)
-  mSmx <- seq(min(Len - 1), Linf,
-    length.out = GridN
+  MaxF <- 2 * max(Fk[Gear_i], F20[Gear_i], na.rm = T)
+  Gear_Smx <- Sm[blicc_ld$Spar[, 1]]
+
+  # Grid Points
+  mSmx <- seq(min(blicc_ld$Len - 1), Linf,
+              length.out = GridN
   )
-  mF <- seq(0, MaxF, length.out = 40)
+  mFk <- seq(0, MaxF, length.out = GridN)
+  dL <- (mSmx/Gear_Smx[Gear_i] - 1) / blicc_rp$vdir[Gear_i]
 
-  SPRRP <- tibble::tibble(Smx_rp = mSmx) |>
-    dplyr::mutate(F30 = purrr::map_dbl(
-      Smx_rp,
-      FSPR_solve,
-      Linf,
-      Galpha,
-      Mk,
-      Ss1,
-      Ss2,
-      0.3,
-      blicc_ld,
-      glq
-    )) |>
+  vSm <- Sm
+  indx <- with(blicc_ld, as.vector(t(Spar[Fkg>0, 1])))
+
+  svdir <- blicc_rp$vdir[blicc_ld$Fkg > 0]
+
+  F30 <- double(GridN)
+  for (i in 1:GridN) {
+    # Calculate the same proportional change to the selectivity parameters for all gears
+    vSm[indx] <- (1 + svdir*dL[i])*Sm[indx]
+    F30_g <- FSPR_solve(Linf, Galpha, Mk, Fk, vSm, 0.3, blicc_rp$vdir, blicc_ld)
+    F30[i] <- F30_g[blicc_ld$Fkg[Gear_i]]
+  }
+  SPRRP <- tibble::tibble(Smx_rp = mSmx, F30=F30) |>
     dplyr::filter(F30 <= MaxF)
 
-  SPRCurve <- tibble::as_tibble(expand.grid(mF = mF, Smx = mSmx)) |>
-    dplyr::mutate(spr = purrr::map2_dbl(Smx, mF, fSPR2, Galpha,
-                                        Gbeta, Mk, Ss1, Ss2, Len, LMP, mb, glq)
-                                  / SPR0)
+  SPRCurve <- tidyr::expand_grid(mFk = mFk, Smx = mSmx) |>
+    dplyr::mutate(dF = (mFk/Fk[Gear_i] - 1) / blicc_rp$vdir[Gear_i],
+                  dL = (Smx/Gear_Smx[Gear_i] - 1) / blicc_rp$vdir[Gear_i],
+                  spr = purrr::map2_dbl(dF, dL, fSPR2))
 
-  cp <- ggplot2::ggplot(SPRCurve, ggplot2::aes(x = Smx, y = mF, z = spr)) +
+  All_Gear_Fk <- double(blicc_ld$NG)
+  All_Gear_Fk[blicc_ld$Fkg] <- Fk  # With zero F's
+  cp <- ggplot2::ggplot(SPRCurve, ggplot2::aes(x = Smx, y = mFk, z = spr)) +
     ggplot2::geom_point(
       tibble::tibble(
-        Lcur = Smx,
-        Fcur = Fk,
-        spr = 0
+        Lcur = Gear_Smx[Gear_i],
+        Fcur = All_Gear_Fk[Gear_i],
+        Gear = blicc_ld$gname[Gear_i]
       ),
       mapping = ggplot2::aes(x = Lcur, y = Fcur),
       size = 3
     ) +
     ggplot2::labs(
-      x = "Length at full selectivity", y = "Fishing Mortality (/k)", colour =
-        "SPR"
+      x = "Selectivity length parameter ", y = "Fishing Mortality (/k) ", colour =
+        "SPR",
+      title = paste0("SPR: ", blicc_ld$gname[Gear_i])
     ) +
-    ggplot2::geom_contour(ggplot2::aes(colour = ..level..))
+    ggplot2::geom_contour(ggplot2::aes(colour = after_stat(level))) +
+    ggplot2::geom_hline(yintercept = 0)
 
   if (nrow(SPRRP) > 0) {   # Reference points exist / can be plotted
     cp <- cp +
@@ -558,14 +722,14 @@ plot_SPR_contour <- function(blicc_rp, blicc_ld) {
         data = SPRRP,
         ggplot2::aes(x = Smx_rp, y = F30),
         colour = "darkred",
-        size = 2,
+        linewidth = 1.5,
         inherit.aes = F
       ) +
       ggplot2::annotate(
         "text",
         x = max(SPRRP$Smx_rp) + 0.5,
         y = max(SPRRP$F30) + 0.3,
-        label = "SPR30",
+        label = paste0("SPR30%"),
         colour = "darkred"
       )
   }
@@ -588,53 +752,86 @@ plot_SPR_contour <- function(blicc_rp, blicc_ld) {
 #' @examples
 #' plot_YPR_contour(eg_rp, eg_ld)
 #'
-plot_YPR_contour <- function(blicc_rp, blicc_ld) {
+plot_YPR_contour <- function(blicc_rp) {
   Smx_rp=ypr=F0.1=Lcur=Fcur=`..level..`=NULL  # R CMD Notes
+
+  fYPR2 <- function(dF, dL) {
+    vFk <- (1 + svdir*dF)*Fk
+    vSm[indx] <- (1 + svdir*dL)*Sm[indx]
+    Rsel <- RSelectivities(vSm, blicc_ld)
+    res <- RPop_F(Galpha, Gbeta, Mk, vFk, Rsel, blicc_ld)
+    Yield <- 0
+    for (gi in 1:blicc_ld$NG) {
+      if (blicc_ld$Fkg[gi] > 0)
+        Yield <- Yield + sum(res$N_L * res$Fki[[gi]] * blicc_ld$wt_L)
+    }
+    return(Yield)
+  }
+
+  blicc_ld <- blicc_rp$ld
   GridN <- 40
-  Linf <- mean(blicc_rp$Linf)
-  Galpha <- mean(blicc_rp$Galpha)
+  Linf <- mean(blicc_rp$rp_df$Linf)
+  Galpha <- mean(blicc_rp$rp_df$Galpha)
   Gbeta <- Galpha/Linf
-  Mk <- mean(blicc_rp$Mk)
-  Fk <- mean(blicc_rp$Fk)
-  Smx <- mean(blicc_rp$Smx)
-  Ss1 <- mean(blicc_rp$Ss1)
-  Ss2 <- mean(blicc_rp$Ss2)
-  F20 <- mean(blicc_rp$F20, na.rm = TRUE)
-  F30 <- mean(blicc_rp$F30, na.rm = TRUE)
+  Mk <- mean(blicc_rp$rp_df$Mk)
+  Fk <- as.vector(tapply(X=unlist(pull(blicc_rp$rp_df, Fk)), INDEX=rep(1:blicc_ld$NF, nrow(blicc_rp$rp_df)), FUN=mean))
+  Sm <- as.vector(tapply(X=unlist(pull(blicc_rp$rp_df, Sm)), INDEX=rep(1:blicc_ld$NP, nrow(blicc_rp$rp_df)), FUN=mean))
+  F20 <- tapply(X=unlist(pull(blicc_rp$rp_df, F20)), INDEX=rep(1:blicc_ld$NF, nrow(blicc_rp$rp_df)), FUN=mean, na.rm = TRUE)
+  F30 <- tapply(X=unlist(pull(blicc_rp$rp_df, F30)), INDEX=rep(1:blicc_ld$NF, nrow(blicc_rp$rp_df)), FUN=mean, na.rm = TRUE)
 
-  glq <-
-    statmod::gauss.quad(blicc_ld$NK, kind = "laguerre", alpha = 0.0)
-  Len <- blicc_ld$Len
-  LMP <- blicc_ld$LMP
-  weight <- weight_at_length(blicc_ld)
+  # Decide reference gear on highest fishing mortality to be controlled
+  Gear_i <- which.max(Fk * unname(blicc_rp$vdir[blicc_ld$Fkg > 0]))
+  gear2plot <- blicc_ld$gname[Gear_i]
 
-  MaxF <- 2 * max(Fk, F20, na.rm = T)
-  mSmx <- seq(min(Len - 1), Linf,
-    length.out = GridN
+  MaxF <- 2 * max(Fk[Gear_i], F20[Gear_i], na.rm = T)
+  Gear_Smx <- Sm[blicc_ld$Spar[, 1]]
+
+  # Grid Points
+  mSmx <- seq(min(blicc_ld$Len - 1), Linf,
+              length.out = GridN
   )
-  mF <- seq(0, MaxF, length.out = GridN)
+  mFk <- seq(0, MaxF, length.out = GridN)
+  dL <- (mSmx/Gear_Smx[Gear_i] - 1) / blicc_rp$vdir[Gear_i]
 
-  YPRRP <- tibble::tibble(Smx_rp = mSmx) |>
-    dplyr::mutate(F0.1 = purrr::map_dbl(Smx_rp, F01_solve, Linf,
-                                        Galpha, Mk, Ss1, Ss2, blicc_ld, glq)) |>
+  vSm <- Sm
+  indx <- with(blicc_ld, as.vector(t(Spar[Fkg>0, 1])))
+
+  svdir <- blicc_rp$vdir[blicc_ld$Fkg > 0]
+
+  F01 <- double(GridN)
+  for (i in 1:GridN) {
+    # Calculate the same proportional change to the selectivity parameters for all gears
+    vSm[indx] <- (1 + svdir*dL[i])*Sm[indx]
+    F01_g <- F01_solve(Linf, Galpha, Mk, Fk, vSm, blicc_rp$vdir, blicc_ld)
+    F01[i] <- F01_g[blicc_ld$Fkg[Gear_i]]
+  }
+  YPRRP <- tibble::tibble(Smx_rp = mSmx, F0.1=F01) |>
     dplyr::filter(F0.1 <= MaxF)
 
-  YPRCurve <- tibble::as_tibble(expand.grid(mF = mF, Smx = mSmx)) |>
-    dplyr::mutate(ypr = purrr::map2_dbl(Smx, mF, fYPR2, Galpha, Gbeta, Mk,
-                                        Ss1, Ss2, Len, LMP, weight, glq))
+  YPRCurve <- tidyr::expand_grid(mFk = mFk, Smx = mSmx) |>
+    dplyr::mutate(dF = (mFk/Fk[Gear_i] - 1) / blicc_rp$vdir[Gear_i],
+                  dL = (Smx/Gear_Smx[Gear_i] - 1) / blicc_rp$vdir[Gear_i],
+                  ypr = purrr::map2_dbl(dF, dL, fYPR2))
 
-  cp <- ggplot2::ggplot(YPRCurve, ggplot2::aes(x = Smx, y = mF, z = ypr)) +
+  All_Gear_Fk <- double(blicc_ld$NG)
+  All_Gear_Fk[blicc_ld$Fkg] <- Fk  # With zero F's
+  cp <- ggplot2::ggplot(YPRCurve, ggplot2::aes(x = Smx, y = mFk, z = ypr)) +
     ggplot2::geom_point(
-      tibble::tibble(Lcur = Smx, Fcur = Fk),
+      tibble::tibble(
+        Lcur = Gear_Smx[Gear_i],
+        Fcur = All_Gear_Fk[Gear_i],
+        Gear = blicc_ld$gname[Gear_i]
+      ),
       mapping = ggplot2::aes(x = Lcur, y = Fcur),
-      size = 3,
-      inherit.aes = F
+      size = 3
     ) +
     ggplot2::labs(
-      x = "Length at full selectivity", y = "Fishing Mortality (/k)", colour =
-        "Relative Yield"
+      x = "Selectivity location parameter ", y = "Fishing Mortality (/k) ", colour =
+        "Relative Yield",
+      title = paste0("Yield: ", blicc_ld$gname[Gear_i])
     ) +
-    ggplot2::geom_contour(ggplot2::aes(colour = ..level..))
+    ggplot2::geom_contour(ggplot2::aes(colour = after_stat(level))) +
+    ggplot2::geom_hline(yintercept = 0)
 
   if (nrow(YPRRP) > 0) {   # Reference points exist / can be plotted
     cp <- cp +
@@ -642,9 +839,9 @@ plot_YPR_contour <- function(blicc_rp, blicc_ld) {
         data = YPRRP,
         ggplot2::aes(x = Smx_rp, y = F0.1),
         colour = "darkred",
-        size = 2,
+        linewidth = 1.5,
         inherit.aes = F
-        ) +
+      ) +
       ggplot2::annotate(
         "text",
         x = max(YPRRP$Smx_rp) + 0.5,
