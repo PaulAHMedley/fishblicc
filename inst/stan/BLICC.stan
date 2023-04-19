@@ -19,138 +19,6 @@
 
 functions {
 
-  vector[] gauss_laguerre_quad(int nt, real alpha) {
-    //  A Gauss-Laguerre rule for approximating
-    //    Integral ( a <= x < +oo ) |x-a|^ALPHA exp(-B*x(x-a)) f(x) dx
-    //  of order "nt".
-    //  Order nt is the number of points in the rule:
-    //  ALPHA is the exponent of |X|:
-    //  Ported from C: Original FORTRAN77 version by Sylvan Elhay, Jaroslav Kautsky.
-    //                 C version by John Burkardt.https://people.math.sc.edu/Burkardt/c_src/laguerre_rule/laguerre_rule.c
-    //                 distributed under the GNU LGPL License
-
-    real r8_epsilon = 2.220446049250313E-016;
-    int itn  = 30;
-    vector[nt] aj;
-    vector[nt] bj;
-    vector[nt] wt = rep_vector(0, nt);
-    real       zemu = tgamma(alpha+1.0);
-    vector[nt] knot_wt[2];
-    int  m;
-    int  mml;
-    int  k;
-    real b;
-    real c;
-    real f;
-    real g;
-    real sign_g;
-    real p;
-    real r;
-    real s;
-
-    {
-      vector[nt] i = cumulative_sum(rep_vector(1, nt));
-      aj = 2.0*i - 1.0 + alpha;
-      bj = sqrt(i .* (i+alpha));
-    }
-    wt[1] = sqrt(zemu);
-    //  Diagonalize the Jacobi matrix.
-    if (nt == 1) {
-      knot_wt[1] = aj;
-      knot_wt[2] = square(wt);
-      return knot_wt;
-    }
-
-    bj[nt] = 0.0;
-
-    for (ll in 1:nt) {
-      int j = 0;
-      int Do_Loop = 1;
-      while (Do_Loop) {
-        m = ll;
-        while ((m<nt) && (fabs(bj[m]) > r8_epsilon * (fabs(aj[m]) + fabs(aj[m+1])))) { //set m
-          m += 1;
-        }
-        if (m == ll) {
-          Do_Loop = 0;  //break; ends while(1) loop
-        } else {
-          p = aj[ll];
-          if (itn <= j) {
-            reject("gauss_laguerre_quad - Fatal error! Iteration limit exceeded");
-          }
-          j += 1;
-          g = (aj[ll+1]-p) / (2.0*bj[ll]);
-          if (g>=0) sign_g = 1.0; else sign_g = -1.0;
-          r =  sqrt(square(g) + 1.0);
-          s = g + fabs(r)*sign_g;
-          g = aj[m] - p + (bj[ll] / s);
-          s = 1.0;
-          c = 1.0;
-          p = 0.0;
-          mml = m - ll;
-
-          for (ii in 1:mml) {
-            int i = m - ii;
-            f = s * bj[i];
-            b = c * bj[i];
-            if (fabs(g) <= fabs(f)) {
-              c = g / f;
-              r =  sqrt(square(c) + 1.0);
-              bj[i+1] = f * r;
-              s = 1.0 / r;
-              c *= s;
-            } else {
-              s = f / g;
-              r =  sqrt(square(s) + 1.0);
-              bj[i+1] = g * r;
-              c = 1.0 / r;
-              s *= c;
-            }
-            g = aj[i+1] - p;
-            r = (aj[i]-g)*s + 2.0 * c * b;
-            p = s * r;
-            aj[i+1] = g + p;
-            g = c * r - b;
-            f = wt[i+1];
-            b = wt[i];
-            wt[i+1] = s * b + c * f;
-            wt[i] = c * b - s * f;
-          }
-          aj[ll] -= p;
-          bj[ll] = g;
-          bj[m] = 0.0;
-        }
-      }  //while
-    }
-    //  Sorting
-    for (ii in 2:m)  {
-      int i = ii - 1;
-      k = i;
-      p = aj[i];
-
-      for (j in ii:nt) {
-        if (aj[j] < p) {
-          k = j;
-          p = aj[j];
-        }
-      }
-
-      if (k != i) {
-        g = aj[i];
-        aj[k] = g;
-        aj[i] = p;
-        p = wt[i];
-        wt[i] = wt[k];
-        wt[k] = p;
-      }
-    }
-    knot_wt[1] = aj;
-    knot_wt[2] = square(wt);
-    return knot_wt;
-  }  //gauss_laguerre_quad
-
-
-
 // Selectivity models
 
 // MODEL 1
@@ -268,42 +136,43 @@ vector NinInterval(vector Surv, vector Zki) {
 data {
   //Likelihood are strictly applied to the bins supplied.
   //It is important to include all zero observations with non-negligible probability
-  int<lower=5>            NK;           // Number of Gauss-Laguerre nodes
   int<lower=1>            NG;           // Number of gears: separate length frequencies
   int<lower=1, upper=NG>  NF;           // Number of F's: gears associated with non-zero catches
   int<lower=1>            NB;           // Number of length bins
+
+  vector[NB]              LLB;            // Bin lower bounds
+  int                     fq[NG, NB];     // Frequency in each bin for each gear
+  vector[NF]              Catch;          // Estimated total relative catch in numbers of fish, excluding zeroes for surveys etc.
+  int<lower=0, upper=NG>  Fkg[NG];        // Index of the Fk associated with the gear gi. 0 implies catch negligible
+  int<lower=1, upper=4>   fSel[NG];       // Selectivity function to use: 1 = logistic, 2 = normal, 3 = ss_normal, 4 = ds_normal
   int<lower=2>            NP;           // Number of selectivity parameters
   int<lower=2>            Pmx;          // Maximum parameters for available selectivity functions  (for matrix dimensions, currently = 3)
-
-  int<lower=1, upper=4>         fSel[NG];       // Selectivity function to use: 1 = logistic, 2 = normal, 3 = ss_normal, 4 = ds_normal
-  int<lower=0, upper=NP>        Spar[NG, Pmx];  // Selectivity function parameter index for each gear. Maximum number of parameters = 3
-  vector[NF]                    Catch;          // Estimated total relative catch in numbers of fish, excluding zeroes for surveys etc.
-  int<lower=0, upper=NG>        Fkg[NG];        // Index of the Fk associated with the gear gi. 0 implies catch negligible
-  vector[NB]                    Len;            // Bin lower bounds
-  int                           fq[NG, NB];     // Frequency in each bin for each gear
-  vector[NB]                    M_L;            // Length-based adjustment for natural mortality
-  row_vector[NB]                ma_L;          // Mature biomass at length
+  int<lower=0, upper=NP>  spar[NG, Pmx];  // Selectivity function parameter index for each gear. Maximum number of parameters = 3
+  row_vector[NB]          ma_L;           // Mature biomass at length
   //Constant Hyperparameters for priors - Linf has a normal prior; all other priors are log normal
   //see https://github.com/stan-dev/stan/wiki/Prior-Choice-Recommendations
-  real       poLinfm;
-  real       poLinfs;
-  real       polGam;
-  real       polGas;
-  real       polMkm;
-  real       polMks;
-  vector[NF] polFkm;
-  real       polFks;
-  vector[NP] polSm;
-  vector[NP] polSs;
-  real       polNB_phim;
-  real       polNB_phis;
-  real       polCs;          // Catch sigma for lognormal
+  real         poLinfm;
+  real         poLinfs;
+  real         polGam;
+  real         polGas;
+  vector[NB]   M_L;          // Length-based adjustment for natural mortality
+  real         polMkm;
+  real         polMks;
+  vector[NF]   polFkm;
+  real         polFks;
+  vector[NP]   polSm;
+  vector[NP]   polSs;
+  real         polNB_phim;
+  real         polNB_phis;
+  real         polCs;       // Catch sigma for lognormal
+  int<lower=5> NK;          // Number of Gauss-Laguerre nodes
+  vector[NK]   gl_nodes;
+  vector[NK]   gl_weights;
 }
 
 
 transformed data {
   real          eps;     // small number to avoid zeroes and assoicated numerical failure. It should have no influence on results.
-  vector[NK]    kn_wt[2] = gauss_laguerre_quad(NK, 0);  // Gauss-Laguerre quadrature nodes and weights
   vector[NG]    NObs;
   vector[NF]    olC;     // Normalized observed log catch by gear
   vector[NB]    LMP;     // Length bin mid point
@@ -326,8 +195,8 @@ transformed data {
 
   // LMP is only used for selectivity models
   for (i in 1:(NB-1))
-    LMP[i] = 0.5*(Len[i] + Len[i+1]);
-  LMP[NB] = Len[NB] + 0.5*(Len[NB] - Len[NB-1]);
+    LMP[i] = 0.5*(LLB[i] + LLB[i+1]);
+  LMP[NB] = LLB[NB] + 0.5*(LLB[NB] - LLB[NB-1]);
 }
 
 
@@ -361,7 +230,6 @@ transformed parameters {
 /////////////////////////////////////////////
 
 model {
-  vector[NB] efq;
   //<><  ><>  <><  ><>  <><  ><>  <><  ><>  <><  ><>
   /////   PRIORS   ///  <><  ><>  <><  ><>  <><  ><>
   //<><  ><>  <><  ><>  <><  ><>  <><  ><>  <><  ><>
@@ -378,6 +246,7 @@ model {
   //<><  ><>  <><  ><>  <><  ><>  <><  ><>  <><  ><>
   {
     //calculate expected mortality for current parameter set
+    vector[NB] efq;
     real       Total_Catch = 0;
     vector[NF] elC;
     real       eC_sum;
@@ -389,14 +258,14 @@ model {
 
     for (gi in 1:NG) {
       if (fSel[gi] == 1) {
-        Fki[gi] = sel_logistic(LMP, Sm[Spar[gi, 1:2]]);          // Logistic selectivity
+        Fki[gi] = sel_logistic(LMP, Sm[spar[gi, 1:2]]);          // Logistic selectivity
       }
       else if (fSel[gi] == 2)
-        Fki[gi] = sel_normal(LMP, Sm[Spar[gi, 1:2]]);            // Normal selectivity
+        Fki[gi] = sel_normal(LMP, Sm[spar[gi, 1:2]]);            // Normal selectivity
       else if (fSel[gi] == 3)
-        Fki[gi] = sel_ssnormal(LMP, Sm[Spar[gi, 1:2]]);          // Normal flat selectivity
+        Fki[gi] = sel_ssnormal(LMP, Sm[spar[gi, 1:2]]);          // Normal flat selectivity
       else {
-        Fki[gi] = sel_dsnormal(LMP, Sm[Spar[gi, 1:3]]);          // Domed selectivity
+        Fki[gi] = sel_dsnormal(LMP, Sm[spar[gi, 1:3]]);          // Domed selectivity
       }
       if (Fkg[gi] > 0) {
         Fki[gi] *= Fk[Fkg[gi]];                   // Fishing mortality
@@ -404,7 +273,7 @@ model {
       }
     }
     //calculate the expected survival at each length point integrating over age
-    Sv = Survival_Est(kn_wt[1], kn_wt[2], Len, Zki, Galpha, Gbeta);
+    Sv = Survival_Est(gl_nodes, gl_weights, LLB, Zki, Galpha, Gbeta);
     Pop = NinInterval(Sv, Zki);
 
     //<><  ><>  <><  ><>  <><  ><>  <><  ><>  <><  ><>
@@ -442,24 +311,24 @@ generated quantities {
     vector[NB] Sv;                         // Survival
 
     // spawning biomass for the unexploited stock
-    Sv = Survival_Est(kn_wt[1], kn_wt[2], Len, Zki, Galpha, Gbeta);
+    Sv = Survival_Est(gl_nodes, gl_weights, LLB, Zki, Galpha, Gbeta);
     SPR0 = ma_L * NinInterval(Sv, Zki);
 
     // Add fishing mortality rate to each length bin
     for (gi in 1:NG) {
       if (Fkg[gi] > 0) {
         if (fSel[gi] == 1)
-          Zki += sel_logistic(LMP, Sm[Spar[gi, 1:2]])*Fk[Fkg[gi]];          // Flat top selectivity
+          Zki += sel_logistic(LMP, Sm[spar[gi, 1:2]])*Fk[Fkg[gi]];          // Flat top selectivity
         else if (fSel[gi] == 2)
-          Zki += sel_normal(LMP, Sm[Spar[gi, 1:2]]*Fk[Fkg[gi]]);            // Normal selectivity
+          Zki += sel_normal(LMP, Sm[spar[gi, 1:2]]*Fk[Fkg[gi]]);            // Normal selectivity
         else if (fSel[gi] == 3)
-          Zki += sel_ssnormal(LMP, Sm[Spar[gi, 1:2]])*Fk[Fkg[gi]];          // Flat top selectivity
+          Zki += sel_ssnormal(LMP, Sm[spar[gi, 1:2]])*Fk[Fkg[gi]];          // Flat top selectivity
         else
-          Zki += sel_dsnormal(LMP, Sm[Spar[gi, 1:3]])*Fk[Fkg[gi]];          // Domed selectivity
+          Zki += sel_dsnormal(LMP, Sm[spar[gi, 1:3]])*Fk[Fkg[gi]];          // Domed selectivity
       }
     }
     //calculate the expected survival at each length point integrating over age
-    Sv = Survival_Est(kn_wt[1], kn_wt[2], Len, Zki, Galpha, Gbeta);
+    Sv = Survival_Est(gl_nodes, gl_weights, LLB, Zki, Galpha, Gbeta);
     SPRF = ma_L * NinInterval(Sv, Zki);   // Spawning biomass calculation
 
     //SPR is the ratio of the spawning biomass with fishing to spawning biomass without fishing

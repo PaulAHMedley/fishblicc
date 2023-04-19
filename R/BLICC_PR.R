@@ -1,18 +1,10 @@
+# BLICC Per Recruit Reference point functions -----------------------------
+
 # ><> <>< ><> <>< ><> <>< ><> <>< ><> <>< ><> <>< ><> <><
-# Per Recruit Reference point functions
 # ><> <>< ><> <>< ><> <>< ><> <>< ><> <>< ><> <>< ><> <><
 
 
-# Although per recruit calculations could be done using age-based
-# functions as is usually done, the per-recruit
-# calculations are carried out using the length-based model.
-# This ensures consistency between the model used
-# to estimate the parameters and that used to calculate the reference points.
-
-# Recalculate SPR
-
-
-#' Calculate the SPR under with the current fishing mortality
+#' Calculate the SPR for the fishing mortalities and selectivities
 #'
 #' The function calculates the spawning potential ratio (SPR) based on
 #' the provided parameter set. The SPR is calculated as a ratio between the
@@ -20,7 +12,7 @@
 #' by the spawning biomass per recruit with no fishing.
 #'
 #' @inheritParams blicc_get_expected
-#' @Gbeta The Gamma distribution parameter for the growth model (Galpha/Linf)
+#' @param Gbeta The Gamma distribution parameter for the growth model (Galpha/Linf)
 #' @return The spawning potential ratio
 #' @noRd
 #'
@@ -31,13 +23,11 @@ Calc_SPR <-
            Fk,
            Sm,
            blicc_ld) {
-    Rsel <- RSelectivities(Sm, blicc_ld)
+    Rsel <- Rselectivities(Sm, blicc_ld)
     SPR <- fSPR(Galpha, Gbeta, Mk, Fk, Rsel, blicc_ld)
     SPR0 <- RSPR_0(Galpha, Gbeta, Mk, blicc_ld) # Unexploited SPR
     return(SPR/SPR0)
   }
-
-# Solve For Reference Points ----------------------------------------------
 
 
 #' Solve for a fishing mortality which produces the target SPR
@@ -53,7 +43,7 @@ Calc_SPR <-
 #'
 #' @inheritParams blicc_get_expected
 #' @param  tarSPR target SPR reference point: usually 0.2, 0.3 or 0.4
-#' @param vdir  A search direction vector with maximum value 1 and
+#' @param  vdir  A search direction vector with maximum value 1 and
 #' minimum 0 applied to changes across gears.
 #' @return Spawning potential ratio per-recruit fishing mortalities consistent
 #' with parameters and reference point
@@ -78,7 +68,7 @@ FSPR_solve <-
     vdir <- vdir[blicc_ld$Fkg>0]
     maxval <- (30/max(Fk[which.max(vdir)]) - 1)
     Gbeta <- Galpha / Linf
-    Rsel <- RSelectivities(Sm, blicc_ld)
+    Rsel <- Rselectivities(Sm, blicc_ld)
     SPR0 <- RSPR_0(Galpha, Gbeta, Mk, blicc_ld) # Unexploited SPR
     min_SRP <- SRP_eval(-1)
     if (min_SRP < 0) return(NA)  # Needs to > tarSPR
@@ -95,14 +85,15 @@ FSPR_solve <-
 
 #' Solve for a selectivity mode which produces the target SPR
 #'
-#' The function finds the selectivity location parameters (Smx) that gives
+#' The function finds the selectivity location parameters that gives
 #' the `tarSPR` spawning potential ratio (SPR).
 #'
-#' Calculates the adjusted location selectivity parameters to achieve a
-#' target spawning potential ratio. This should often work for sensible
-#' reference point target. However, note that selectivity may not achieve any
-#' particular reference point if the fishing mortality is too low. In these
-#' cases, `NA` is returned.
+#' Calculates the adjusted location selectivity parameters along a
+#' direction vector to achieve a target spawning potential ratio.
+#' This should often work for sensible reference point target.
+#' However, note that selectivity may not achieve any
+#' particular reference point if the fishing mortality is too low.
+#' In these cases, `NA` is returned.
 #'
 #' @inheritParams FSPR_solve
 #' @return The selectivity parameter vector with modes (full selectivity)
@@ -122,17 +113,17 @@ SSPR_solve <-
 
     SRP_eval <- function(dL) {
       vSm[indx] <- (1 + vdir*dL)*Sm[indx]
-      Rsel <- RSelectivities(vSm, blicc_ld)
+      Rsel <- Rselectivities(vSm, blicc_ld)
       SPR <- fSPR(Galpha, Gbeta, Mk, Fk, Rsel, blicc_ld)
       return(SPR / SPR0 - tarSPR)
     }
 
-    maxdL <- Linf[1]/max(Sm[blicc_ld$Spar[which.max(vdir), 1]]) - 1
+    maxdL <- Linf/max(Sm[blicc_ld$spar[which.max(vdir), 1]]) - 1
     vdir <- vdir[blicc_ld$Fkg>0]
     Gbeta <- Galpha / Linf
     vSm <- Sm
     SPR0 <- RSPR_0(Galpha, Gbeta, Mk, blicc_ld) # Unexploited SPR
-    indx <- with(blicc_ld, as.vector(t(Spar[Fkg>0, 1])))
+    indx <- with(blicc_ld, as.vector(t(spar[Fkg>0, 1])))
 
     # First need to bracket tarSPR
     S2 <- maxdL
@@ -142,15 +133,15 @@ SSPR_solve <-
       V1 <- V2
       S2 <-
         Linf * (1 + 5 / sqrt(Galpha)) # A length that fish do not grow to
-      S2 <- S2/max(Sm[blicc_ld$Spar[which.max(vdir),1]]) - 1
+      S2 <- S2/max(Sm[blicc_ld$spar[which.max(vdir),1]]) - 1
       V2 <- SRP_eval(S2)
       if (V2 < 0) {
         return(NA)
       }
     } else {
       # V2 > 0
-      mindL <- blicc_ld$Len[1]/max(Sm[blicc_ld$Spar[which.max(vdir),1]]) - 1
-      S1 <- blicc_ld$Lm/max(Sm[blicc_ld$Spar[which.max(vdir),1]]) - 1
+      mindL <- blicc_ld$LLB[1]/max(Sm[blicc_ld$spar[which.max(vdir), 1]]) - 1
+      S1 <- blicc_ld$L50/max(Sm[blicc_ld$spar[which.max(vdir), 1]]) - 1
       V1 <- SRP_eval(S1)
       while ((V1 > 0) & (S1 >= mindL)) {
         S1 <- S1 - 0.1
@@ -175,6 +166,7 @@ SSPR_solve <-
 #'
 #' @inheritParams FSPR_solve
 #' @return F0.1 per-recruit fishing mortality reference point
+#' @noRd
 #'
 F01_solve <-
   function(Linf,
@@ -199,7 +191,7 @@ F01_solve <-
     vdir <- vdir[blicc_ld$Fkg>0]
     maxval <- (30/max(Fk[which.max(vdir)]) - 1)
     Gbeta <- Galpha / Linf
-    Rsel <- RSelectivities(Sm, blicc_ld)
+    Rsel <- Rselectivities(Sm, blicc_ld)
 
     vFk <- (1.0 - vdir)*Fk
     vFkd <- (1.0 - vdir*0.99)*Fk
@@ -234,15 +226,15 @@ SMY_solve <-
 
     YPR_S <- function(dL) {
       vSm[indx] <- (1 + vdir*dL)*Sm[indx]
-      Rsel <- RSelectivities(vSm, blicc_ld)
+      Rsel <- Rselectivities(vSm, blicc_ld)
       Yield <- fYPR(Galpha, Gbeta, Mk, Fk, Rsel, blicc_ld)
       return(Yield)
     }
     Gbeta <- Galpha / Linf
     vSm <- Sm
     # index location parameters for gears contributing to fishing mortality
-    indx <- with(blicc_ld, as.vector(t(Spar[Fkg>0, 1])))
-    maxdL <- Linf/max(Sm[blicc_ld$Spar[which.max(vdir),1]]) - 1
+    indx <- with(blicc_ld, as.vector(t(spar[Fkg>0, 1])))
+    maxdL <- Linf/max(Sm[blicc_ld$spar[which.max(vdir), 1]]) - 1
     vdir <- vdir[blicc_ld$Fkg>0]
 
     res <- stats::optimize(
@@ -279,7 +271,7 @@ fYPR <- function(Galpha, Gbeta, Mk, Fk, Rsel, blicc_ld) {
     }
   }
 
-  N_L <- CPop_Len(blicc_ld$gl_nodes, blicc_ld$gl_weights, blicc_ld$Len, Zki, Galpha, Gbeta)
+  N_L <- with(blicc_ld, Cpop_len(gl_nodes, gl_weights, LLB, Zki, Galpha, Gbeta))
   Yield <- 0
   for (gi in 1:blicc_ld$NG) {
     if (blicc_ld$Fkg[gi] > 0)
@@ -306,7 +298,8 @@ fSPR <- function(Galpha, Gbeta, Mk, Fk, Rsel, blicc_ld) {
     }
   }
 
-  N_L <- CPop_Len(blicc_ld$gl_nodes, blicc_ld$gl_weights, blicc_ld$Len, Zki, Galpha, Gbeta)
+  N_L <- with(blicc_ld, Cpop_len(gl_nodes, gl_weights, LLB,
+                                 Zki, Galpha, Gbeta))
   return(sum(N_L * blicc_ld$ma_L))
 }
 

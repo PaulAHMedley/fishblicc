@@ -6,19 +6,21 @@
 # Expected Values ---------------------------------------------------------
 
 
-#' Posterior draws including standard reference points for F and Smx
+#' Generate posterior draws and standard reference points
 #'
-#' The functions returns a tibble of draws from the posterior MCMC stanfit
-#' object together with a nested tibble for each draw containing the results
-#' (expected values) in terms of length. The tibble is suitable for use in
+#' The functions returns a list consisting of the search direction
+#' vector, a tibble of draws from the posterior MCMC stanfit (or the
+#' mpd estimate) including SPR 20%, 30% and 40% reference points,
+#' expected number in each length bin and the data object used to
+#' generate these.  The tibble of draws is suitable for use in
 #' the `posterior` and `bayesplot` packages and can be used in various
 #' functions to show results. Note that the function can take a little time
 #' to run and may be moderately large, depending on the number of
-#' draws, and reference points may not exist (indicated by `NA`).
+#' draws. Some reference points may not exist (indicated by `NA`).
 #'
 #' @details
 #' Reference points are found where possible for the parameter draw from the MCMC.
-#' The reference points are found on along line representing the relative impact
+#' The reference points are found along line representing the relative impact
 #' across gears. The default is to apply the same adjustments proportionately
 #' to every gear that has a fishing mortality, but alternative scenarios can be
 #' defined. For example, if there are two gears, and only the first will be
@@ -28,14 +30,15 @@
 #' selectivity. Strictly speaking, reference points may not exist within
 #' specific constraints on F and selectivity. Within more general bounds on F
 #' and selectivity, all reference "points" exist as lines or points. In these
-#' functions, reference points in relation to a control (Fk or Smx) are
+#' functions, reference points in relation to a control (Fk or Sm) are
 #' calculated based on the other being fixed at the current estimated value.
 #' To see how the fishery might respond when they are adjusted together,
 #' the yield or SPR surface must be plotted.
 #'
 #' @export
+#' @inheritParams blicc_mpd
+#' @inheritParams blicc_dat
 #' @param slimf      An object from the `blicc_fit` or `blicc_mpd` function.
-#' @param blicc_ld   A data list from the `blicc_dat` function.
 #' @param vdir       A search direction vector with maximum value 1 and
 #' minimum 0 applied to changes across gears.
 #' @return A list of a tibble containing posterior draws or mpd point estimates
@@ -47,160 +50,192 @@
 #' summary(res_rp$rp_df)
 #' }
 #'
-blicc_ref_pts <- function(slimf, blicc_ld, vdir = NA, a=NA, b=NA, L50=NA, L95=NA) {
-  Linf=Galpha=Mk=Fk=Sm=mpd=par=.draw=NULL
+blicc_ref_pts <-
+  function(slimf,
+           blicc_ld,
+           vdir = NA,
+           a = NA,
+           b = NA,
+           L50 = NA,
+           L95 = NA) {
+    Linf = Galpha = Mk = Fk = Sm = mpd = par = .draw = NULL
 
-  vdir <- as.vector(vdir)
-  if (is.na(vdir)) {
-    vdir <- rep(0, blicc_ld$NG)
-    vdir[blicc_ld$Fkg] <- 1
-  } else if (max(vdir) != 1.0 | min(vdir) < 0)
-    stop("Error: vdir - the direction vector must have at least
-            one value equal to 1.0, and no values outside the 0-1 range.")
+    vdir <- as.vector(vdir)
+    if (is.na(vdir)) {
+      vdir <- double(blicc_ld$NG)
+      vdir[blicc_ld$Fkg] <- 1
+    } else if (max(vdir) != 1.0 | min(vdir) < 0)
+      stop(
+        "Error: vdir - the direction vector must have at least
+            one value equal to 1.0, and no values outside the 0-1 range."
+      )
 
-  names(vdir) <- blicc_ld$gname
+    names(vdir) <- blicc_ld$gname
 
-  if (class(slimf)[1] == "stanfit") {
-    # Convert stanfit object to posterior draws with list columns for F and
-    # Sm parameters
-    rp_df <- posterior::as_draws_df(slimf) |>
-      dplyr::select(Linf:`.draw`)
+    if (class(slimf)[1] == "stanfit") {
+      # Convert stanfit object to posterior draws with list columns for F and
+      # Sm parameters
+      rp_df <- posterior::as_draws_df(slimf) |>
+        dplyr::select(Linf:`.draw`)
 
-    par_c <- paste0("Sm[", as.character(1:blicc_ld$NP), "]")
-    suppressWarnings(
-      sel_tmp <- rp_df |>
-        dplyr::select(.draw, tidyselect::all_of(par_c)) |>
-        tidyr::pivot_longer(cols = tidyselect::all_of(par_c), names_to="name2", values_to="Sm") |>
-        dplyr::arrange(.draw, name2) |>
-        dplyr::group_by(.draw) |>
-        dplyr::summarise(Sm = list(Sm)) |>
-        dplyr::ungroup()
-    )
-    rp_df <- rp_df |>
-      dplyr::select(-all_of(par_c))
+      par_c <- paste0("Sm[", as.character(1:blicc_ld$NP), "]")
+      suppressWarnings(
+        sel_tmp <- rp_df |>
+          dplyr::select(.draw, tidyselect::all_of(par_c)) |>
+          tidyr::pivot_longer(
+            cols = tidyselect::all_of(par_c),
+            names_to = "name2",
+            values_to = "Sm"
+          ) |>
+          dplyr::arrange(.draw, name2) |>
+          dplyr::group_by(.draw) |>
+          dplyr::summarise(Sm = list(Sm)) |>
+          dplyr::ungroup()
+      )
+      rp_df <- rp_df |>
+        dplyr::select(-all_of(par_c))
 
-    par_c <- paste0("Fk[", as.character(1:blicc_ld$NF), "]")
-    suppressWarnings(
-      F_tmp <- rp_df |>
-        dplyr::select(.draw, tidyselect::all_of(par_c)) |>
-        tidyr::pivot_longer(cols = tidyselect::all_of(par_c), names_to="name2", values_to="Fk") |>
-        dplyr::arrange(.draw, name2) |>
-        dplyr::group_by(.draw) |>
-        dplyr::summarise(Fk = list(Fk)) |>
-        dplyr::ungroup()
-    )
-    rp_df <- rp_df |>
-      dplyr::select(-all_of(par_c))
+      par_c <- paste0("Fk[", as.character(1:blicc_ld$NF), "]")
+      suppressWarnings(
+        F_tmp <- rp_df |>
+          dplyr::select(.draw, tidyselect::all_of(par_c)) |>
+          tidyr::pivot_longer(
+            cols = tidyselect::all_of(par_c),
+            names_to = "name2",
+            values_to = "Fk"
+          ) |>
+          dplyr::arrange(.draw, name2) |>
+          dplyr::group_by(.draw) |>
+          dplyr::summarise(Fk = list(Fk)) |>
+          dplyr::ungroup()
+      )
+      rp_df <- rp_df |>
+        dplyr::select(-tidyselect::all_of(par_c))
 
-    rp_df <- rp_df |>
-      dplyr::left_join(F_tmp, by=".draw") |>
-      dplyr::left_join(sel_tmp, by=".draw") |>
-      dplyr::select(Linf:Mk, Fk, Sm, everything())
+      rp_df <- rp_df |>
+        dplyr::left_join(F_tmp, by = ".draw") |>
+        dplyr::left_join(sel_tmp, by = ".draw") |>
+        dplyr::select(Linf:Mk, Fk, Sm, tidyselect::everything())
 
-  } else if (class(slimf)[1]=="tbl_df" &&
-             all(names(slimf)==c("par", "mpd", "se"))) {
+    } else if (class(slimf)[1] == "tbl_df" &&
+               all(names(slimf) == c("par", "mpd", "se"))) {
+      par_c <- paste0("Sm[", as.character(1:blicc_ld$NP), "]")
+      S_v <- dplyr::pull(dplyr::filter(slimf, par %in% par_c), mpd)
+      rp_df <- dplyr::filter(slimf,!(par %in% par_c))
+      par_c <- paste0("Fk[", as.character(1:blicc_ld$NF), "]")
+      F_v <- dplyr::pull(dplyr::filter(rp_df, par %in% par_c), mpd)
+      rp_df <- dplyr::filter(rp_df,!(par %in% par_c)) |>
+        dplyr::select(-se) |>
+        tidyr::pivot_wider(names_from = par, values_from = mpd) |>
+        dplyr::mutate(Fk = list(F_v),
+                      Sm = list(S_v),
+                      `.draw` = 0) |>
+        dplyr::select(Linf:Mk, Fk, Sm, tidyselect::everything())
 
-    par_c <- paste0("Sm[", as.character(1:blicc_ld$NP), "]")
-    S_v <- dplyr::pull(dplyr::filter(slimf, par %in% par_c), mpd)
-    rp_df <- dplyr::filter(slimf, !(par %in% par_c))
-    par_c <- paste0("Fk[", as.character(1:blicc_ld$NF), "]")
-    F_v <- dplyr::pull(dplyr::filter(rp_df, par %in% par_c), mpd)
-    rp_df <- dplyr::filter(rp_df, !(par %in% par_c)) |>
-      dplyr::select(-se) |>
-      tidyr::pivot_wider(names_from=par, values_from=mpd) |>
-      dplyr::mutate(Fk = list(F_v),
-                    Sm = list(S_v),
-                    `.draw` = 0) |>
-      dplyr::select(Linf:Mk, Fk, Sm, everything())
+    } else {
+      stop("Error: parameter slimf must be a stanfit object or mpd data frame")
+    }
 
-  } else {
-    stop("Error: parameter slimf must be a stanfit object or mpd data frame")
-  }
+    # Update data object
+    New_NK <- LG_Nodes(blicc_ld, rp_df)   # Recalculates the LG knots
+    if (blicc_ld$NK != New_NK) {
+      glq <- statmod::gauss.quad(blicc_ld$NK,
+                                 kind = "laguerre", alpha = 0.0)
+      blicc_ld$NK <- New_NK
+      blicc_ld$gl_nodes <- glq$nodes
+      blicc_ld$gl_weights <- glq$weights
+    }
 
-  # Update data object
-  New_NK <- LG_Nodes(rp_df, blicc_ld)   # Recalculates the LG knots
-  if (blicc_ld$NK != New_NK) {
-    glq <- statmod::gauss.quad(blicc_ld$NK,
-                               kind = "laguerre", alpha = 0.0)
-    blicc_ld$NK <- New_NK
-    blicc_ld$gl_nodes <- glq$nodes
-    blicc_ld$gl_weights <- glq$weights
-  }
+    Recalc_SPR <- !all(is.na(c(a, b, L50, L95)))
+    if (Recalc_SPR) {
+      if (!is.na(a))
+        blicc_ld$a <- a
+      if (!is.na(b))
+        blicc_ld$b <- b
+      if (!is.na(L50))
+        blicc_ld$L50 <- L50
+      if (!is.na(L95))
+        blicc_ld$Ls <- -log(1 / 0.95 - 1) / (L95 - blicc_ld$L50)
+      blicc_ld$ma_L <- (exp(blicc_ld$b * log(blicc_ld$LMP)) /
+                          (1 + exp(
+                            -blicc_ld$Ls * (blicc_ld$LMP - blicc_ld$L50)
+                          )))
+      blicc_ld$wt_L <- blicc_ld$a * exp(blicc_ld$b * log(blicc_ld$LMP))
 
-  Recalc_SPR <- ! all(is.na(c(a, b, L50, L95)))
-  if (Recalc_SPR) {
-    if (!is.na(a)) blicc_ld$a <- a
-    if (!is.na(b)) blicc_ld$b <- b
-    if (!is.na(L50)) blicc_ld$L50 <- L50
-    if (!is.na(L95)) blicc_ld$Ls <- -log(1 / 0.95 - 1) / (L95 - blicc_ld$L50)
-    blicc_ld$ma_L <- (exp(blicc_ld$b*log(blicc_ld$LMP)) /
-                        (1 + exp(-blicc_ld$Ls*(blicc_ld$LMP - blicc_ld$L50))))
-    blicc_ld$wt_L <- blicc_ld$a * exp(blicc_ld$b*log(blicc_ld$LMP))
-
-    rp_df <- rp_df |>
-      dplyr::mutate(
-        SPR = purrr::pmap_dbl(
+      rp_df <- rp_df |>
+        dplyr::mutate(SPR = purrr::pmap_dbl(
           list(Galpha, Gbeta, Mk, Fk, Sm),
           Calc_SPR,
           blicc_ld = blicc_ld,
-          .progress="SPR"
+          .progress = "SPR"
         ))
-  }
+    }
 
-  rp_df <- rp_df |>
-    dplyr::mutate(
-      F20 = purrr::pmap(
-        list(Linf, Galpha, Mk, Fk, Sm),
-        FSPR_solve,
-        tarSPR = 0.2,
-        vdir = vdir,
-        blicc_ld = blicc_ld,
-        .progress="F20"
-      ),
-      F30 = purrr::pmap(
-        list(Linf, Galpha, Mk, Fk, Sm),
-        FSPR_solve,
-        tarSPR = 0.3,
-        vdir = vdir,
-        blicc_ld = blicc_ld
-      ),
-      F40 = purrr::pmap(
-        list(Linf, Galpha, Mk, Fk, Sm),
-        FSPR_solve,
-        tarSPR = 0.4,
-        vdir = vdir,
-        blicc_ld = blicc_ld
-      ),
-      F01 = purrr::pmap(
-        list(Linf, Galpha, Mk, Fk, Sm),
-        F01_solve,
-        vdir = vdir,
-        blicc_ld = blicc_ld
-      ),
-      S20 = purrr::pmap(
-        list(Linf, Galpha, Mk, Fk, Sm),
-        SSPR_solve,
-        tarSPR = 0.2,
-        vdir = vdir,
-        blicc_ld = blicc_ld
-      ),
-      S40 = purrr::pmap(
-        list(Linf, Galpha, Mk, Fk, Sm),
-        SSPR_solve,
-        tarSPR = 0.4,
-        vdir = vdir,
-        blicc_ld = blicc_ld
-      ),
-      SMY = purrr::pmap(
-        list(Linf, Galpha, Mk, Fk, Sm),
-        SMY_solve,
-        vdir = vdir,
-        blicc_ld = blicc_ld
+    rp_df <- rp_df |>
+      dplyr::mutate(
+        F20 = purrr::pmap(
+          list(Linf, Galpha, Mk, Fk, Sm),
+          FSPR_solve,
+          tarSPR = 0.2,
+          vdir = vdir,
+          blicc_ld = blicc_ld,
+          .progress = "F20"
+        ),
+        F30 = purrr::pmap(
+          list(Linf, Galpha, Mk, Fk, Sm),
+          FSPR_solve,
+          tarSPR = 0.3,
+          vdir = vdir,
+          blicc_ld = blicc_ld,
+          .progress = "F30"
+        ),
+        F40 = purrr::pmap(
+          list(Linf, Galpha, Mk, Fk, Sm),
+          FSPR_solve,
+          tarSPR = 0.4,
+          vdir = vdir,
+          blicc_ld = blicc_ld,
+          .progress = "F40"
+        ),
+        F01 = purrr::pmap(
+          list(Linf, Galpha, Mk, Fk, Sm),
+          F01_solve,
+          vdir = vdir,
+          blicc_ld = blicc_ld,
+          .progress = "F01"
+        ),
+        S20 = purrr::pmap(
+          list(Linf, Galpha, Mk, Fk, Sm),
+          SSPR_solve,
+          tarSPR = 0.2,
+          vdir = vdir,
+          blicc_ld = blicc_ld,
+          .progress = "S20"
+        ),
+        S40 = purrr::pmap(
+          list(Linf, Galpha, Mk, Fk, Sm),
+          SSPR_solve,
+          tarSPR = 0.4,
+          vdir = vdir,
+          blicc_ld = blicc_ld,
+          .progress = "S40"
+        ),
+        SMY = purrr::pmap(
+          list(Linf, Galpha, Mk, Fk, Sm),
+          SMY_solve,
+          vdir = vdir,
+          blicc_ld = blicc_ld,
+          .progress = "SMY"
+        )
       )
-    )
-  lx_df <- blicc_expect_len(rp_df, blicc_ld)
-  return(list(vdir=vdir, rp_df = rp_df, lx_df = lx_df, ld = blicc_ld))
-}
+    lx_df <- blicc_expect_len(rp_df, blicc_ld)
+    return(list(
+      vdir = vdir,
+      rp_df = rp_df,
+      lx_df = lx_df,
+      ld = blicc_ld
+    ))
+  }
 
 
 #' Generate a data frame of length-based expected values
@@ -217,13 +252,13 @@ blicc_ref_pts <- function(slimf, blicc_ld, vdir = NA, a=NA, b=NA, L50=NA, L95=NA
 #' @param rp_df   Posterior draws and reference points tibble from
 #' `blicc_ref_pts` function.
 #' @return A tibble containing fitted values with respect to length
-#' @NoRd
+#' @noRd
 #' @examples
 #' lx_df <- blicc_expect_len(eg_rp)
 #' summary(lx_df)
 #'
 blicc_expect_len <- function(rp_df, blicc_ld) {
-  Linf=Galpha=Mk=Fk=Sm=.draw=expect=NULL
+  Linf = Galpha = Mk = Fk = Sm = .draw = expect = NULL
   suppressWarnings({
     lx_df <- rp_df |>
       dplyr::mutate(expect = purrr::pmap(
@@ -252,6 +287,7 @@ blicc_expect_len <- function(rp_df, blicc_ld) {
 #' blicc_dat().
 #'
 #' @export
+#' @inheritParams blicc_mpd
 #' @param  Linf     Maximum mean length fish in the population can grow to
 #' @param  Galpha   Alpha parameter for the Gamma probability density function
 #' that governs growth variability.
@@ -261,7 +297,6 @@ blicc_expect_len <- function(rp_df, blicc_ld) {
 #' length bin
 #' @param  Sm       Vector of parameters for all the selectivity functions
 #' flat-topped selectivity
-#' @param  blicc_ld A standard data list created by `blicc_dat`
 #' @return A tibble of expected values for each length bin for each gear
 #' @examples
 #' blicc_get_expected(Linf = 32, Galpha = 100, Mk = 1.5, Fk = 1.5,
@@ -270,19 +305,23 @@ blicc_expect_len <- function(rp_df, blicc_ld) {
 blicc_get_expected <-
   function(Linf, Galpha, Mk, Fk, Sm, blicc_ld) {
     # Returns expected values based on the model
-    Rsel <- RSelectivities(Sm, blicc_ld)
-    Pop <- RPop_F(Galpha, Galpha/Linf, Mk, Fk, Rsel, blicc_ld)
+    Rsel <- Rselectivities(Sm, blicc_ld)
+    pop <- Rpop_F(Galpha, Galpha / Linf, Mk, Fk, Rsel, blicc_ld)
 
     ex_df <- tibble::tibble()
     for (gi in 1:blicc_ld$NG) {
-      efq <- Pop$N_L * Pop$Fki[[gi]] # Catch
+      efq <- pop$N_L * pop$Fki[[gi]] # Catch
       efq <- sum(blicc_ld$fq[[gi]]) * efq / sum(efq) # Normalise
-      ex_df <- rbind(ex_df, tibble::tibble(
-        Sgroup = blicc_ld$gname[gi],
-        Lgroup = factor(blicc_ld$Len),
-        sel = Rsel[[gi]],
-        N_L = Pop$N_L,
-        efq = efq))
+      ex_df <- rbind(
+        ex_df,
+        tibble::tibble(
+          Sgroup = blicc_ld$gname[gi],
+          Lgroup = factor(blicc_ld$LLB),
+          sel = Rsel[[gi]],
+          N_L = pop$N_L,
+          efq = efq
+        )
+      )
     }
     return(ex_df)
   }
@@ -303,20 +342,21 @@ blicc_get_expected <-
 #' \dontrun{
 #' lfq <- blicc_get_efq(Linf = 32, Galpha = 100, Mk = 1.5, Fk = 1.5,
 #'                      Sm = c(24, 0.1, 0.001), blicc_ld = eg_ld)
-#' plot(y = lfq, x = eg_ld$Len)
+#' plot(y = lfq, x = eg_ld$LLB)
 #' }
 blicc_get_efq <-
   function(Linf, Galpha, Mk, Fk, Sm, Gear_i, blicc_ld) {
     if (any(is.na(Fk)) | any(is.na(Sm))) {
       return(NA)
     }
-    Rsel <- RSelectivities(Sm, blicc_ld)
-    Pop <- RPop_F(Galpha, Galpha/Linf, Mk, Fk, Rsel, blicc_ld)
+    Rsel <- Rselectivities(Sm, blicc_ld)
+    pop <- Rpop_F(Galpha, Galpha / Linf, Mk, Fk, Rsel, blicc_ld)
 
     efq <- double(0)
     for (gi in Gear_i) {
-      ex_fq <- Pop$N_L * Pop$Fki[[gi]] # Catch
-      ex_fq <- sum(blicc_ld$fq[[gi]]) * ex_fq / sum(ex_fq) # Normalise
+      ex_fq <- pop$N_L * pop$Fki[[gi]] # Catch
+      ex_fq <-
+        sum(blicc_ld$fq[[gi]]) * ex_fq / sum(ex_fq) # Normalise
       efq <- c(efq, ex_fq)
     }
     # interleaved gear_names=rep(blicc_ld$gear_names[Gear_i], each=blicc_ld$NB)
@@ -339,21 +379,28 @@ blicc_get_efq <-
 #' @examples
 #' yrep <- posterior_predict(blicc_rp = eg_rp, blicc_ld = eg_ld)
 #'
-posterior_predict <- function(blicc_rp, draws=0) {
-  Linf=Galpha=Mk=Fk=Smx=Ss1=Ss2=NULL
+posterior_predict <- function(blicc_rp, draws = 0) {
+  Linf = Galpha = Mk = Fk = Smx = Ss1 = Ss2 = NULL
   if ((draws <= 0) | (draws >= nrow(blicc_rp))) {
     df <- blicc_rp$rp_df
   } else {
-    df <- blicc_rp$rp_df[sample.int(n=nrow(blicc_rp), size=draws),] }
+    df <- blicc_rp$rp_df[sample.int(n = nrow(blicc_rp), size = draws), ]
+  }
 
   # Vector of expected frequency at length
-  ex <- unlist(purrr::pmap(dplyr::select(df, Linf, Galpha, Mk,
-                                         Fk, Sm),
-                           blicc_get_efq, blicc_ld = blicc_rp$ld))
+  ex <- unlist(purrr::pmap(
+    dplyr::select(df, Linf, Galpha, Mk,
+                  Fk, Sm),
+    blicc_get_efq,
+    blicc_ld = blicc_rp$ld
+  ))
   phi <- rep(df$NB_phi, each = blicc_rp$ld$NB)
 
-  yrep <- matrix(stats::rnbinom(n=length(ex), mu=ex, size=phi),
-                 ncol = blicc_rp$ld$NB, byrow=TRUE)
+  yrep <- matrix(
+    stats::rnbinom(n = length(ex), mu = ex, size = phi),
+    ncol = blicc_rp$ld$NB,
+    byrow = TRUE
+  )
   # matrix rows will be gears * draws
   return(yrep)
 }

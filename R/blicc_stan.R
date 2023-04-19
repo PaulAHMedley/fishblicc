@@ -3,7 +3,6 @@
 # ><> <>< ><> <>< ><> <>< ><> <>< ><> <>< ><> <>< ><> <><
 # ><> <>< ><> <>< ><> <>< ><> <>< ><> <>< ><> <>< ><> <><
 
-
 #' Finds Bayesian length interval catch curve maximum posterior density point
 #'
 #' The maximum posterior density point is found using on the likelihood for the
@@ -15,6 +14,9 @@
 #' length frequency sample. Selectivity, mortality, asymptotic mean length and
 #' scale parameters are fitted to generate the spawning potential ratio as a
 #' measure of the stock status.
+#'
+#' It is recommended to test the model and data object using this procedure
+#' before investing in the MCMC fit using `blicc_fit`.
 #'
 #' @details
 #' Unlike `blicc_fit()`, the model finds a point estimate. This is much faster
@@ -41,19 +43,20 @@
 #' (see function `blicc_dat()`)
 #' @return A tibble of parameter estimates (mpd) with standard errors.
 #' @examples
-#' ld <- blicc_dat(LLB = 25:35, fq=c(0,1,2,26,72,66,36,24,12,4,0),
-#'                 Linf=c(35, 3))
+#' ld <- blicc_dat(LLB = 25:35,
+#'                 fq=list(c(0,1,2,26,72,66,36,24,12,4,0)),
+#'                 Linf=c(35, 2), sel_fun=4,
+#'                 gear_names = "Gill net")
 #' mpd_fit <- blicc_mpd(ld)
 #'
 blicc_mpd <- function(blicc_ld) {
   # Find the posterior mode
   fit <-
-    # rstan::optimizing(
-    #   stanmodels$BLICC,
+    rstan::optimizing(
+      stanmodels$BLICC,
     # Test version
-    # res <-
-    optimizing(
-      stmod,
+    # rstan::optimizing(
+    #   stmod,
       #
       data = blicc_ld,
       init = blicc_ini(blicc_ld),
@@ -110,12 +113,17 @@ blicc_mpd <- function(blicc_ld) {
 #' mortality by length and a double-sided normal selectivity function for
 #' fishing mortality.
 #'
-#' The model fits 8 parameters. In general, there is insufficient support from
-#' a single length frequency sample to estimate these with any precision, and
-#' therefore informative priors are used where necessary. The default values
-#' for priors can follow recommendations based on life-history invariants
-#' (see `blicc_dat`). However the user is still required to provide a prior
-#' on the mean maximum length (Linf).
+#' The model fits 4 parameters plus 3 or more parameters for each selectivity
+#' function being fitted. In general, there is insufficient support from
+#' a single length frequency samples to estimate all these with any precision,
+#' and therefore informative priors are used where necessary. The default
+#' values for priors can follow recommendations based on meta-analyses or
+#' life-history invariant (see `blicc_dat`). However the user is still
+#' required to provide a prior on the mean maximum length (Linf) in each case.
+#'
+#' It is recommended to fit a model using the `blicc_mpd()` function before
+#' attempting the MCMC fit. This should show up any problems with the model
+#' or data object.
 #'
 #' The fit starts at the posterior mode which is found using the Stan optimizer.
 #' Then a default 4 MCMC chains are initiated and run concurrently. Comparing
@@ -137,6 +145,7 @@ blicc_mpd <- function(blicc_ld) {
 #' representative of the underlying posterior. This problem might be best
 #' addressed in the first instance by increasing the adapt_delta parameter
 #' above the default 0.8.
+#'
 #' For example, the parameter "control=list(adapt_delta=0.9)" can be added
 #' to the parameter list on calling the function.
 #'
@@ -148,8 +157,10 @@ blicc_mpd <- function(blicc_ld) {
 #' @param  ...         Other arguments passed to `rstan::sampling()`.
 #' @return An object of class stanfit returned by `rstan::sampling()`
 #' @examples
-#' ld <- blicc_dat(LLB = 25:35, fq=c(0,1,2,26,72,66,36,24,12,4,0),
-#'                 Linf=c(35, 2), NK=50)
+#' ld <- blicc_dat(LLB = 25:35,
+#'                 fq=list(c(0,1,2,26,72,66,36,24,12,4,0)),
+#'                 Linf=c(35, 2), sel_fun=4,
+#'                 gear_names = "Gill net")
 #' stf <- blicc_fit(ld, ntarget=100, nwarmup=200, nchain=1) #Quick test
 #'
 blicc_fit <- function(blicc_ld,
@@ -169,12 +180,11 @@ blicc_fit <- function(blicc_ld,
   # Find the posterior mode to start
   # # Distributed version
   res <-
-    # rstan::optimizing(
-    #   stanmodels$BLICC,
+    rstan::optimizing(
+      stanmodels$BLICC,
     # Test version
-    res <-
-    optimizing(
-      stmod,
+    # rstan::optimizing(
+    #   stmod,
       #
       data = blicc_ld,
       init = blicc_ini(blicc_ld),
@@ -192,14 +202,14 @@ blicc_fit <- function(blicc_ld,
 
   niter <- nwarmup + ntarget / nchain
   # Distributed version
-  # stf <- rstan::sampling(
-  #   stanmodels$BLICC,
+  stf <- rstan::sampling(
+    stanmodels$BLICC,
 
   # Test version
-  stf <- stan(
-    fit = stmod,
-    file = stan_fn,
-    model_name = "BLICC",
+  # stf <- rstan::stan(
+  #   fit = stmod,
+  #   file = stan_fn,
+  #   model_name = "BLICC",
     #
     data = blicc_ld,
     chains = nchain,
@@ -261,7 +271,7 @@ blicc_fit <- function(blicc_ld,
 #' @param Mk   Natural mortality divided by the growth rate K
 #' (usually around 1.5). Optional.
 #' @param M_L  Length specific natural mortality vector the same length as
-#' Len. Optional.
+#' LLB. Optional.
 #' @param a  The length-weight parameter: a*L^b. Not used in model fitting,
 #' but for plots etc. Optional.
 #' @param b  The length-weight exponent (a*L^b, usually close
@@ -281,282 +291,126 @@ blicc_fit <- function(blicc_ld,
 #' @param NK   Number of nodes for the Gauss Laguerre quadrature rule. 110 is a
 #' safe value, but extends the run time of all calculations.  Optional.
 #' @return     A list of vectors and numbers structured suitable for use in the
-#' Stan model BLICC.stan.
+#' Stan model `BLICC.stan`.
 #' @examples
-#' ld <- blicc_dat(LLB = 25:35, fq=c(0,1,2,26,72,66,36,24,12,4,0), Linf=c(35, 2), sel_fun=4)
+#' ld <- blicc_dat(LLB = 25:35,
+#'                 fq=list(c(0,1,2,26,72,66,36,24,12,4,0)),
+#'                 Linf=c(35, 2), sel_fun=4,
+#'                 gear_names = "Gill net")
 #'
 blicc_dat <-
-  function(LLB,
+  function(model_name = "fishblicc data model",
+           LLB,
            fq,
            Linf,
            sel_fun,
            Catch = 1,
            gear_names = NA,
            Mk = NA,
-           M_L = 1,
+           ref_length = NA,
            ma_L = NA,
            wt_L = NA,
            a = 1,
            b = 3,
            L50 = NA,
            L95 = NA,
-           sel_par = NA,
-           spar = NA,
            NK = NA) {
-    # Data vectors
-    if (is.vector(fq) & !is.list(fq)) fq <- list(fq)  #convert to list
+
+    if (!is.vector(LLB, mode="numeric")) {
+      stop(
+        "Error: please supply the lower bound of bins as a vector of unique values and in ascending order."
+      )
+    }
+    if (any(diff(LLB) <= 0)) {
+      stop("Error: lower bound of bins must be unique and in ascending order.")
+    }
+    NB <- length(LLB)
+    LMP <- c((LLB[-NB] + LLB[-1]) * 0.5, LLB[NB] + 0.5*(LLB[NB]-LLB[NB-1])) # Length bin mid points (LMP) used for plotting etc. Not used in Stan model.
+
+        # Data vectors
+    if (is.vector(fq, mode="numeric")) fq <- list(fq)  #convert to list if possible
     if (!is.list(fq)) {
       stop(
         "Error: frequency data must be supplied as a list of vectors (or can be given as a vector if only one.)"
       )
     }
-    if (!is.vector(LLB)) {
-      stop(
-        "Error: please supply the lower bound of bins as a vector of unique vakues and in ascending order."
-      )
-    }
-    NB <- length(LLB)
-    LMP <- c((LLB[-NB] + LLB[-1]) * 0.5, LLB[NB] + 0.5*(LLB[NB]-LLB[NB-1])) # Length bin mid points (LMP) used for plotting etc. Not used in Stan model.
-
     Ngear <- length(fq)
     for (i in 1:Ngear)
-      if (!is.vector(fq[[i]]) | (NB != length(fq[[i]]))) {
+      if (!is.vector(fq[[i]], mode="numeric") | (NB != length(fq[[i]]))) {
         stop(
-          "Error: please provide the lower bound of bins, and each frequency in each bin, including zeroes as vectors of the same length."
+          "Error: please provide each frequency in each bin, including zeroes as vectors of the same length as the number of bins."
         )
       }
 
-    if (any(diff(LLB) <= 0)) {
-      stop("Error: lower bound of bins must be unique and in ascending order.")
-    }
-
-    # Selectivity functions
-    if (is.character(sel_fun)) {
-      sel_fun <- match(sel_fun, c("logistic", "normal", "ss_normal", "ds_normal"))
-    }
-    if (is.numeric(sel_fun)) {
-      if (!(all(sel_fun %in% 1:4))) {
-        stop("Error: selectivity functions must be defined as integers or characters: \n 1=logistic, 2=normal, 3=ss_normal, 4=ds_normal.")
-      }
-    } else {
-      stop("Error: selectivity functions must be defined as integers or characters: \n 1=logistic, 2=normal, 3=ss_normal, 4=ds_normal.")
-    }
-    if (length(sel_fun) != Ngear) {
-      stop("Error: the selectivity functions vector (sel_fun) must be the same length as the number of gears.")
-    }
-
-    if (is.na(sel_par)) {
-      sel_par <- double(Ngear)
-      spar <- matrix(0, nrow = Ngear, ncol = 3)
-      np <- 1
-      for (i in 1:Ngear) {
-        if (sel_fun[i] == 4) {
-          spar[i,] <- np:(np+2)
-          np <- np + 3
-        } else {
-          spar[i,] <- c(np, np+1, 0)
-          np <- np + 2
-        }
-        if (sel_fun[i]==1) { # logistic
-          sm <- c(log((LMP[1]+LMP[which.max(fq[[i]])])*0.75), -1)
-        } else if (sel_fun[i]==4) {
-          sm <- c(log(LMP[which.max(fq[[i]])]), -4, -4)
-        } else {
-          sm <- c(log(LMP[which.max(fq[[i]])]), -4)
-        }
-        indx <- spar[i, spar[i,]>0]
-        sel_par[indx] <- sm
-      }
-      #      sel_par <- sel_prior(LMP, fq, sel_fun, spar)
-    } else {
-      if (!is.matrix(spar) | any(dim(spar) != c(Ngear, 3)) | length(unique(spar[spar>0])) != max(spar)) {
-        stop("Error: log selectivity parameter priors must be indexed in matrix spar. See function details for help.")
-      }
-      if (length(sel_par) != max(spar) | !is.numeric(sel_par)) {
-        stop("Error: log selectivity parameter priors must be defined in vector sel_par and indexed in matrix spar. See function details for help.")
-      }
-    }
     # Catches
     if (!is.vector(Catch) | length(Catch) != Ngear | any(Catch<0) | !any(Catch>0)) {
       stop("Error: Relative catches must be provided for each length frequency.")
     }
     Fgear <- integer(Ngear)
-    gi <- 1
-    for (i in 1:Ngear) {
-      if (Catch[i] > 0) {
-        Fgear[i] <- gi
-        gi <- gi + 1
+    fi <- 1
+    for (gi in 1:Ngear) {
+      if (Catch[gi] > 0) {
+        Fgear[gi] <- fi
+        fi <- fi + 1
       }
     }
 
-    cprop <- Catch[Catch > 0]/sum(Catch)
+    catch_prop <- Catch[Catch > 0]/sum(Catch)
 
-    # Growth
-    if (length(Linf) < 2) {
-      stop("Error: the Linf vector must contain a mean and sd for the prior.")
-    }
-    if (Linf[1] <= min(LLB)) {
-      stop(paste(
-        "Error: Linf must be greater than the lowest bin value:",
-        as.character(min(LLB))
-      ))
-    }
-    if (Linf[2] <= 0) {
-      stop("Error: Linf prior sd must be greater than zero.")
-    }
     # Gear names
-    if (is.na(gear_names[1])) {
+    if (any(is.na(gear_names))) {
       gear_names <- paste0("Gear_", as.character(1:Ngear))
-    }
-    if ((length(gear_names) != Ngear) | !is.character(gear_names)) {
-      stop("Error: gear_names must be a character vector with the same length as the number of gears.")
-    }
-    gear_names <- gear_names
-
-    # Weight and maturity
-    if (b <= 2 | b > 4) {
-      stop("Error: Length-weight exponent (b) must be greater than 2 and less than 4.")
-    }
-    if (is.na(L50)) {
-      L50 <- 0.66 * Linf[1]
-    } else {
-      if (L50 <= 0.2 * Linf[1] | L50 >= Linf[1]) {
-        stop("Error: Length at 50% maturity must be greater than 0.2*Linf and less than Linf.")
-      }
-    }
-    if (is.na(L95)) {
-      # Ls = -log(1/0.95 - 1)/(L95-L50)
-      Ls <- -log(1 / 0.95 - 1) / (0.05 * (Linf[1] - L50))
-    } else {
-      if (L95 <= L50 | L95 >= Linf[1]) {
-        stop("Error: Length at 95% maturity must be greater than L50 and less than Linf.")
-      }
-      Ls <- -log(1 / 0.95 - 1) / (L95 - L50)
-    }
-
-    if (is.na(ma_L)) {
-      ma_L <- (exp(b*log(LMP)) / (1 + exp(-Ls*(LMP - L50))))    #Mature biomass
-    } else {
-      if (length(ma_L) != NB) {
-        stop("Error: Length of the mature biomass -at-length vector must equal the number of length bins.")
-      }
-    }
-
-    if (is.na(wt_L)) {
-      if (a == 1) {
-        print("Warning: No weight-at-length information provided - the weight units will be incorrect.")
-      }
-      wt_L <- a * exp(b*log(LMP))    # Estimated biomass per recruit
-    } else {
-      if (length(wt_L) != NB) {
-        stop("Error: Length of the weight-at-length vector must equal the number of length bins.")
-      }
-    }
-
-    # Other checks
-    if (!is.na(NK))
-      if (NK < 50) {
-        print(
-          "Warning: Having fewer than 50 nodes for the Gauss Laguerre quadarture rule is not advised."
-        )
+    } else
+      if ((length(gear_names) != Ngear) | !is.character(gear_names)) {
+        stop("Error: gear_names must be a character vector with the same length as the number of gears.")
       }
 
     # Natural mortality
-    if (length(M_L) == 1) M_L <- rep(1, NB)
-    if (!is.numeric(M_L) | (length(M_L) != NB)) {
-      print("Error: The length specific natural mortality vector must be numeric and the same length as length frequencies.")
-      return()
-    }
-    if (!is.na(Mk)) {
-      if (Mk <= 0) {
-        print("Error: Mk must be greater than zero.")
-        return()
-      } else {
-        lMk <- c(log(Mk), 0.1)
-      }
-    } else {
-      # from Prince et al. 2015
-      lMk <-
-        c(log(b * (1 - (L50 / Linf[1])) / (L50 / Linf[1])),  0.1)
+    if (!is.na(Mk) & Mk <= 0) {
+      stop("Error: Mk must be greater than zero.")
     }
 
     dl <- list(
-      # Number of knots used in the Gauss-Laguerre quadrature rule
-      NK = 110L,
+      mname = model_name,
       # Number of gears: separate length frequencies
       NG = Ngear,
       # Number of F's: gears associated with non-zero catches
-      NF = length(cprop),
+      NF = length(catch_prop),
       # Number of length bins
       NB = NB,
-      # Number of selectivity parameters
-      NP = sum(spar>0),
-      # Maximum number of selectivity parameters
-      Pmx = 3,
       # Gear names
       gname = as.array(gear_names),
-      # Selectivity function indices
-      fSel = as.array(sel_fun),
-      # Selectivity function parameter index for each gear
-      Spar = spar,
-      # Estimated total relative catch in numbers of fish, excluding zeroes for surveys etc.
-      Catch = as.array(cprop),
-      # Index of the Fk associated with each gear: 0 implies catch negligible
-      Fkg = as.array(Fgear),
       # Lower length boundaries for each bin
-      Len = LLB,
+      LLB = LLB,
       # Length bin mid points (for plotting etc.)
       LMP = LMP,
       # Frequency data
       fq = fq,
-      # Natural mortality variation between lengths vector (Lorenzen M)
-      M_L = M_L,
-      # Mature biomass at length
-      ma_L = ma_L,
-      # Biomass at length
-      wt_L = wt_L,
-      # Length-weight scale parameter
-      a = a,
-      # Length-weight exponential
-      b = b,
-      # Length at 50% maturity
-      Lm = L50,
-      # Slope parameter for the logistic maturity ogive
-      Ls = Ls,
-      # Expected Linf
-      poLinfm = Linf[1],
-      # sd for the normal Linf, see above
-      poLinfs = Linf[2],
-      # Growth mean CV
-      polGam = log(1 / 0.1 ^ 2),
-      # 10% CV: could be 5% (log(1/0.05^2)) to 30% (log(1/0.3^2)).
-      # 30% CV makes length very uninformative however. Default CV=10%
-      # growth log-normal sd hyper-parameter
-      polGas = 0.25,
-      # Natural mortality lognormal mean hyperperamater
-      polMkm = lMk[1],
-      # Natural mortality lognormal sd hyperperamater
-      polMks = lMk[2],
-      # Fishing mortality lognormal mean hyperperamater
-      # default "fully exploited"
-      polFkm = as.array(log(Mk*cprop)),
-      # Very weak prior with hyper-parameter lognormal sd
-      polFks = 2.0,
-      # lognormal mode / 50% selectivity and
-      # 1-2 slope parameters for each function
-      polSm = sel_par,
-      # selectivity lognormal sd
-      polSs = rep(1.0, length(sel_par)),
-      # Negative binomial lognormal mean
-      # Medium level of overdispersion
-      polNB_phim = log(100),
-      polNB_phis = 0.2,
-      #  Catch: sigma for lognormal
-      polCs = 0.01
+      # Estimated total relative catch in numbers of fish, excluding zeroes for surveys etc.
+      Catch = as.array(catch_prop),
+      # Index of the Fk associated with each gear: 0 implies catch negligible
+      Fkg = as.array(Fgear)
     )
-    if (is.na(NK) | NK < 20L) {
+    # Selectivity functions
+    dl <- set_selectivity(dl, 1:Ngear, sel_fun)
+    dl <- set_LH_param(dl, Linf[1], a, b, L50, L95, ma_L, wt_L)
+    dl <- set_Linf(dl, Linf)
+    dl <- set_Galpha(dl, c(log(1 / 0.1 ^ 2), 0.25))
+    dl <- set_Mk(dl, c(log(Mk), 0.1), ref_length)
+    dl <- set_Fk(dl, NA, 2.0)  # loose prior for fully exploited stock
+    dl <- selectivity_priors(dl)
+
+    # Negative binomial lognormal mean
+    # Medium level of overdispersion
+    dl$polNB_phim <- log(100)
+    dl$polNB_phis <- 0.5
+    #  Catch: sigma for lognormal
+    dl$polCs <- 0.01
+
+    # Gauss-Laguerre quadrature grid size
+    if (is.na(NK)) {
       df <- with(dl,
-                 expand_grid(
+                 tidyr::expand_grid(
                    Linf = c(poLinfm-3.1*poLinfs, poLinfm, poLinfm+3.1*poLinfs),
                    Galpha = exp(c(polGam-3.1*polGas, polGam, polGam+3.1*polGas)),
                    Mk = exp(c(polMkm-3.1*polMks, polMkm, polMkm+3.1*polMks)),
@@ -571,66 +425,21 @@ blicc_dat <-
                   cbind(df, tibble::tibble(Sm=list(exp(dl$polSm)))),
                   cbind(df, tibble::tibble(Sm=list(exp(dl$polSm+3.1*dl$polSs)))))
       # Gauss-Laguerre rule
-      dl$NK <- LG_Nodes(df, dl)
+      dl$NK <- LG_Nodes(dl, df)
     } else {
       dl$NK <- NK
+      if (NK < 50)
+        warning(
+          "Warning: Having fewer than 50 nodes for the Gauss Laguerre quadarture rule is not advised."
+        )
     }
+
     glq <-
       statmod::gauss.quad(dl$NK, kind = "laguerre", alpha = 0.0)
     dl$gl_nodes <- glq$nodes
     dl$gl_weights <- glq$weights
-
     return(dl)
   }
-
-
-#' Generates selectivity functions priors in a single vector
-#'
-#' Provides a vector of the prior parameters for selectivity functions based
-#' based on the data ("empirical Bayes"). The aim is to provide a loose prior
-#' to encourage the MCMC to provide expected values close to the data. In
-#' practice the prior should have little influence on the result but support
-#' model fitting convergence.
-#'
-#' @param sel_fun A numeric vector of selectivity functions 1-4
-#' @param spar An integer matrix giving the position of each parameter in the return vector
-#' @return A vector of the log-parameters for the relevant selectivity
-#' functions
-#' @noRd
-#'
-add_sel_prior <- function(blicc_ld) {
-  # function for a loose fit of selectivity functions to frequency data
-  ls <- function(par, freq, N) {
-    ex <- fun(exp(par), blicc_ld$LMP)*RPop
-    ex <- ex*N/sum(ex)
-    return(sum(((ex-freq)^2)/ex))
-  }
-
-  Sv <- RSurvival(gl_nodes, gl_weights, Len, Zki, Galpha, Gbeta)
-
-
-  res_par <- double(length(fq))
-  sm <- double(3)
-  for (gi in 1:length(fq)) {
-    fun <- switch(sel_fun[gi],
-                  Rsel_logistic,
-                  Rsel_normal,
-                  Rsel_ssnormal,
-                  Rsel_dsnormal)
-
-    if (sel_fun[gi]==1) { # logistic
-      sm <- c(log((LMP[1]+LMP[which.max(fq[[gi]])])*0.75), 0)
-    } else if (sel_fun[gi]==4) {
-      sm <- c(log(LMP[which.max(fq[[gi]])]), -4, -4)
-    } else {
-      sm <- c(log(LMP[which.max(fq[[gi]])]), -4)
-    }
-    fit <- stats::optim(sm, ls, control = list(maxit=100, reltol = 1e-4), freq=fq[[gi]], N=sum(fq[[gi]]))
-    indx <- spar[gi, spar[gi,]>0]
-    res_par[indx] <- fit$par
-  }
-  return(res_par)
-}
 
 
 #' Default start parameters centred on priors
@@ -674,47 +483,289 @@ blicc_mcmc_ini <- function(blicc_ld, pchain = 4, par = NULL) {
 }
 
 
-#' Calculates the mean log-probability density ratio between two sets of draws
+#' Sets data object from `blicc_dat()` to have a new Linf prior
 #'
-#' Simple Bayes factor estimate based on the mean posterior density.
-#' This only works where the data and the likelihood model remain between
-#' the two fits. The intended use is to compare a flat-top selectivity (stf0)
-#' with a domed selectivity (stf1). In this case, the only change is a single
-#' parameter fixed at zero in stf0, but estimated in stf1. This function
-#' allows direct comparison of the estimated total posterior
-#' probability between the two fits to help determine how much better a domed
-#' selectivity fits the data.
+#' Checks the new Linf is a vector of 2 values, the new mean and sd for
+#' the normal prior to be used. These are replaced in the data object,
+#' which is then returned.
 #'
 #' @export
-#' @param stf1,stf0 Stan model output for the numerator and denominator
-#' @return A single number estimating the relative probability in support for
-#' model stf1 compared to stf2
-#' @examples
-#' \dontrun{
-#' ld <- blicc_dat(LLB = 25:35, fq=c(0,1,2,26,72,66,36,24,12,4,0),
-#'                 Linf=c(35, 2))
-#' slim_domed <- blicc_fit(ld)
-#' ld$Flat <- 0L  # Make selectivity flat-topped (logistic or knife-edged)
-#' slim_flat <- blicc_fit(ld)
-#' posterior_density_ratio(slim_domed, slim_flat)
-#'}
-posterior_density_ratio <- function(stf1, stf0) {
-  p1 <-
-    rstan::extract(stf1,
-                   pars = c("lp__"))
-  p0 <-
-    rstan::extract(stf0,
-                   pars = c("lp__"))
+#' @inheritParams blicc_mpd
+#' @param new_Linf  A numeric vector of double containing the mean and
+#' sd for the prior normal.
+#' @return The data object blicc_ld but with the prior for Linf changed.
+#'
+set_Linf <- function(blicc_ld,
+                     new_Linf) {
+  if (! is.vector(new_Linf, mode="double") | length(new_Linf) != 2)
+    stop("Error: Linf must be a vector of 2 (mu, sigma) for the prior.")
+  if (new_Linf[1] <= min(blicc_ld$LLB)) {
+    stop(paste(
+      "Error: Linf must be greater than the lowest bin value:",
+      as.character(min(blicc_ld$LLB))
+    ))
+  }
+  if (new_Linf[2] <= 0) {
+    stop("Error: Linf prior sd must be greater than zero.")
+  }
 
-  meanp1 <-
-    max(p1$lp__) + log(sum(exp(p1$lp__ - max(p1$lp__))) / length(p1$lp__))
-  meanp0 <-
-    max(p0$lp__) + log(sum(exp(p0$lp__ - max(p0$lp__))) / length(p0$lp__))
-
-  #print("Bayes factor estimate:")
-  return(exp(meanp1 - meanp0))
+  # Expected Linf
+  blicc_ld$poLinfm <- new_Linf[1]
+  # sd for the normal Linf, see above
+  blicc_ld$poLinfs <- new_Linf[2]
+  return(blicc_ld)
 }
 
+#' Sets data object from `blicc_dat()` to have a new Galpha prior
+#'
+#' Inputs are not checked. Galpha prior is updated.
+#'
+#' @inheritParams blicc_mpd
+#' @param new_Galpha  A numeric vector of double containing the mean and
+#' sd for the prior normal.
+#' @return The data object blicc_ld but with the prior for Galpha changed.
+#' @noRd
+#'
+set_Galpha <- function(blicc_ld,
+                       new_Galpha) {
+  # Growth mean CV
+  blicc_ld$polGam <- new_Galpha[1]
+  # 10% CV: could be 5% (log(1/0.05^2)) to 30% (log(1/0.3^2)).
+  # 30% CV makes length very uninformative however. Default CV=10%
+  # growth log-normal sd hyper-parameter
+  blicc_ld$polGas = new_Galpha[2]
+  return(blicc_ld)
+}
+
+
+#' Sets data object from `blicc_dat()` to have a new Mk prior
+#'
+#' Checks the new values are valid, then provide the mean and sd for
+#' the log-normal prior to be used. Also, if the ref_length parameter
+#' is defined, apply the inverse length function for natural mortality.
+#' These are replaced in the data object, which is then returned.
+#'
+#' @export
+#' @inheritParams blicc_mpd
+#' @param new_lMk      The log mean and sigma for the lognormal natural mortality prior
+#' @param ref_length  The reference length for the inverse length
+#' function if it is used. (default is NA i.e. fixed natural mortality)
+#' @param new_Mks A double containing the lognormal sd (CV) (default=0.1)
+#' @return The data object blicc_ld but with the prior and function
+#' for Mk changed.
+#'
+set_Mk <- function(blicc_ld,
+                   new_lMk = as.numeric(c(NA, NA)),
+                   ref_length = NA) {
+  # Natural mortality
+  if (is.na(ref_length))
+    M_L <- rep(1, blicc_ld$NB)  # Fixed natural mortality
+  else {
+    if (ref_length < min(blicc_ld$LLB) | ref_length > max(blicc_ld$LLB))
+      stop("Error: The reference length for the natural mortality must be within the length frequencies.")
+    M_L <- ref_length/blicc_ld$LMP
+  }
+
+  if (! (is.vector(new_lMk, mode = "numeric") & length(new_lMk)==2))
+    stop("Error: natural mortality must be provided as vector of mean and sigma for the lognormal.")
+
+  if (is.na(new_lMk[2])) new_lMk[2] <- 0.1  # default
+
+
+  if (is.na(new_lMk[1])) {
+    # from Prince et al. 2015
+    new_lMk[1] <-
+      with(blicc_ld, c(log(b * (1 - (L50 / poLinfm)) / (L50 / poLinfm))))
+    warning(paste0("Warning: Default Mk based on life history invariant estimate: ",
+                   format(exp(new_lMk[1]), digits=2)))
+  }
+  if (new_lMk[1]<0 | new_lMk[1]>log(5))
+    warning(paste0("Warning: Mk outside range 1-5: ",
+                   format(exp(new_lMk[1]), digits=2)))
+
+  blicc_ld$M_L <- M_L
+  blicc_ld$polMkm <- new_lMk[1]
+  blicc_ld$polMks <- new_lMk[2]
+  return(blicc_ld)
+}
+
+
+#' Sets data object from `blicc_dat()` to have a new Fk prior
+#'
+#' Inputs are minimally checked. Fk prior is updated.
+#'
+#' @inheritParams blicc_mpd
+#' @param new_lFk  A vector of double containing the lognormal mean Fk for each gear
+#' @param new_lFks  A double containing the lognormal sd Fk for all gears
+#' @return The data object blicc_ld but with the prior for Galpha changed.
+#' @noRd
+#'
+set_Fk <- function(blicc_ld,
+                   new_lFk,
+                   new_lFks) {
+  if (is.na(new_lFk)) {
+    new_lFk <- blicc_ld$polMkm + log(blicc_ld$Catch)
+    new_lFks <- 2.0
+  }
+  if (blicc_ld$NF != length(new_lFk))
+    stop("Error in set_Fk: array of wrong length")
+  blicc_ld$polFkm <- as.array(new_lFk)
+  blicc_ld$polFks = new_lFks
+  return(blicc_ld)
+}
+
+
+#' Sets data object from `blicc_dat()` to have a new selectivity functions
+#'
+#' Checks the gear and selectivity are valid, then sets up the data object
+#' so that the parameters and parameter references for the selectivity
+#' functions are valid. New references are replaced in the data object,
+#' which is then returned.
+#'
+#' @export
+#' @inheritParams blicc_mpd
+#' @param Gear      The gears for which the selectivity functions are being changed
+#' @param sel_fun   The selectivity functions that gears are being set to either as
+#' integers or strings.
+#' @return The data object blicc_ld but with the new selectivities
+#'
+set_selectivity <-
+  function(blicc_ld,
+           Gear,
+           sel_fun) {
+  Gear <- parse_gear(Gear, blicc_ld)
+  sel_fun <- parse_selectivity(sel_fun, blicc_ld)
+  if (length(sel_fun) != length(Gear)) {
+    stop(paste0("Error: the specified selectivity function must equal the number of gears (",
+                length(Gear)))
+  }
+  if (is.null(blicc_ld$fSel)) blicc_ld$fSel <- as.array(integer(blicc_ld$NG))
+
+  blicc_ld$fSel[Gear] <- sel_fun
+
+  npar <- Rsel_functions()$npar[blicc_ld$fSel]
+
+  blicc_ld$NP <- sum(npar)
+  blicc_ld$Pmx <- max(npar)
+  spar <- matrix(0, nrow = blicc_ld$NG, ncol = blicc_ld$Pmx)
+  np <- 1
+  for (i in 1:blicc_ld$NG) {
+    spar[i,] <- np:(np+npar[i]-1)
+    np <- np + npar[i]
+  }
+  blicc_ld$spar <- spar
+
+  return(blicc_ld)
+}
+
+#' Sets data object from `blicc_dat()` to have a new selectivity functions
+#'
+#' Checks the gear and selectivity are valid, then sets up the data object
+#' so that the parameters and parameter references for the selectivity
+#' functions are valid. New references are replaced in the data object,
+#' which is then returned.
+#'
+#' @export
+#' @inheritParams blicc_mpd
+#' @param a      The gears for which the selectivity functions are being changed
+#' @param sel_fun   The selectivity functions that gears are being set to either as
+#' integers or strings.
+#' @return The data object blicc_ld but with the new selectivities
+#'
+set_LH_param <-
+  function(blicc_ld,
+           Linf,
+           a=1,
+           b=3,
+           L50=NA,
+           L95=NA,
+           ma_L = NA,
+           wt_L = NA) {
+
+    # Weight and maturity
+    if (b <= 2 | b > 4) {
+      stop("Error: Length-weight exponent (b) must be greater than 2 and less than 4.")
+    }
+    if (is.na(L50)) {
+      L50 <- 0.66 * Linf
+    } else {
+      if (L50 <= 0.2 * Linf | L50 >= Linf) {
+        stop("Error: Length at 50% maturity must be greater than 0.2*Linf and less than Linf.")
+      }
+    }
+    if (is.na(L95)) {
+      # Ls = -log(1/0.95 - 1)/(L95-L50)
+      Ls <- -log(1 / 0.95 - 1) / (0.05 * (Linf - L50))
+    } else {
+      if (L95 <= L50 | L95 >= Linf) {
+        stop("Error: Length at 95% maturity must be greater than L50 and less than Linf.")
+      }
+      Ls <- -log(1 / 0.95 - 1) / (L95 - L50)
+    }
+
+    if (is.na(wt_L)) {
+      if (a == 1) {
+        warning("Warning: No weight-at-length information provided - the weight units will be incorrect.")
+      }
+      wt_L <- with(blicc_ld, a * exp(b*log(LMP)))    # Estimated biomass per recruit
+    } else {
+      if (length(wt_L) != blicc_ld$NB) {
+        stop("Error: Length of the weight-at-length vector must equal the number of length bins.")
+      }
+    }
+
+    if (is.na(ma_L)) {
+      ma_L <- with(blicc_ld, wt_L / (1 + exp(-Ls*(LMP - L50))))    #Mature biomass
+    } else {
+      if (length(ma_L) != blicc_ld$NB) {
+        stop("Error: Length of the mature biomass -at-length vector must equal the number of length bins.")
+      }
+    }
+
+    blicc_ld$a <- a
+    blicc_ld$b <- b
+    blicc_ld$L50 <- L50
+    blicc_ld$Ls <- Ls
+    blicc_ld$wt_L <- wt_L
+    blicc_ld$ma_L <- ma_L
+    return(blicc_ld)
+  }
+
+#' Sets data object from `blicc_dat()` to have a new selectivity priors
+#'
+#' The priors for each function are defined loosely based on the available
+#' data ("empirical Bayes"). The priors are not informative, so they set
+#' primarily to aid fitting and discourage values outside the defined range.
+#' For example, the location parameter is generally set with a log-normal
+#' mean at the length frequency mode. Estimates far from this point would be
+#' rejected during review.
+#' Prior parameters are selectivity function specific.
+#'
+#' @export
+#' @inheritParams blicc_mpd
+#' @return The data object blicc_ld but with the new selectivity priors
+#'
+selectivity_priors <- function(blicc_ld) {
+  npar <- Rsel_functions()$npar[blicc_ld$fSel]
+  sel_par <- double(sum(npar)) # lognormal mu parameters
+  sel_pars <- sel_par          # lognormal sigma parameters
+
+  for (i in 1:blicc_ld$NG) {
+    if (blicc_ld$fSel[i]==1) { # logistic
+      sm <- with(blicc_ld, c(log((LMP[1]+LMP[which.max(fq[[i]])])*0.75), -1))
+    } else if (blicc_ld$fSel[i]==4) {
+      sm <- with(blicc_ld, c(log(LMP[which.max(fq[[i]])]), -4, -4))
+    } else {
+      sm <- with(blicc_ld, c(log(LMP[which.max(fq[[i]])]), -4))
+    }
+    indx <- with(blicc_ld, spar[i, spar[i,]>0])
+    sel_par[indx] <- sm
+    sel_pars[indx] <- 1.5
+  }
+  blicc_ld$polSm <- sel_par
+  blicc_ld$polSs <- sel_pars
+  return(blicc_ld)
+}
 
 #' Estimate a minimum number of Gauss-Laguerre quadrature nodes for a defined tolerance
 #'
@@ -722,101 +773,52 @@ posterior_density_ratio <- function(stf1, stf0) {
 #' to identify the smallest number of nodes that produce estimates that are still
 #' within the specified tolerance.
 #'
-#' @param draws
-#' @param blicc_ld
-#' @param toler
-#' @return A list of nodes and weights at the minimum level.
-#' @NoRd
+#' @inheritParams blicc_mpd
+#' @param draws A dataframe of parameter draws to test
+#' @param toler The minimum acceptable tolerance for the integral
+#' @return A list of Gauss-Laguerre nodes and weights meeting the minimum tolerance
+#' @noRd
 #'
-LG_Nodes <- function(draws, blicc_ld, toler=1.0e-06) {
+LG_Nodes <- function(blicc_ld, draws, toler=1.0e-06) {
   Min_NK <- 30
   glq <-
     statmod::gauss.quad(110, kind = "laguerre", alpha = 0.0)
-  Fk <- as.matrix(tidyr::unnest_wider(dplyr::select(draws, Fk), col="Fk", names_sep="_"))
-  Sm <- as.matrix(tidyr::unnest_wider(dplyr::select(draws, Sm), col="Sm", names_sep="_"))
+  suppressWarnings(
+    Fk <- as.matrix(tidyr::unnest_wider(dplyr::select(draws, Fk), col="Fk", names_sep="_"))
+  )
+  suppressWarnings(
+    Sm <- as.matrix(tidyr::unnest_wider(dplyr::select(draws, Sm), col="Sm", names_sep="_"))
+  )
   Zki <- list()
   pop <- list()
   for (i in 1:nrow(draws)) {
     # Grid values
     Zki[[i]] <- draws$Mk[i] * blicc_ld$M_L
-    FSel <- RSelectivities(Sm[i,], blicc_ld)
+    FSel <- Rselectivities(Sm[i,], blicc_ld)
     for (gi in 1:blicc_ld$NG) {
       if (blicc_ld$Fkg[gi] > 0) {
         Zki[[i]] <- Zki[[i]] + FSel[[gi]] * Fk[i, blicc_ld$Fkg[gi]] # Total mortality
       }
     }
-    pop[[i]] <- CPop_Len(glq$nodes, glq$weights, blicc_ld$Len, Zki[[i]], draws$Galpha[i], draws$Gbeta[i])
+    pop[[i]] <- Cpop_len(glq$nodes, glq$weights, blicc_ld$LLB, Zki[[i]], draws$Galpha[i], draws$Gbeta[i])
   }
   Opt_NK <- Min_NK
-  err <- double(nrow(draws))
+  err <- double(1)
   repeat {
     glq <-
       statmod::gauss.quad(Opt_NK, kind = "laguerre", alpha = 0.0)
     for (i in 1:nrow(draws)) {
-      err[i] <- max(abs(pop[[i]]-CPop_Len(glq$nodes, glq$weights, blicc_ld$Len,
-                                          Zki[[i]], draws$Galpha[i], draws$Gbeta[i])))
+      err <- max(abs(pop[[i]]-Cpop_len(glq$nodes, glq$weights, blicc_ld$LLB,
+                                          Zki[[i]], draws$Galpha[i], draws$Gbeta[i])),
+                 na.rm=T)
+      if (is.na(err)) stop("Error: Numerical error in LG integration: check the data.")
+      else if (err > toler) break
     }
-    if (max(err) < toler | Opt_NK >= 110) break;
+    if (err < toler | Opt_NK >= 110) break
     Opt_NK <- Opt_NK+10
   }
   return(Opt_NK)
 }
 
-
-#' Returns a tibble containing a summary of the fishblicc priors being applied
-#'
-#' This is a convenience function that summarizes the priors contained in a
-#' fishblicc data object into a tibble. This can be used, for example, to
-#' create a table for publication.
-#'
-#' @export
-#' @inheritParams blicc_mpd
-#' @return A tibble describing the priors being applied parameter estimates
-#' @examples
-#' ld <- blicc_dat(LLB = 25:35, fq=c(0,1,2,26,72,66,36,24,12,4,0),
-#'                 Linf=c(35, 3))
-#' blicc_priors(ld)
-#'
-blicc_priors <- function(blicc_ld) {
-
-  Selectivity_Functions <- c("Logistic", "Normal", "Single-sided Normal",
-                             "Double-sided Normal")
-  Sel_par_names <- list(c("Sel 50%", "Sel steepness"), c("Mode", "SD"),
-                        c("Mode", "Left SD"), c("Mode", "Left SD", "Right SD"))
-
-  Sel_Func <- Selectivity_Functions[blicc_ld$fSel]
-
-  gear_names <- c(NA, NA, NA, blicc_ld$gname[blicc_ld$Fkg])
-  function_type <- c("Normal", rep("Lognormal", 2+blicc_ld$NF))
-  sel_par <- vector()
-  for (i in 1:blicc_ld$NG) {
-    sel_par <- c(sel_par, Sel_par_names[[blicc_ld$fSel[i]]])
-    if (dl$fSel[i]==4) {
-      gear_names <- c(gear_names, blicc_ld$gname[i], NA, NA)
-      function_type <- c(function_type, "Lognormal", NA, NA)
-    } else {
-      gear_names <- c(gear_names, blicc_ld$gname[i], NA)
-      function_type <- c(function_type, "Lognormal", NA)
-    }
-  }
-  gear_names <- c(gear_names, rep(NA, 4))
-  function_type <- c(function_type, "Lognormal", rep(NA, 3))
-
-  par_names <- c("Linf", "Galpha", "Mk", rep("Fk", blicc_ld$NF),
-                 sel_par, "NB_phi", "b", "Lm", "Ls")
-
-  return(tibble(
-    Gear = gear_names,
-    Parameter = par_names,
-    `Function Type` = function_type,
-    Mean = with(blicc_ld, c(poLinfm, exp(c(polGam, polMkm, polFkm, polSm, polNB_phim)),
-                            b, Lm, Ls)),
-    Mu = with(blicc_ld, c(poLinfm, polGam, polMkm, polFkm, polSm, polNB_phim,
-                          b, Lm, Ls)),
-    SD = with(blicc_ld, c(poLinfs, polGas, polMks, rep(polFks, NF), polSs, polNB_phis,
-                          NA, NA, NA)))
-  )
-
-}
 
 

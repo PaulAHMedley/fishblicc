@@ -3,7 +3,7 @@ using namespace Rcpp;
 
 // BLICC model functions in C++
 
-//' Calculate a double-sided normal selectivity curve for a length vector
+ //' Calculate a double-sided normal selectivity curve for a length vector
  //'
  //' Slightly faster C++ version.
  //' A double-sided normal takes two separate slope (sigma^2) parameters
@@ -60,7 +60,7 @@ using namespace Rcpp;
  //' @noRd
  //'
  // [[Rcpp::export]]
- Rcpp::NumericVector CPop_Len(Rcpp::NumericVector node,
+ Rcpp::NumericVector Cpop_len(Rcpp::NumericVector node,
                               Rcpp::NumericVector wt,
                               Rcpp::NumericVector Len,
                               Rcpp::NumericVector Zki,
