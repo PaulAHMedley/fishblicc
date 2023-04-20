@@ -58,7 +58,8 @@ blicc_ref_pts <-
            b = NA,
            L50 = NA,
            L95 = NA) {
-    Linf = Galpha = Mk = Fk = Sm = mpd = par = .draw = NULL
+    Linf = Galpha = Mk = Fk = Sm = mpd = par = .draw = name2 = se = NULL
+    Gbeta = NULL
 
     vdir <- as.vector(vdir)
     if (is.na(vdir)) {
@@ -93,7 +94,7 @@ blicc_ref_pts <-
           dplyr::ungroup()
       )
       rp_df <- rp_df |>
-        dplyr::select(-all_of(par_c))
+        dplyr::select(-tidyselect::all_of(par_c))
 
       par_c <- paste0("Fk[", as.character(1:blicc_ld$NF), "]")
       suppressWarnings(
@@ -249,13 +250,11 @@ blicc_ref_pts <-
 #' used in various functions to show results. Note that the resulting table
 #' of draws may be large depending on the number of draws.
 #'
+#' @inheritParams blicc_mpd
 #' @param rp_df   Posterior draws and reference points tibble from
 #' `blicc_ref_pts` function.
 #' @return A tibble containing fitted values with respect to length
 #' @noRd
-#' @examples
-#' lx_df <- blicc_expect_len(eg_rp)
-#' summary(lx_df)
 #'
 blicc_expect_len <- function(rp_df, blicc_ld) {
   Linf = Galpha = Mk = Fk = Sm = .draw = expect = NULL
@@ -300,7 +299,7 @@ blicc_expect_len <- function(rp_df, blicc_ld) {
 #' @return A tibble of expected values for each length bin for each gear
 #' @examples
 #' blicc_get_expected(Linf = 32, Galpha = 100, Mk = 1.5, Fk = 1.5,
-#'                    Sm = log(c(24, 0.1, 0.001)), blicc_ld = eg_ld)
+#'                    Sm = c(24, 0.1, 0.001), blicc_ld = eg_ld)
 #'
 blicc_get_expected <-
   function(Linf, Galpha, Mk, Fk, Sm, blicc_ld) {
@@ -327,43 +326,6 @@ blicc_get_expected <-
   }
 
 
-#' The expected length frequency
-#'
-#' For a set of parameter values, returns the expected catch in each length bin
-#' for each gear based on the BLICC model. This is the same as the
-#' `blicc_get_expected()` function, but only returns the expected length
-#' frequency. Used for predictive posterior.
-#'
-#' @inheritParams blicc_get_expected
-#' @param Gear_i A integer vector of gears to obtain the expected catch for
-#' @return A list of two vectors: the gear names, and a vector of the expected
-#' length bin frequency
-#' @examples
-#' \dontrun{
-#' lfq <- blicc_get_efq(Linf = 32, Galpha = 100, Mk = 1.5, Fk = 1.5,
-#'                      Sm = c(24, 0.1, 0.001), blicc_ld = eg_ld)
-#' plot(y = lfq, x = eg_ld$LLB)
-#' }
-blicc_get_efq <-
-  function(Linf, Galpha, Mk, Fk, Sm, Gear_i, blicc_ld) {
-    if (any(is.na(Fk)) | any(is.na(Sm))) {
-      return(NA)
-    }
-    Rsel <- Rselectivities(Sm, blicc_ld)
-    pop <- Rpop_F(Galpha, Galpha / Linf, Mk, Fk, Rsel, blicc_ld)
-
-    efq <- double(0)
-    for (gi in Gear_i) {
-      ex_fq <- pop$N_L * pop$Fki[[gi]] # Catch
-      ex_fq <-
-        sum(blicc_ld$fq[[gi]]) * ex_fq / sum(ex_fq) # Normalise
-      efq <- c(efq, ex_fq)
-    }
-    # interleaved gear_names=rep(blicc_ld$gear_names[Gear_i], each=blicc_ld$NB)
-    return(efq)
-  }
-
-
 #' A posterior predicted length frequency data set
 #'
 #' For a set of MCMC parameter draws, returns a simulated catch in each
@@ -372,29 +334,37 @@ blicc_get_efq <-
 #' and bayesplot packages for evaluation.
 #'
 #' @export
-#' @inheritParams blicc_expect_len
+#' @param blicc_rp List of fishblicc result tables from `blicc_ref_pts()`
+#' @param Gear Identifies the single gear (selectivity) providing predictions
 #' @param draws  The number of random draws up to the number of
 #' draws from the MCMC (the default).
 #' @return A matrix with rows equal to gears*draws and columns to length
 #' @examples
-#' yrep <- posterior_predict(blicc_rp = eg_rp, blicc_ld = eg_ld)
+#' yrep <- posterior_predict(blicc_rp = eg_rp, Gear=1, draws=100)
 #'
-posterior_predict <- function(blicc_rp, draws = 0) {
-  Linf = Galpha = Mk = Fk = Smx = Ss1 = Ss2 = NULL
-  if ((draws <= 0) | (draws >= nrow(blicc_rp))) {
-    df <- blicc_rp$rp_df
+posterior_predict <- function(blicc_rp, Gear=NA, draws = 0) {
+  .draw = Lgroup = Sgroup = efq = NULL
+  Gear <- parse_gear(Gear, blicc_rp$ld)
+  if (length(Gear) > 1)
+    stop("Error: a single gear must be specified.")
+
+  if ((draws <= 0) | (draws >= nrow(blicc_rp$rp_df))) {
+    df <- blicc_rp$lx_df
   } else {
-    df <- blicc_rp$rp_df[sample.int(n = nrow(blicc_rp), size = draws), ]
+    df <- tibble::tibble(`.draw`=sample.int(n = nrow(blicc_rp$rp_df), size = draws)) |>
+      dplyr::left_join(blicc_rp$lx_df, by=".draw")
   }
 
-  # Vector of expected frequency at length
-  ex <- unlist(purrr::pmap(
-    dplyr::select(df, Linf, Galpha, Mk,
-                  Fk, Sm),
-    blicc_get_efq,
-    blicc_ld = blicc_rp$ld
-  ))
-  phi <- rep(df$NB_phi, each = blicc_rp$ld$NB)
+  if (blicc_rp$ld$NG > 1)
+    df <- df |>
+      dplyr::filter(Sgroup==blicc_rp$ld$gname[Gear])
+
+  # Check order is correct, then extract expected lengths as vector
+  ex <- df |>
+    dplyr::arrange(.draw, Lgroup) |>
+    dplyr::pull(efq)
+
+  phi <- rep(blicc_rp$rp_df$NB_phi, each = blicc_rp$ld$NB)
 
   yrep <- matrix(
     stats::rnbinom(n = length(ex), mu = ex, size = phi),

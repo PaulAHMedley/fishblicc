@@ -18,13 +18,13 @@
 #' @param Gear Specifies the gear to plot
 #' @return ggplot geom object plotting observed and expected frequency
 #' @examples
-#' eg_lx <- blicc_expect_len(eg_rp, eg_ld)
-#' plot_expected_frequency(eg_rp, eg_lx, eg_ld)
+#' plot_expected_frequency(eg_rp)
 #'
 plot_expected_frequency <-
   function(blicc_rp, Gear = NA) {
     .draw = Lgroup = LMP = fq = NB_phi = NULL  # Not necessary but stops CMD check notes
     efq = fq_lo = fq_hi = efq_m = efq_lo = efq_hi = dat_lo = dat_hi = NULL
+    Sgroup = ofq = NULL
 
     rp_df <- blicc_rp$rp_df
     blicc_ld <- blicc_rp$ld
@@ -106,7 +106,7 @@ plot_expected_frequency <-
       ggplot2::geom_hline(yintercept = 0)
 
     if (length(Gear) > 1) {
-      gp <- gp + facet_wrap(vars(Sgroup),
+      gp <- gp + ggplot2::facet_wrap(ggplot2::vars(Sgroup),
                             ncol = 2,
                             scales = "free_y")
     } else {
@@ -125,10 +125,11 @@ plot_expected_frequency <-
 #' @inheritParams plot_expected_frequency
 #' @return ggplot geom object plotting standardised residuals
 #' @examples
-#' eg_lx <- blicc_expect_len(eg_rp, eg_ld)
-#' plot_residuals(eg_rp, eg_lx, eg_ld)
+#' plot_residuals(eg_rp)
 #'
 plot_residuals <- function(blicc_rp) {
+  .draw = NB_phi = Sgroup = Lgroup = efq = ofq = LMP = std_res = NULL
+
   blicc_ld <- blicc_rp$ld
   blicc_lx <- blicc_rp$lx_df
   dat_df <-
@@ -139,13 +140,14 @@ plot_residuals <- function(blicc_rp) {
            LMP = rep(LMP, NG),
            ofq = unlist(fq)
          ))
-  df1 <- blicc_rp$rp_df |>
-    dplyr::select(.draw, NB_phi) |>
-    dplyr::right_join(blicc_lx, by = ".draw") |>
-    dplyr::select(.draw, Sgroup, Lgroup, efq, NB_phi) |>
-    dplyr::left_join(dat_df, by = c("Sgroup", "Lgroup")) |>
-    dplyr::mutate(std_res = (ofq - efq) / sqrt(efq + (efq ^ 2) / NB_phi))
-
+  suppressWarnings(
+    df1 <- blicc_rp$rp_df |>
+      dplyr::select(.draw, NB_phi) |>
+      dplyr::right_join(blicc_lx, by = ".draw") |>
+      dplyr::select(.draw, Sgroup, Lgroup, efq, NB_phi) |>
+      dplyr::left_join(dat_df, by = c("Sgroup", "Lgroup")) |>
+      dplyr::mutate(std_res = (ofq - efq) / sqrt(efq + (efq ^ 2) / NB_phi))
+  )
   gp <-
     ggplot2::ggplot(df1, ggplot2::aes(x = LMP, y = std_res, colour = Sgroup)) +
     ggplot2::geom_point() +
@@ -161,11 +163,11 @@ plot_residuals <- function(blicc_rp) {
 #' @inheritParams plot_expected_frequency
 #' @return ggplot geom object for plotting
 #' @examples
-#' eg_lx <- blicc_expect_len(eg_rp, eg_ld)
-#' plot_selectivity(eg_lx, eg_ld)
+#' plot_selectivity(eg_rp)
 #'
 plot_selectivity <- function(blicc_rp) {
   Lgroup = sel = LMP = sel_01 = sel_90 = sel_25 = sel_75 = sel_m = NULL
+  Sgroup = sel_10 = NULL
 
   blicc_ld <- blicc_rp$ld
   blicc_lx <- blicc_rp$lx_df
@@ -230,7 +232,7 @@ plot_SPR_density <- function(blicc_rp) {
 #' plot_FkF40_density(eg_rp)
 #'
 plot_FkF40_density <- function(blicc_rp) {
-  Fk = F40 = NULL # Not necessary but stops CMD check notes
+  Fk = F40 = `Fk/F40` = id = NULL # Not necessary but stops CMD check notes
 
   suppressWarnings(
     rp_df <- blicc_rp$rp_df |>
@@ -330,12 +332,11 @@ plot_FkF40_density <- function(blicc_rp) {
 #' @inheritParams plot_expected_frequency
 #' @return ggplot geom object for plotting expected length frequencies by SPR
 #' @examples
-#' eg_lx <- blicc_expect_len(eg_rp, eg_ld)
-#' plot_efq_FRP(eg_rp, eg_lx, eg_ld)
+#' plot_efq_FRP(eg_rp)
 #'
 plot_efq_FRP <- function(blicc_rp, Gear = NA) {
   # Not necessary but stops CMD check notes
-  Linf = Galpha = Mk = Fk = Sm = NB_phi = NULL
+  Linf = Galpha = Mk = Fk = Sm = NB_phi = Sgroup = NULL
   .draw = Lgroup = Current = SPR20 = SPR40 = SMY = LMP = fq = Harvest_Level =
     NULL
   F20 = F30 = F40 = efq = fq_lo = fq_hi = N = efq_m = dat_lo = dat_hi =
@@ -465,11 +466,10 @@ plot_efq_FRP <- function(blicc_rp, Gear = NA) {
 #' @return ggplot geom object plotting expected length frequencies by
 #' selectivity
 #' @examples
-#' eg_lx <- blicc_expect_len(eg_rp, eg_ld)
-#' plot_efq_SRP(eg_rp, eg_lx, eg_ld)
+#' plot_efq_SRP(eg_rp)
 #'
 plot_efq_SRP <- function(blicc_rp, Gear = NA) {
-  Linf = Galpha = Mk = Fk = Sm = NB_phi = NULL
+  Linf = Galpha = Mk = Fk = Sm = NB_phi = Sgroup = NULL
   .draw = Lgroup = Current = SPR20 = SPR40 = LMP = fq = Harvest_Level =
     NULL
   S20 = S40 = SMY = efq = fq_lo = fq_hi = N = efq_m = dat_lo = dat_hi =
@@ -599,10 +599,11 @@ plot_efq_SRP <- function(blicc_rp, Gear = NA) {
 #' @inheritParams plot_expected_frequency
 #' @return ggplot geom object for plotting
 #' @examples
-#' plot_SPR_contour(eg_rp, eg_ld)
+#' plot_SPR_contour(eg_rp)
 #'
 plot_SPR_contour <- function(blicc_rp) {
   Smx_rp = spr = Lcur = Fcur = `..level..` = NULL  #R CMD Notes
+  Smx = dF = level = NULL
 
   fSPR2 <- function(dF, dL) {
     vFk <- (1 + svdir * dF) * Fk
@@ -739,10 +740,11 @@ plot_SPR_contour <- function(blicc_rp) {
 #' @inheritParams plot_expected_frequency
 #' @return ggplot geom object for plotting
 #' @examples
-#' plot_YPR_contour(eg_rp, eg_ld)
+#' plot_YPR_contour(eg_rp)
 #'
 plot_YPR_contour <- function(blicc_rp) {
   Smx_rp = ypr = F0.1 = Lcur = Fcur = `..level..` = NULL  # R CMD Notes
+  Smx = dF = level = NULL
 
   fYPR2 <- function(dF, dL) {
     vFk <- (1 + svdir * dF) * Fk

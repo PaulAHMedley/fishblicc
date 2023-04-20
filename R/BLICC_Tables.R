@@ -11,12 +11,7 @@
 #' @inheritParams blicc_mpd
 #' @return A tibble describing the priors being applied.
 #' @examples
-#' ld <- blicc_dat(LLB = 25:35,
-#'                 fq=list(c(0,1,2,26,72,66,36,24,12,4,0)),
-#'                 Linf=c(35, 2),
-#'                 sel_fun = 4L,
-#'                 gear_names = "Gill net")
-#' table_prior(ld)
+#' table_prior(eg_ld)
 #'
 table_prior <- function(blicc_ld) {
 

@@ -4,12 +4,12 @@
 \alias{plot_selectivity}
 \title{Plot selectivity and 50\% and 80\% credible intervals by length}
 \usage{
-plot_selectivity(blicc_lx, blicc_ld)
+plot_selectivity(blicc_rp)
 }
 \arguments{
-\item{blicc_lx}{A tibble from \code{blicc_expect_len} function.}
-
-\item{blicc_ld}{A data list from the \code{blicc_dat} function.}
+\item{blicc_rp}{A list of posterior draws, reference points with
+associated direction, the data object and expected lengths
+from \code{blicc_ref_pts} function.}
 }
 \value{
 ggplot geom object for plotting
@@ -18,7 +18,6 @@ ggplot geom object for plotting
 Plot selectivity and 50\% and 80\% credible intervals by length
 }
 \examples{
-eg_lx <- blicc_expect_len(eg_rp, eg_ld)
-plot_selectivity(eg_lx, eg_ld)
+plot_selectivity(eg_rp)
 
 }

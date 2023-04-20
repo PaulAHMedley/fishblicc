@@ -4,15 +4,14 @@
 \alias{plot_efq_SRP}
 \title{Plot expected length frequencies for a range of selectivity reference points}
 \usage{
-plot_efq_SRP(blicc_rp, blicc_lx, blicc_ld)
+plot_efq_SRP(blicc_rp, Gear = NA)
 }
 \arguments{
-\item{blicc_rp}{A posterior draws and reference points tibble
+\item{blicc_rp}{A list of posterior draws, reference points with
+associated direction, the data object and expected lengths
 from \code{blicc_ref_pts} function.}
 
-\item{blicc_lx}{A tibble from \code{blicc_expect_len} function.}
-
-\item{blicc_ld}{A data list from the \code{blicc_dat} function.}
+\item{Gear}{Specifies the gear to plot}
 }
 \value{
 ggplot geom object plotting expected length frequencies by
@@ -28,7 +27,6 @@ different levels. Note that if reference points do not exist, they are not
 plotted, so some graphs may be blank except for data.
 }
 \examples{
-eg_lx <- blicc_expect_len(eg_rp, eg_ld)
-plot_efq_SRP(eg_rp, eg_lx, eg_ld)
+plot_efq_SRP(eg_rp)
 
 }

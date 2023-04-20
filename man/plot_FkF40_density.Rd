@@ -7,7 +7,8 @@
 plot_FkF40_density(blicc_rp)
 }
 \arguments{
-\item{blicc_rp}{A posterior draws and reference points tibble
+\item{blicc_rp}{A list of posterior draws, reference points with
+associated direction, the data object and expected lengths
 from \code{blicc_ref_pts} function.}
 }
 \value{

@@ -66,7 +66,6 @@ parse_selectivity <- function(sel_fun, blicc_ld) {
 }
 
 
-
 #' Parse the gear parameter, converting to an integer
 #'
 #' The gear parameter is converted to an integer index of the gear, or `NA`
@@ -101,7 +100,7 @@ parse_gear <- function(Gear, blicc_ld) {
         }
       }
       Gear <- as.integer(Gear)
-      if (!all(between(Gear, 1, blicc_ld$NG))) {
+      if (!all(dplyr::between(Gear, 1, blicc_ld$NG))) {
         stop(paste0(
           "Error: Specified gear must be between 1 and ",
           as.character(blicc_ld$NG)
@@ -240,8 +239,11 @@ Rsel_dsnormal <- function(Sp, LMP) {
 #' @return A list of the population size in each length bin and a list of
 #' fishing mortalities at length for each gear.
 #' @examples
-#' S <- Rpop_F(100, 100, 0.2, exp(eg_ld$polFk), exp(eg_ld$polSm))
-#' plot(y=S, x=15:55, type="l")
+#' Sel <- Rselectivities(exp(eg_ld$polSm), eg_ld)
+#' S <- Rpop_F(100, 100/50, Mk=1.5, Fk=exp(eg_ld$polFkm),
+#'             FSel=Sel, blicc_ld=eg_ld)
+#' plot(y=S$NL, x=eg_ld$LMP, type="l")
+#'
 Rpop_F <- function(Galpha, Gbeta, Mk, Fk, FSel, blicc_ld) {
   Zki <- Mk * blicc_ld$M_L
   for (gi in 1:blicc_ld$NG) {
@@ -337,6 +339,7 @@ Rpop_len <- function(node, wt, Len, Zki, Galpha, Gbeta)  {
 #' The model uses the Gauss-Laguerre quadrature rule for integration,
 #' so nodes and weights for this must be provided.
 #'
+#' @export
 #' @inheritParams blicc_mpd
 #' @param Sm  Vector of selectivity parameters for all the
 #' selectivity functions
@@ -366,10 +369,12 @@ Rselectivities <- function(Sm, blicc_ld) {
 #' The model calculates the spawning potential by multiplying the proportion of
 #' numbers in each length bin with no fishing by the mature biomass per recruit.
 #'
+#' @export
 #' @inheritParams Rpop_F
-#' @return A real of the spawning potential when F=0.
+#' @return The spawning potential (a double) when F=0.
 #' @examples
-#' RSPR_0(100, 100/50, 0.2, eg_ld)
+#' RSPR_0(Galpha=100, Gbeta=100/50, Mk=1.5, blicc_ld=eg_ld)
+#'
 RSPR_0 <- function(Galpha, Gbeta, Mk, blicc_ld) {
   Zki <- Mk * blicc_ld$M_L
   pop <- with(blicc_ld,
@@ -377,3 +382,5 @@ RSPR_0 <- function(Galpha, Gbeta, Mk, blicc_ld) {
                        LLB, Zki, Galpha, Gbeta))
   return(sum(pop * blicc_ld$ma_L))
 }
+
+

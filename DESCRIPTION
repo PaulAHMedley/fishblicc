@@ -29,7 +29,8 @@ Imports:
     statmod,
     stats,
     tibble,
-    tidyr
+    tidyr,
+    tidyselect
 Suggests: 
     bayesplot,
     testthat (>= 3.0.0)

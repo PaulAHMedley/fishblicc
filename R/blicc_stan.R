@@ -43,11 +43,7 @@
 #' (see function `blicc_dat()`)
 #' @return A tibble of parameter estimates (mpd) with standard errors.
 #' @examples
-#' ld <- blicc_dat(LLB = 25:35,
-#'                 fq=list(c(0,1,2,26,72,66,36,24,12,4,0)),
-#'                 Linf=c(35, 2), sel_fun=4,
-#'                 gear_names = "Gill net")
-#' mpd_fit <- blicc_mpd(ld)
+#' mpd_fit <- blicc_mpd(eg_ld)
 #'
 blicc_mpd <- function(blicc_ld) {
   # Find the posterior mode
@@ -79,7 +75,7 @@ blicc_mpd <- function(blicc_ld) {
                       "NB_phi", "Gbeta", "SPR")
   rd <- fit$theta_tilde[ , full_par_names]
   par_names <- c("Linf", "Galpha", "Mk",
-                 paste0("Fk", as.character(1:blicc_ld$NF)),
+                 ifelse(blicc_ld$NG>1, paste0("Fk", as.character(1:blicc_ld$NF)), "Fk"),
                  paste0("Sm", as.character(1:blicc_ld$NP)),
                  "NB_phi", "Gbeta", "SPR")
 
@@ -157,11 +153,7 @@ blicc_mpd <- function(blicc_ld) {
 #' @param  ...         Other arguments passed to `rstan::sampling()`.
 #' @return An object of class stanfit returned by `rstan::sampling()`
 #' @examples
-#' ld <- blicc_dat(LLB = 25:35,
-#'                 fq=list(c(0,1,2,26,72,66,36,24,12,4,0)),
-#'                 Linf=c(35, 2), sel_fun=4,
-#'                 gear_names = "Gill net")
-#' stf <- blicc_fit(ld, ntarget=100, nwarmup=200, nchain=1) #Quick test
+#' stf <- blicc_fit(eg_ld, ntarget=100, nwarmup=200, nchain=1) #Quick test
 #'
 blicc_fit <- function(blicc_ld,
                       ntarget = 2000,
@@ -255,6 +247,7 @@ blicc_fit <- function(blicc_ld,
 #' integer matrix with a row for each selectivity function (gear)
 #'
 #' @export
+#' @param model_name A name for the model (species or fishery). Optional.
 #' @param LLB  A vector of lower length boundaries for each length frequency
 #' bin. Required.
 #' @param fq   A list of vectors, each the same length as LLB, containing the
@@ -270,8 +263,10 @@ blicc_fit <- function(blicc_ld,
 #' @param gear_names A vector of names for the gears for reference. Optional.
 #' @param Mk   Natural mortality divided by the growth rate K
 #' (usually around 1.5). Optional.
-#' @param M_L  Length specific natural mortality vector the same length as
-#' LLB. Optional.
+#' @param ref_length  The reference length for the inverse length
+#' function if it is used. (default is NA i.e. fixed natural mortality)
+#' @param wt_L  Weight (biomass) for each length bin. Optional.
+#' @param ma_L  Mature biomass for each length bin. Optional.
 #' @param a  The length-weight parameter: a*L^b. Not used in model fitting,
 #' but for plots etc. Optional.
 #' @param b  The length-weight exponent (a*L^b, usually close
@@ -281,21 +276,15 @@ blicc_fit <- function(blicc_ld,
 #' around 0.66 Linf, which is assumed if it is not provided. Optional.
 #' @param L95  The length at 95% maturity. Must be greater than L50 and less
 #' than Linf. A small increment is added L50 if it is not provided. Optional.
-#' @param sel_par Prior hyper-parameters for the selectivity functions.
-#' These are values for the mean of the lognormal for each parameter.
-#' Optional.
-#' @param spar Matrix of integer indices linking the selectivity function (row)
-#' for each parameter in the function (column) to the parameter location.
-#' Optional. Must be provided if spar is provided.
-#' in the parameter array (e.g. in sel_par). Zeroes mark unused matrix cells.
 #' @param NK   Number of nodes for the Gauss Laguerre quadrature rule. 110 is a
 #' safe value, but extends the run time of all calculations.  Optional.
 #' @return     A list of vectors and numbers structured suitable for use in the
 #' Stan model `BLICC.stan`.
 #' @examples
 #' ld <- blicc_dat(LLB = 25:35,
-#'                 fq=list(c(0,1,2,26,72,66,36,24,12,4,0)),
-#'                 Linf=c(35, 2), sel_fun=4,
+#'                 fq = list(c(0,1,2,26,72,66,36,24,12,4,0)),
+#'                 Linf = c(35, 2),
+#'                 sel_fun = 4,
 #'                 gear_names = "Gill net")
 #'
 blicc_dat <-
@@ -308,8 +297,8 @@ blicc_dat <-
            gear_names = NA,
            Mk = NA,
            ref_length = NA,
-           ma_L = NA,
            wt_L = NA,
+           ma_L = NA,
            a = 1,
            b = 3,
            L50 = NA,
@@ -393,8 +382,8 @@ blicc_dat <-
     )
     # Selectivity functions
     dl <- set_selectivity(dl, 1:Ngear, sel_fun)
-    dl <- set_LH_param(dl, Linf[1], a, b, L50, L95, ma_L, wt_L)
     dl <- set_Linf(dl, Linf)
+    dl <- set_LH_param(dl, a, b, L50, L95, ma_L, wt_L)
     dl <- set_Galpha(dl, c(log(1 / 0.1 ^ 2), 0.25))
     dl <- set_Mk(dl, c(log(Mk), 0.1), ref_length)
     dl <- set_Fk(dl, NA, 2.0)  # loose prior for fully exploited stock
@@ -494,7 +483,8 @@ blicc_mcmc_ini <- function(blicc_ld, pchain = 4, par = NULL) {
 #' @param new_Linf  A numeric vector of double containing the mean and
 #' sd for the prior normal.
 #' @return The data object blicc_ld but with the prior for Linf changed.
-#'
+#' @examples
+#' new_ld <- set_Linf(eg_ld, c(30,2))
 set_Linf <- function(blicc_ld,
                      new_Linf) {
   if (! is.vector(new_Linf, mode="double") | length(new_Linf) != 2)
@@ -544,15 +534,16 @@ set_Galpha <- function(blicc_ld,
 #' the log-normal prior to be used. Also, if the ref_length parameter
 #' is defined, apply the inverse length function for natural mortality.
 #' These are replaced in the data object, which is then returned.
+#' Note that the Mk must be provided as the log value.
 #'
 #' @export
 #' @inheritParams blicc_mpd
+#' @inheritParams blicc_dat
 #' @param new_lMk      The log mean and sigma for the lognormal natural mortality prior
-#' @param ref_length  The reference length for the inverse length
-#' function if it is used. (default is NA i.e. fixed natural mortality)
-#' @param new_Mks A double containing the lognormal sd (CV) (default=0.1)
 #' @return The data object blicc_ld but with the prior and function
 #' for Mk changed.
+#' @examples
+#' new_ld <- set_Mk(eg_ld, new_lMk=c(log(1.9), 0.2), ref_length=25)
 #'
 set_Mk <- function(blicc_ld,
                    new_lMk = as.numeric(c(NA, NA)),
@@ -575,13 +566,13 @@ set_Mk <- function(blicc_ld,
   if (is.na(new_lMk[1])) {
     # from Prince et al. 2015
     new_lMk[1] <-
-      with(blicc_ld, c(log(b * (1 - (L50 / poLinfm)) / (L50 / poLinfm))))
+      with(blicc_ld, log(b * (1 - (L50 / poLinfm)) / (L50 / poLinfm)))
     warning(paste0("Warning: Default Mk based on life history invariant estimate: ",
                    format(exp(new_lMk[1]), digits=2)))
   }
   if (new_lMk[1]<0 | new_lMk[1]>log(5))
     warning(paste0("Warning: Mk outside range 1-5: ",
-                   format(exp(new_lMk[1]), digits=2)))
+                   format(exp(new_lMk[1]), digits=2), "(make sure you provide log-Mk)"))
 
   blicc_ld$M_L <- M_L
   blicc_ld$polMkm <- new_lMk[1]
@@ -628,6 +619,8 @@ set_Fk <- function(blicc_ld,
 #' @param sel_fun   The selectivity functions that gears are being set to either as
 #' integers or strings.
 #' @return The data object blicc_ld but with the new selectivities
+#' @examples
+#' new_ld <- set_selectivity(eg_ld, Gear=1, sel_fun="logistic")
 #'
 set_selectivity <-
   function(blicc_ld,
@@ -667,14 +660,13 @@ set_selectivity <-
 #'
 #' @export
 #' @inheritParams blicc_mpd
-#' @param a      The gears for which the selectivity functions are being changed
-#' @param sel_fun   The selectivity functions that gears are being set to either as
-#' integers or strings.
+#' @inheritParams blicc_dat
 #' @return The data object blicc_ld but with the new selectivities
+#' @examples
+#' new_ld <- set_LH_param(eg_ld, a=1e-5, b=3.05, L50=20)
 #'
 set_LH_param <-
   function(blicc_ld,
-           Linf,
            a=1,
            b=3,
            L50=NA,
@@ -682,6 +674,7 @@ set_LH_param <-
            ma_L = NA,
            wt_L = NA) {
 
+    Linf <- blicc_ld$poLinfm
     # Weight and maturity
     if (b <= 2 | b > 4) {
       stop("Error: Length-weight exponent (b) must be greater than 2 and less than 4.")
@@ -741,9 +734,9 @@ set_LH_param <-
 #' rejected during review.
 #' Prior parameters are selectivity function specific.
 #'
-#' @export
 #' @inheritParams blicc_mpd
 #' @return The data object blicc_ld but with the new selectivity priors
+#' @noRd
 #'
 selectivity_priors <- function(blicc_ld) {
   npar <- Rsel_functions()$npar[blicc_ld$fSel]

@@ -73,33 +73,34 @@
 #'An example data table of parameter draws and reference points from the BLICC model
 #'  eg_rp <- blicc_ref_pts(eg_slim, eg_ld)
 #'
-#'@format A list of data frames of results from a BLICC model fit:
+#'@format A list of data frames and the data object of results from a BLICC model fit:
 #'\describe{
 #'  \item{vdir}{A vector describing the "direction" across gears for RP estimates}
 #'  \item{rp_df}{A draws tibble of parameter estimates and reference points}
-#'  \describe{
-#'    \item{Linf}{Mean maximum length from the von Bertalanffy growth model}
-#'    \item{Galpha}{Gamma distribution parameter governing growth variability}
-#'    \item{Mk}{Natural mortality (per unit K time)}
-#'    \item{Fk[.]}{A list vector of fishing mortality (per unit K time)}
-#'    \item{Sm[.]}{A list vector of selectivity model parameters}
-#'    \item{NB_phi}{Negative binomial parameter: Excess variance compared to the Poisson}
-#'    \item{Gbeta}{Gamma distribution "rate" parameter: (=Galpha/Linf)}
-#'    \item{SPR}{Spawning potential ratio}
-#'    \item{lp__}{Log posterior probability for the draw}
-#'    \item{.chain}{MCMC chain identifier}
-#'    \item{.iteration}{MCMC iteration identifier}
-#'    \item{.draw}{MCMC draw identifier}
-#'    \item{F20}{Fishing mortality estimated to achieve 20% SPR}
-#'    \item{F30}{Fishing mortality estimated to achieve 30% SPR}
-#'    \item{F40}{Fishing mortality estimated to achieve 40% SPR}
-#'    \item{F01}{Fishing mortality at 10% of the yield curve slope at the origin (F0.1)}
-#'    \item{S20}{Selectivity mode estimated to achieve 20% SPR}
-#'    \item{S40}{Selectivity mode estimated to achieve 40% SPR}
-#'    \item{SMY}{Selectivity mode estimated to achieve maximum yield per recruit}
-#'  }
 #'  \item{lx_df}{A tibble of expected numbers of fish in each length bin}
 #'  \item{ld}{The data object used to fit the model and calculate indicators and results }
+#'}
+#'@format rp_df is a tibble of parameter estimates from a BLICC model fit:
+#'\describe{
+#'  \item{Linf}{Mean maximum length from the von Bertalanffy growth model}
+#'  \item{Galpha}{Gamma distribution parameter governing growth variability}
+#'  \item{Mk}{Natural mortality (per unit K time)}
+#'  \item{Fk}{A list vector of fishing mortality (per unit K time)}
+#'  \item{Sm}{A list vector of selectivity model parameters}
+#'  \item{NB_phi}{Negative binomial parameter: Excess variance compared to the Poisson}
+#'  \item{Gbeta}{Gamma distribution "rate" parameter: (=Galpha/Linf)}
+#'  \item{SPR}{Spawning potential ratio}
+#'  \item{lp__}{Log posterior probability for the draw}
+#'  \item{.chain}{MCMC chain identifier}
+#'  \item{.iteration}{MCMC iteration identifier}
+#'  \item{.draw}{MCMC draw identifier}
+#'  \item{F20}{Fishing mortality estimated to achieve 20% SPR}
+#'  \item{F30}{Fishing mortality estimated to achieve 30% SPR}
+#'  \item{F40}{Fishing mortality estimated to achieve 40% SPR}
+#'  \item{F01}{Fishing mortality at 10% of the yield curve slope at the origin (F0.1)}
+#'  \item{S20}{Selectivity mode estimated to achieve 20% SPR}
+#'  \item{S40}{Selectivity mode estimated to achieve 40% SPR}
+#'  \item{SMY}{Selectivity mode estimated to achieve maximum yield per recruit}
 #'}
 #'
 #'@source Data are simulated.

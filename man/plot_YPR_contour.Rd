@@ -4,13 +4,12 @@
 \alias{plot_YPR_contour}
 \title{Yield-per-recruit surface contour plot}
 \usage{
-plot_YPR_contour(blicc_rp, blicc_ld)
+plot_YPR_contour(blicc_rp)
 }
 \arguments{
-\item{blicc_rp}{A posterior draws and reference points tibble
+\item{blicc_rp}{A list of posterior draws, reference points with
+associated direction, the data object and expected lengths
 from \code{blicc_ref_pts} function.}
-
-\item{blicc_ld}{A data list from the \code{blicc_dat} function.}
 }
 \value{
 ggplot geom object for plotting
@@ -24,6 +23,6 @@ simplicity. The reference line is plotted if it exists within a
 reasonable range of the current estimated status.
 }
 \examples{
-plot_YPR_contour(eg_rp, eg_ld)
+plot_YPR_contour(eg_rp)
 
 }
