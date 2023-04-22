@@ -3,18 +3,24 @@
 \docType{data}
 \name{eg_rp}
 \alias{eg_rp}
-\title{Example parameter draws and reference points from the BLICC model}
+\title{A list of results including reference points from the \code{blicc_ref_pts()} function}
 \format{
-A data frame of results of 21 variables from a BLICC model fit:
+A list of data frames and the data object of results from a BLICC model fit:
+\describe{
+\item{vdir}{A vector describing the "direction" across gears for RP estimates}
+\item{rp_df}{A draws tibble of parameter estimates and reference points}
+\item{lx_df}{A tibble of expected numbers of fish in each length bin}
+\item{ld}{The data object used to fit the model and calculate indicators and results }
+}
+
+rp_df is a tibble of parameter estimates from a BLICC model fit:
 \describe{
 \item{Linf}{Mean maximum length from the von Bertalanffy growth model}
 \item{Galpha}{Gamma distribution parameter governing growth variability}
 \item{Mk}{Natural mortality (per unit K time)}
-\item{Fk}{Fishing mortality (per unit K time)}
-\item{Smx}{Selectivity mode (full selectivity)}
-\item{Ss1}{Left slope for the double normal selectivity (=1/sigma^2)}
-\item{Ss2}{Right slope for the double normal selectivity (=1/sigma^2)}
-\item{NB_phi}{Negative binomial parameter: Excess variance comapred to the Poisson}
+\item{Fk}{A list vector of fishing mortality (per unit K time)}
+\item{Sm}{A list vector of selectivity model parameters}
+\item{NB_phi}{Negative binomial parameter: Excess variance compared to the Poisson}
 \item{Gbeta}{Gamma distribution "rate" parameter: (=Galpha/Linf)}
 \item{SPR}{Spawning potential ratio}
 \item{lp__}{Log posterior probability for the draw}
@@ -38,6 +44,6 @@ eg_rp
 }
 \description{
 An example data table of parameter draws and reference points from the BLICC model
-eg_res_df <- blicc_ref_pts(eg_slim, eg_ld)
+eg_rp <- blicc_ref_pts(eg_slim, eg_ld)
 }
 \keyword{datasets}

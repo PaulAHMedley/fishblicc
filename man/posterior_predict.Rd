@@ -4,19 +4,18 @@
 \alias{posterior_predict}
 \title{A posterior predicted length frequency data set}
 \usage{
-posterior_predict(blicc_rp, blicc_ld, draws = 0)
+posterior_predict(blicc_rp, Gear = NA, draws = 0)
 }
 \arguments{
-\item{blicc_rp}{Posterior draws and reference points tibble from
-\code{blicc_ref_pts} function.}
+\item{blicc_rp}{List of fishblicc result tables from \code{blicc_ref_pts()}}
 
-\item{blicc_ld}{A data list from the \code{blicc_dat} function.}
+\item{Gear}{Identifies the single gear (selectivity) providing predictions}
 
 \item{draws}{The number of random draws up to the number of
 draws from the MCMC (the default).}
 }
 \value{
-A matrix with rows equal to draws and columns to length
+A matrix with rows equal to gears*draws and columns to length
 }
 \description{
 For a set of MCMC parameter draws, returns a simulated catch in each
@@ -25,6 +24,6 @@ might be expected if the model is correct, can be used in the posterior
 and bayesplot packages for evaluation.
 }
 \examples{
-yrep <- posterior_predict(blicc_rp = eg_rp, blicc_ld = eg_ld)
+yrep <- posterior_predict(blicc_rp = eg_rp, Gear=1, draws=100)
 
 }

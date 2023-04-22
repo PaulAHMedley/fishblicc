@@ -25,6 +25,9 @@ scale parameters are fitted to generate the spawning potential ratio as a
 measure of the stock status.
 }
 \details{
+It is recommended to test the model and data object using this procedure
+before investing in the MCMC fit using \code{blicc_fit}.
+
 Unlike \code{blicc_fit()}, the model finds a point estimate. This is much faster
 than the MCMC, but does not provide full information on uncertainty.
 The model estimates mortality and survival through sequential length
@@ -45,8 +48,6 @@ In addtion to the parameters, the fit reports the spawning potential ratio
 (SPR) and the log probability at the mode (lp__).
 }
 \examples{
-ld <- blicc_dat(LLB = 25:35, fq=c(0,1,2,26,72,66,36,24,12,4,0),
-                Linf=c(35, 3))
-mpd_fit <- blicc_mpd(ld)
+mpd_fit <- blicc_mpd(eg_ld)
 
 }

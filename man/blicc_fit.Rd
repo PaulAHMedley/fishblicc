@@ -40,12 +40,17 @@ mortality is constrained by a parametric model with constant natural
 mortality by length and a double-sided normal selectivity function for
 fishing mortality.
 
-The model fits 8 parameters. In general, there is insufficient support from
-a single length frequency sample to estimate these with any precision, and
-therefore informative priors are used where necessary. The default values
-for priors can follow recommendations based on life-history invariants
-(see \code{blicc_dat}). However the user is still required to provide a prior
-on the mean maximum length (Linf).
+The model fits 4 parameters plus 3 or more parameters for each selectivity
+function being fitted. In general, there is insufficient support from
+a single length frequency samples to estimate all these with any precision,
+and therefore informative priors are used where necessary. The default
+values for priors can follow recommendations based on meta-analyses or
+life-history invariant (see \code{blicc_dat}). However the user is still
+required to provide a prior on the mean maximum length (Linf) in each case.
+
+It is recommended to fit a model using the \code{blicc_mpd()} function before
+attempting the MCMC fit. This should show up any problems with the model
+or data object.
 
 The fit starts at the posterior mode which is found using the Stan optimizer.
 Then a default 4 MCMC chains are initiated and run concurrently. Comparing
@@ -67,12 +72,11 @@ diagnostics. These invalidate the MCMC because they cannot be guaranteed as
 representative of the underlying posterior. This problem might be best
 addressed in the first instance by increasing the adapt_delta parameter
 above the default 0.8.
+
 For example, the parameter "control=list(adapt_delta=0.9)" can be added
 to the parameter list on calling the function.
 }
 \examples{
-ld <- blicc_dat(LLB = 25:35, fq=c(0,1,2,26,72,66,36,24,12,4,0),
-                Linf=c(35, 2), NK=50)
-stf <- blicc_fit(ld, ntarget=100, nwarmup=200, nchain=1) #Quick test
+stf <- blicc_fit(eg_ld, ntarget=100, nwarmup=200, nchain=1) #Quick test
 
 }

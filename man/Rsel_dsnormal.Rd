@@ -4,32 +4,29 @@
 \alias{Rsel_dsnormal}
 \title{Calculate a double-sided normal selectivity curve for a length vector}
 \usage{
-Rsel_dsnormal(LMP, Smx, Ss1, Ss2)
+Rsel_dsnormal(Sp, LMP)
 }
 \arguments{
+\item{Sp}{Vector (length 3) of the selectivity parameters (mode,
+left  and right side 1/sigma^2) for the normal
+selectivity function}
+
 \item{LMP}{A vector of lengths (usually mid-points for length bins)}
-
-\item{Smx}{Mode of the normal selectivity function}
-
-\item{Ss1}{Left side slope, parameterized as 1/sigma^2}
-
-\item{Ss2}{Right side slope, parameterized as 1/sigma^2. Zero implies
-flat-topped selectivity}
 }
 \value{
 \if{html}{\out{<div class="sourceCode">}}\preformatted{ A vector of selectivity values varying from 0.0 to 1.0
 }\if{html}{\out{</div>}}
 }
 \description{
-A double-sided normal takes two separate slope (sigma^2) parameters
+A double-sided normal takes two separate slope (1/sigma^2) parameters
 around the mode parameter (mu) that change the slope independently
 on either side of the mode. The selectivity varies from 0 to 1.0,
 with 1.0 being at the mode. It is calculated for each position defined
-in the length vector. Setting the second slope parameter (Ss2) to zero
-creates a flat-top selectivity.
+in the length vector. Setting the second slope parameter to zero
+creates a flat-top selectivity (see \code{Rsel_ssnormal}).
 }
 \examples{
-Sel <- Rsel_dsnormal(LMP=seq(15.5, 55.5, by=1.0), 30, 0.1, 0.2)
+Sel <- Rsel_dsnormal(Sp = c(35, 0.1, 0.2), LMP = seq(15.5, 55.5, by=1.0))
 plot(y=Sel, x=seq(15.5, 55.5, by=1.0))
 
 }

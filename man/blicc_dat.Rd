@@ -5,35 +5,60 @@
 \title{Generates a data list and initial parameter values for the BLICC model}
 \usage{
 blicc_dat(
+  model_name = "fishblicc data model",
   LLB,
   fq,
   Linf,
+  sel_fun,
+  Catch = 1,
+  gear_names = NA,
   Mk = NA,
+  ref_length = -1,
+  wt_L = NA,
+  ma_L = NA,
   a = 1,
   b = 3,
   L50 = NA,
   L95 = NA,
-  Flat = 1L,
-  NK = 110L
+  NK = NA
 )
 }
 \arguments{
+\item{model_name}{A name for the model (species or fishery). Optional.}
+
 \item{LLB}{A vector of lower length boundaries for each length frequency
 bin. Required.}
 
-\item{fq}{A vector, the same length as LLB, containing the frequency data.
-Zeroes must be included. Required.}
+\item{fq}{A list of vectors, each the same length as LLB, containing the
+frequency data. Zeroes must be included. If only one gear, can be a vector.
+Required.}
 
 \item{Linf}{A vector of two values: mean and sd of the prior maximum mean
 length for the stock. Required.}
 
+\item{sel_fun}{A vector of selectivity function names (character) or index
+(1-4), with 1="logistic", 2="normal", 3="ss_normal", 4="ds_normal" for
+each vector in fq. Required.}
+
+\item{Catch}{A vector of relative catches. Required, if the number of gears
+is more than one.}
+
+\item{gear_names}{A vector of names for the gears for reference. Optional.}
+
 \item{Mk}{Natural mortality divided by the growth rate K
 (usually around 1.5). Optional.}
+
+\item{ref_length}{The reference length for the inverse length
+function if it is used. (default is NA i.e. fixed natural mortality)}
+
+\item{wt_L}{Weight (biomass) for each length bin. Optional.}
+
+\item{ma_L}{Mature biomass for each length bin. Optional.}
 
 \item{a}{The length-weight parameter: a*L^b. Not used in model fitting,
 but for plots etc. Optional.}
 
-\item{b}{A number with the length-weight exponent (a*L^b, usually close
+\item{b}{The length-weight exponent (a*L^b, usually close
 to 3.0) Optional.}
 
 \item{L50}{The length at 50\% maturity, often referred to as "first"
@@ -43,9 +68,6 @@ around 0.66 Linf, which is assumed if it is not provided. Optional.}
 \item{L95}{The length at 95\% maturity. Must be greater than L50 and less
 than Linf. A small increment is added L50 if it is not provided. Optional.}
 
-\item{Flat}{An integer indicating whether selectivity is flat-topped
-(==0) or not (!=0).  Optional.}
-
 \item{NK}{Number of nodes for the Gauss Laguerre quadrature rule. 110 is a
 safe value, but extends the run time of all calculations.  Optional.}
 }
@@ -53,14 +75,12 @@ safe value, but extends the run time of all calculations.  Optional.}
 \if{html}{\out{<div class="sourceCode">}}\preformatted{A list of vectors and numbers structured suitable for use in the
 }\if{html}{\out{</div>}}
 
-Stan model BLICC.stan.
+Stan model \code{BLICC.stan}.
 }
 \description{
 Vectors for the lower bound for each length bin and the number of fish in
 each length bin and combined with prior parameters into a data list as
-expected by the BLICC model. Constant bin widths are not necessary for
-the model and not assumed. Zero frequencies must be explicitly in the
-fq vector.
+expected by the BLICC model.
 }
 \details{
 This is a convenience function. The fitting and other functions accept a
@@ -78,11 +98,20 @@ of knots (nodes) used in the quadrature integration. The default is 110,
 which is safe but extends running times. Lower values risk inaccurate
 integration but result in faster fitting.
 
-It is important that the length frequencies include zeros for bins which
+The length frequencies should include zeros for bins which
 contained no fish. The length frequency should be bounded by a single zero
 bin as the first and last bin in the frequency.
+
+To allow maximum flexibility, prior hyper-parameters for the selectivity
+functions (as log-values for means in the log-normal distribution) are
+defined in a single vector. These are linked to each function using an
+integer matrix with a row for each selectivity function (gear)
 }
 \examples{
-ld <- blicc_dat(LLB = 25:35, fq=c(0,1,2,26,72,66,36,24,12,4,0), Linf=c(35, 2))
+ld <- blicc_dat(LLB = 25:35,
+                fq = list(c(0,1,2,26,72,66,36,24,12,4,0)),
+                Linf = c(35, 2),
+                sel_fun = 4,
+                gear_names = "Gill net")
 
 }
