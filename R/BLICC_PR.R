@@ -78,7 +78,9 @@ FSPR_solve <-
       return(NA)
     }
     dF <- stats::uniroot(f = SRP_eval,
-                         interval = c(-1, maxval))$root
+                         interval = c(-1, maxval),
+                         tol=1e-5,
+                         maxiter=500)$root
     return((1.0 + vdir*dF)*Fk)
   }
 
@@ -118,7 +120,8 @@ SSPR_solve <-
       return(SPR / SPR0 - tarSPR)
     }
 
-    maxdL <- Linf/max(Sm[blicc_ld$spar[which.max(vdir), 1]]) - 1
+    ref_par <- max(Sm[blicc_ld$spar[which.max(vdir), 1]])
+    maxdL <- Linf/ref_par - 1
     vdir <- vdir[blicc_ld$Fkg>0]
     Gbeta <- Galpha / Linf
     vSm <- Sm
@@ -133,18 +136,18 @@ SSPR_solve <-
       V1 <- V2
       S2 <-
         Linf * (1 + 5 / sqrt(Galpha)) # A length that fish do not grow to
-      S2 <- S2/max(Sm[blicc_ld$spar[which.max(vdir),1]]) - 1
+      S2 <- S2/ref_par - 1
       V2 <- SRP_eval(S2)
       if (V2 < 0) {
         return(NA)
       }
     } else {
       # V2 > 0
-      mindL <- blicc_ld$LLB[1]/max(Sm[blicc_ld$spar[which.max(vdir), 1]]) - 1
-      S1 <- blicc_ld$L50/max(Sm[blicc_ld$spar[which.max(vdir), 1]]) - 1
+      mindL <- blicc_ld$LLB[1]/ref_par - 1
+      S1 <- blicc_ld$L50/ref_par - 1
       V1 <- SRP_eval(S1)
       while ((V1 > 0) & (S1 >= mindL)) {
-        S1 <- S1 - 0.1
+        S1 <- S1 - 1.0
         V1 <- SRP_eval(S1)
       }
       if (V1 > 0) {
@@ -152,7 +155,9 @@ SSPR_solve <-
       }
     }
     dL <- stats::uniroot(f = SRP_eval,
-                         interval = c(S1, S2))$root
+                         interval = c(S1, S2),
+                         tol=1e-5,         # Depends on binwidth precision
+                         maxiter=500)$root
     vSm[indx] <- (1 + vdir*dL)*Sm[indx]
     return(vSm)
   }
@@ -204,7 +209,9 @@ F01_solve <-
       return(NA)
     }
     dF <- stats::uniroot(f = fYPRF01,
-                         interval = c(-1, maxval))$root
+                         interval = c(-1, maxval),
+                         tol=1e-5,
+                         maxiter=500)$root
     return((1.0 + vdir*dF)*Fk)
   }
 

@@ -798,7 +798,7 @@ selectivity_priors <- function(blicc_ld) {
 #' @noRd
 #'
 LG_Nodes <- function(blicc_ld, draws, toler=1.0e-06) {
-  Min_NK <- 30
+  Min_NK <- 50
   glq <-
     statmod::gauss.quad(110, kind = "laguerre", alpha = 0.0)
   suppressWarnings(

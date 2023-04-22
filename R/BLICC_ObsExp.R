@@ -88,7 +88,6 @@ blicc_ref_pts <-
             names_to = "name2",
             values_to = "Sm"
           ) |>
-          dplyr::arrange(.draw, name2) |>
           dplyr::group_by(.draw) |>
           dplyr::summarise(Sm = list(Sm)) |>
           dplyr::ungroup()
@@ -105,7 +104,6 @@ blicc_ref_pts <-
             names_to = "name2",
             values_to = "Fk"
           ) |>
-          dplyr::arrange(.draw, name2) |>
           dplyr::group_by(.draw) |>
           dplyr::summarise(Fk = list(Fk)) |>
           dplyr::ungroup()
