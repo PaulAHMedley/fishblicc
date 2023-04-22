@@ -45,22 +45,24 @@ Rsel_functions <- function() {
 parse_selectivity <- function(sel_fun, blicc_ld) {
   func <- Rsel_functions()
   Nfunc <- length(func$short_name)
+  func_list <- paste(func$short_name, collapse=" ")
+  errmsg <- paste0("Error: specified selectivity function must be the function name (",
+                   func_list,
+                   " or all) or an integer between 1 and", as.character(Nfunc))
   if (is.character(sel_fun)){
+
+    if (sel_fun[1]=="all")
+      return(1L:blicc_ld$NG)
+
     if (! all(sel_fun %in% func$short_name))
-      stop(paste("Error: specified selectivity function must be the function name (",
-                  func$short_name,
-                  ") or an integer between 1 and ", as.character(Nfunc)))
+      stop(errmsg)
     sel_fun <- match(sel_fun, func$short_name)
   } else {
     if (! is.numeric(sel_fun))
-      stop(paste0("Error: specified selectivity function must be the function name (",
-                  func$short_name,
-                  ") or an integer between 1 and", as.character(Nfunc)))
+      stop(errmsg)
     sel_fun <- as.integer(sel_fun)
     if (min(sel_fun) < 1 | max(sel_fun) > Nfunc)
-      stop(paste("Error: specified selectivity function must be the function name (",
-                  func$short_name,
-                  ") or an integer between 1 and", as.character(Nfunc)))
+      stop(errmsg)
   }
   return(sel_fun)
 }
@@ -99,7 +101,7 @@ parse_gear <- function(Gear, blicc_ld) {
           )
         }
       }
-      Gear <- as.integer(Gear)
+      Gear <- as.integer(unique(Gear))
       if (!all(dplyr::between(Gear, 1, blicc_ld$NG))) {
         stop(paste0(
           "Error: Specified gear must be between 1 and ",

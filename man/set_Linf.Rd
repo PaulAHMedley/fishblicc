@@ -4,14 +4,17 @@
 \alias{set_Linf}
 \title{Sets data object from \code{blicc_dat()} to have a new Linf prior}
 \usage{
-set_Linf(blicc_ld, new_Linf)
+set_Linf(blicc_ld, Linf, model_name = NA)
 }
 \arguments{
 \item{blicc_ld}{A standard data list suitable for the model
 (see function \code{blicc_dat()})}
 
-\item{new_Linf}{A numeric vector of double containing the mean and
+\item{Linf}{A numeric vector of double containing the mean and
 sd for the prior normal.}
+
+\item{model_name}{A string for a replacement model name in the data
+object. Optional.}
 }
 \value{
 The data object blicc_ld but with the prior for Linf changed.
@@ -22,5 +25,5 @@ the normal prior to be used. These are replaced in the data object,
 which is then returned.
 }
 \examples{
-new_ld <- set_Linf(eg_ld, c(30,2))
+new_ld <- set_Linf(eg_ld, c(30,2), model_name="Sensitivity")
 }

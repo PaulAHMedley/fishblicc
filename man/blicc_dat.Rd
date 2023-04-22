@@ -13,7 +13,7 @@ blicc_dat(
   Catch = 1,
   gear_names = NA,
   Mk = NA,
-  ref_length = NA,
+  ref_length = -1,
   wt_L = NA,
   ma_L = NA,
   a = 1,

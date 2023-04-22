@@ -74,11 +74,15 @@ blicc_mpd <- function(blicc_ld) {
                       paste0("Sm[", as.character(1:blicc_ld$NP), "]"),
                       "NB_phi", "Gbeta", "SPR")
   rd <- fit$theta_tilde[ , full_par_names]
-  par_names <- c("Linf", "Galpha", "Mk",
-                 ifelse(blicc_ld$NG>1, paste0("Fk", as.character(1:blicc_ld$NF)), "Fk"),
-                 paste0("Sm", as.character(1:blicc_ld$NP)),
-                 "NB_phi", "Gbeta", "SPR")
-
+  if (blicc_ld$NF>1)
+    par_names <- c("Linf", "Galpha", "Mk",
+                   paste0("Fk", as.character(1:blicc_ld$NF)),
+                   paste0("Sm", as.character(1:blicc_ld$NP)),
+                   "NB_phi", "Gbeta", "SPR")
+  else
+    par_names <- c("Linf", "Galpha", "Mk", "Fk",
+                   paste0("Sm", as.character(1:blicc_ld$NP)),
+                   "NB_phi", "Gbeta", "SPR")
   res <- tibble::tibble(
     par = c(full_par_names, "lp__"),
     mpd = unname(c(unlist(fit$par)[par_names],
@@ -296,7 +300,7 @@ blicc_dat <-
            Catch = 1,
            gear_names = NA,
            Mk = NA,
-           ref_length = NA,
+           ref_length = -1,
            wt_L = NA,
            ma_L = NA,
            a = 1,
@@ -385,6 +389,15 @@ blicc_dat <-
     dl <- set_Linf(dl, Linf)
     dl <- set_LH_param(dl, a, b, L50, L95, ma_L, wt_L)
     dl <- set_Galpha(dl, c(log(1 / 0.1 ^ 2), 0.25))
+
+    if (is.na(Mk)) {
+      # from Prince et al. 2015
+      Mk <-
+        with(dl, b * (1 - (L50 / poLinfm)) / (L50 / poLinfm))
+      warning(paste0("Warning: Default Mk, based on life history invariant estimate, is: ",
+                     format(Mk, digits=2)))
+    }
+
     dl <- set_Mk(dl, c(log(Mk), 0.1), ref_length)
     dl <- set_Fk(dl, NA, 2.0)  # loose prior for fully exploited stock
     dl <- selectivity_priors(dl)
@@ -480,29 +493,34 @@ blicc_mcmc_ini <- function(blicc_ld, pchain = 4, par = NULL) {
 #'
 #' @export
 #' @inheritParams blicc_mpd
-#' @param new_Linf  A numeric vector of double containing the mean and
+#' @param Linf  A numeric vector of double containing the mean and
 #' sd for the prior normal.
+#' @param model_name A string for a replacement model name in the data
+#' object. Optional.
 #' @return The data object blicc_ld but with the prior for Linf changed.
 #' @examples
-#' new_ld <- set_Linf(eg_ld, c(30,2))
+#' new_ld <- set_Linf(eg_ld, c(30,2), model_name="Sensitivity")
 set_Linf <- function(blicc_ld,
-                     new_Linf) {
-  if (! is.vector(new_Linf, mode="double") | length(new_Linf) != 2)
+                     Linf,
+                     model_name=NA) {
+  if (! is.vector(Linf, mode="double") | length(Linf) != 2)
     stop("Error: Linf must be a vector of 2 (mu, sigma) for the prior.")
-  if (new_Linf[1] <= min(blicc_ld$LLB)) {
+  if (Linf[1] <= min(blicc_ld$LLB)) {
     stop(paste(
       "Error: Linf must be greater than the lowest bin value:",
       as.character(min(blicc_ld$LLB))
     ))
   }
-  if (new_Linf[2] <= 0) {
+  if (Linf[2] <= 0) {
     stop("Error: Linf prior sd must be greater than zero.")
   }
 
+  if (!is.na(model_name))
+    blicc_ld$model_name <- model_name
   # Expected Linf
-  blicc_ld$poLinfm <- new_Linf[1]
+  blicc_ld$poLinfm <- Linf[1]
   # sd for the normal Linf, see above
-  blicc_ld$poLinfs <- new_Linf[2]
+  blicc_ld$poLinfs <- Linf[2]
   return(blicc_ld)
 }
 
@@ -510,20 +528,20 @@ set_Linf <- function(blicc_ld,
 #'
 #' Inputs are not checked. Galpha prior is updated.
 #'
-#' @inheritParams blicc_mpd
-#' @param new_Galpha  A numeric vector of double containing the mean and
+#' @inheritParams set_Linf
+#' @param Galpha  A numeric vector of double containing the mean and
 #' sd for the prior normal.
 #' @return The data object blicc_ld but with the prior for Galpha changed.
 #' @noRd
 #'
 set_Galpha <- function(blicc_ld,
-                       new_Galpha) {
+                       Galpha) {
   # Growth mean CV
-  blicc_ld$polGam <- new_Galpha[1]
+  blicc_ld$polGam <- Galpha[1]
   # 10% CV: could be 5% (log(1/0.05^2)) to 30% (log(1/0.3^2)).
   # 30% CV makes length very uninformative however. Default CV=10%
   # growth log-normal sd hyper-parameter
-  blicc_ld$polGas = new_Galpha[2]
+  blicc_ld$polGas = Galpha[2]
   return(blicc_ld)
 }
 
@@ -537,46 +555,45 @@ set_Galpha <- function(blicc_ld,
 #' Note that the Mk must be provided as the log value.
 #'
 #' @export
-#' @inheritParams blicc_mpd
+#' @inheritParams set_Linf
 #' @inheritParams blicc_dat
-#' @param new_lMk      The log mean and sigma for the lognormal natural mortality prior
+#' @param lMk   The log mean and sigma for the lognormal natural mortality prior
 #' @return The data object blicc_ld but with the prior and function
 #' for Mk changed.
 #' @examples
-#' new_ld <- set_Mk(eg_ld, new_lMk=c(log(1.9), 0.2), ref_length=25)
+#' new_ld <- set_Mk(eg_ld, lMk=c(log(1.9), 0.2), ref_length=25)
 #'
 set_Mk <- function(blicc_ld,
-                   new_lMk = as.numeric(c(NA, NA)),
-                   ref_length = NA) {
+                   lMk = as.numeric(c(NA, NA)),
+                   ref_length = NA,
+                   model_name = NA) {
   # Natural mortality
-  if (is.na(ref_length))
-    M_L <- rep(1, blicc_ld$NB)  # Fixed natural mortality
-  else {
-    if (ref_length < min(blicc_ld$LLB) | ref_length > max(blicc_ld$LLB))
-      stop("Error: The reference length for the natural mortality must be within the length frequencies.")
-    M_L <- ref_length/blicc_ld$LMP
+  if (!is.na(ref_length)) {
+    if (ref_length>0){
+      if (ref_length < min(blicc_ld$LLB) | ref_length > max(blicc_ld$LLB))
+        stop("Error: The reference length for the natural mortality must be within the length frequencies.")
+      M_L <- ref_length/blicc_ld$LMP
+    } else {
+      M_L <- rep(1, blicc_ld$NB)  # Fixed natural mortality
+      ref_length <- -1
+    }
+    blicc_ld$M_L <- M_L
+    blicc_ld$ref_length <- ref_length
   }
 
-  if (! (is.vector(new_lMk, mode = "numeric") & length(new_lMk)==2))
+  if (! (is.vector(lMk, mode = "numeric") & length(lMk)==2))
     stop("Error: natural mortality must be provided as vector of mean and sigma for the lognormal.")
 
-  if (is.na(new_lMk[2])) new_lMk[2] <- 0.1  # default
-
-
-  if (is.na(new_lMk[1])) {
-    # from Prince et al. 2015
-    new_lMk[1] <-
-      with(blicc_ld, log(b * (1 - (L50 / poLinfm)) / (L50 / poLinfm)))
-    warning(paste0("Warning: Default Mk based on life history invariant estimate: ",
-                   format(exp(new_lMk[1]), digits=2)))
+  if (!is.na(model_name))
+    blicc_ld$model_name <- model_name
+  if (!is.na(lMk[1])) {
+    if (lMk[1]<0 | lMk[1]>log(5))
+      warning(paste0("Warning: Mk outside range 1-5: ",
+                     format(exp(lMk[1]), digits=2), " (make sure you provide the log-Mk)"))
+    blicc_ld$polMkm <- lMk[1]
   }
-  if (new_lMk[1]<0 | new_lMk[1]>log(5))
-    warning(paste0("Warning: Mk outside range 1-5: ",
-                   format(exp(new_lMk[1]), digits=2), "(make sure you provide log-Mk)"))
-
-  blicc_ld$M_L <- M_L
-  blicc_ld$polMkm <- new_lMk[1]
-  blicc_ld$polMks <- new_lMk[2]
+  if (!is.na(lMk[2]))
+    blicc_ld$polMks <- lMk[2]
   return(blicc_ld)
 }
 
@@ -585,23 +602,23 @@ set_Mk <- function(blicc_ld,
 #'
 #' Inputs are minimally checked. Fk prior is updated.
 #'
-#' @inheritParams blicc_mpd
-#' @param new_lFk  A vector of double containing the lognormal mean Fk for each gear
-#' @param new_lFks  A double containing the lognormal sd Fk for all gears
-#' @return The data object blicc_ld but with the prior for Galpha changed.
+#' @inheritParams set_Linf
+#' @param lFk  A vector of double containing the lognormal mean Fk for each gear
+#' @param lFks  A double containing the lognormal sd Fk for all gears
+#' @return The data object blicc_ld with the prior for Galpha changed.
 #' @noRd
 #'
 set_Fk <- function(blicc_ld,
-                   new_lFk,
-                   new_lFks) {
-  if (is.na(new_lFk)) {
-    new_lFk <- blicc_ld$polMkm + log(blicc_ld$Catch)
-    new_lFks <- 2.0
+                   lFk,
+                   lFks) {
+  if (is.na(lFk)) {
+    lFk <- blicc_ld$polMkm + log(blicc_ld$Catch)
+    lFks <- 2.0
   }
-  if (blicc_ld$NF != length(new_lFk))
+  if (blicc_ld$NF != length(lFk))
     stop("Error in set_Fk: array of wrong length")
-  blicc_ld$polFkm <- as.array(new_lFk)
-  blicc_ld$polFks = new_lFks
+  blicc_ld$polFkm <- as.array(lFk)
+  blicc_ld$polFks = lFks
   return(blicc_ld)
 }
 
@@ -614,18 +631,19 @@ set_Fk <- function(blicc_ld,
 #' which is then returned.
 #'
 #' @export
-#' @inheritParams blicc_mpd
+#' @inheritParams set_Linf
 #' @param Gear      The gears for which the selectivity functions are being changed
 #' @param sel_fun   The selectivity functions that gears are being set to either as
 #' integers or strings.
-#' @return The data object blicc_ld but with the new selectivities
+#' @return The data object blicc_ld with the new selectivities
 #' @examples
 #' new_ld <- set_selectivity(eg_ld, Gear=1, sel_fun="logistic")
 #'
 set_selectivity <-
   function(blicc_ld,
            Gear,
-           sel_fun) {
+           sel_fun,
+           model_name = NA) {
   Gear <- parse_gear(Gear, blicc_ld)
   sel_fun <- parse_selectivity(sel_fun, blicc_ld)
   if (length(sel_fun) != length(Gear)) {
@@ -643,11 +661,13 @@ set_selectivity <-
   spar <- matrix(0, nrow = blicc_ld$NG, ncol = blicc_ld$Pmx)
   np <- 1
   for (i in 1:blicc_ld$NG) {
-    spar[i,] <- np:(np+npar[i]-1)
+    spar[i, 1:npar[i]] <- np:(np+npar[i]-1)
     np <- np + npar[i]
   }
   blicc_ld$spar <- spar
-
+  if (!is.na(model_name))
+    blicc_ld$model_name <- model_name
+  blicc_ld <- selectivity_priors(blicc_ld)
   return(blicc_ld)
 }
 
@@ -656,23 +676,23 @@ set_selectivity <-
 #' Checks the gear and selectivity are valid, then sets up the data object
 #' so that the parameters and parameter references for the selectivity
 #' functions are valid. New references are replaced in the data object,
-#' which is then returned.
+#' which is then returned. This is an unexported function, so also applies
+#' defaults.
 #'
-#' @export
-#' @inheritParams blicc_mpd
+#' @inheritParams set_Linf
 #' @inheritParams blicc_dat
-#' @return The data object blicc_ld but with the new selectivities
-#' @examples
-#' new_ld <- set_LH_param(eg_ld, a=1e-5, b=3.05, L50=20)
+#' @return The data object blicc_ld with the new life-history parameters
+#' @noRd
 #'
 set_LH_param <-
   function(blicc_ld,
-           a=1,
-           b=3,
-           L50=NA,
-           L95=NA,
+           a = NA,
+           b = NA,
+           L50 = NA,
+           L95 = NA,
            ma_L = NA,
-           wt_L = NA) {
+           wt_L = NA,
+           model_name = NA) {
 
     Linf <- blicc_ld$poLinfm
     # Weight and maturity
@@ -715,6 +735,8 @@ set_LH_param <-
       }
     }
 
+    if (!is.na(model_name))
+      blicc_ld$model_name <- model_name
     blicc_ld$a <- a
     blicc_ld$b <- b
     blicc_ld$L50 <- L50

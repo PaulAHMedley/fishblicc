@@ -326,6 +326,38 @@ blicc_get_expected <-
   }
 
 
+#' The expected length frequency
+#'
+#' For a set of parameter values, returns the expected catch in each length bin
+#' for each gear based on the BLICC model. This is the same as the
+#' `blicc_get_expected()` function, but only returns the expected length
+#' frequency. Used for predictive posterior some plots.
+#'
+#' @inheritParams blicc_get_expected
+#' @param Gear_i A integer vector of gears to obtain the expected catch for
+#' @return A list of two vectors: the gear names, and a vector of the expected
+#' length bin frequency
+#' @noRd
+#'
+blicc_get_efq <-
+  function(Linf, Galpha, Mk, Fk, Sm, Gear_i, blicc_ld) {
+    if (any(is.na(Fk)) | any(is.na(Sm))) {
+      return(NA)
+    }
+    Rsel <- Rselectivities(Sm, blicc_ld)
+    Pop <- Rpop_F(Galpha, Galpha/Linf, Mk, Fk, Rsel, blicc_ld)
+
+    efq <- double(0)
+    for (gi in Gear_i) {
+      ex_fq <- Pop$N_L * Pop$Fki[[gi]] # Catch
+      ex_fq <- sum(blicc_ld$fq[[gi]]) * ex_fq / sum(ex_fq) # Normalise
+      efq <- c(efq, ex_fq)
+    }
+    # interleaved gear_names=rep(blicc_ld$gear_names[Gear_i], each=blicc_ld$NB)
+    return(efq)
+  }
+
+
 #' A posterior predicted length frequency data set
 #'
 #' For a set of MCMC parameter draws, returns a simulated catch in each

@@ -4,7 +4,7 @@
 \alias{set_selectivity}
 \title{Sets data object from \code{blicc_dat()} to have a new selectivity functions}
 \usage{
-set_selectivity(blicc_ld, Gear, sel_fun)
+set_selectivity(blicc_ld, Gear, sel_fun, model_name = NA)
 }
 \arguments{
 \item{blicc_ld}{A standard data list suitable for the model
@@ -14,9 +14,12 @@ set_selectivity(blicc_ld, Gear, sel_fun)
 
 \item{sel_fun}{The selectivity functions that gears are being set to either as
 integers or strings.}
+
+\item{model_name}{A string for a replacement model name in the data
+object. Optional.}
 }
 \value{
-The data object blicc_ld but with the new selectivities
+The data object blicc_ld with the new selectivities
 }
 \description{
 Checks the gear and selectivity are valid, then sets up the data object
