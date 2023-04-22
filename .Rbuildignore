@@ -3,3 +3,8 @@
 ^Package_Creation\.qmd$
 ^LICENSE.md$
 ^README.Rmd$
+^temp\.txt$
+^fishblicc_Model_Description\.Rmd$
+^fishblicc_Model_Description\.html$
+^fishblicc_Model_Description\.md$
+^fishblicc_Model_Description_files$

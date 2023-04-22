@@ -4,7 +4,7 @@
 \alias{blicc_get_expected}
 \title{Expected length interval selectivity, mortality, survival and frequency}
 \usage{
-blicc_get_expected(Linf, Galpha, Mk, Fk, Smx, Ss1, Ss2, blicc_ld)
+blicc_get_expected(Linf, Galpha, Mk, Fk, Sm, blicc_ld)
 }
 \arguments{
 \item{Linf}{Maximum mean length fish in the population can grow to}
@@ -14,20 +14,18 @@ that governs growth variability.}
 
 \item{Mk}{Natural mortality (time in units of the growth rate K)}
 
-\item{Fk}{Fishing mortality (time in units of the growth rate K) to
-be multiplied by selectivity to get fishing mortality in each length bin}
+\item{Fk}{Vector of fishing mortality (time in units of the growth
+rate K) to be multiplied by selectivity to get fishing mortality in each
+length bin}
 
-\item{Smx}{Mode of the normal selectivity function (full selectivity)}
-
-\item{Ss1}{Left side slope, parameterized as 1/sigma^2}
-
-\item{Ss2}{Right side slope, parameterized as 1/sigma^2. Zero implies
+\item{Sm}{Vector of parameters for all the selectivity functions
 flat-topped selectivity}
 
-\item{blicc_ld}{A standard data list created by \code{blicc_dat}}
+\item{blicc_ld}{A standard data list suitable for the model
+(see function \code{blicc_dat()})}
 }
 \value{
-A tibble of expected values for each length bin
+A tibble of expected values for each length bin for each gear
 }
 \description{
 For a set of parameter values, returns the expected selectivity, mortality,
@@ -42,7 +40,7 @@ provides the model dimensions and is produced by the function
 blicc_dat().
 }
 \examples{
-blicc_get_expected(Linf = 32, Galpha = 100, Mk = 1.5, Fk = 1.5, Smx = 24,
-                   Ss1 = 0.1, Ss2 = 0.001, blicc_ld = eg_ld)
+blicc_get_expected(Linf = 32, Galpha = 100, Mk = 1.5, Fk = 1.5,
+                   Sm = c(24, 0.1, 0.001), blicc_ld = eg_ld)
 
 }
