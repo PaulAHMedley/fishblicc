@@ -2,15 +2,15 @@
 % Please edit documentation in R/BLICC_Plots.R
 \name{plot_efq_FRP}
 \alias{plot_efq_FRP}
-\title{Plot expected length frequencies for a range of fishing mortality
-reference points}
+\title{Plot expected length frequencies for a range of fishing mortality reference
+points}
 \usage{
 plot_efq_FRP(blicc_rp, Gear = NA)
 }
 \arguments{
-\item{blicc_rp}{A list of posterior draws, reference points with
-associated direction, the data object and expected lengths
-from \code{blicc_ref_pts} function.}
+\item{blicc_rp}{A list of posterior draws, reference points with associated
+direction, the data object and expected lengths from \link{blicc_ref_pts}
+function.}
 
 \item{Gear}{Specifies the gear to plot}
 }
@@ -23,8 +23,9 @@ fishing mortalities required to obtain SPR 20\%, SPR 30\% and SPR 40\%. The
 graphs show the expected values and 80\% credible intervals compared to
 current observations, and can be used to assess whether length frequencies
 should be able to detect changes in fishing mortality to these different
-levels. Note that if reference points do not exist, they are not
-plotted, so some graphs may be blank except for data.
+levels. Note that if reference points do not exist, they are not plotted, so
+some graphs may be blank except for the data. The graphs show the number of
+MCMC draws for which the reference points exist in each case.
 }
 \examples{
 plot_efq_FRP(eg_rp)

@@ -174,7 +174,7 @@ static const std::vector<string> locations_array__ = {" (found before start of p
                                                       " (in 'string', line 119, column 33 to column 35)",
                                                       " (in 'string', line 119, column 2 to column 37)",
                                                       " (in 'string', line 120, column 9 to column 11)",
-                                                      " (in 'string', line 120, column 2 to column 32)",
+                                                      " (in 'string', line 120, column 2 to column 37)",
                                                       " (in 'string', line 121, column 30 to column 32)",
                                                       " (in 'string', line 121, column 2 to column 34)",
                                                       " (in 'string', line 122, column 31 to column 33)",
@@ -219,10 +219,10 @@ static const std::vector<string> locations_array__ = {" (found before start of p
                                                       " (in 'string', line 153, column 4 to column 27)",
                                                       " (in 'string', line 152, column 19 to line 154, column 3)",
                                                       " (in 'string', line 152, column 2 to line 154, column 3)",
-                                                      " (in 'string', line 160, column 8 to column 33)",
+                                                      " (in 'string', line 160, column 8 to column 38)",
                                                       " (in 'string', line 159, column 23 to line 161, column 9)",
                                                       " (in 'string', line 159, column 6 to line 161, column 9)",
-                                                      " (in 'string', line 162, column 6 to column 29)",
+                                                      " (in 'string', line 162, column 6 to column 34)",
                                                       " (in 'string', line 158, column 11 to line 163, column 5)",
                                                       " (in 'string', line 157, column 6 to column 17)",
                                                       " (in 'string', line 156, column 15 to line 158, column 5)",
@@ -785,7 +785,7 @@ private:
   int NB;
   Eigen::Matrix<double, -1, 1> LLB;
   std::vector<std::vector<int>> fq;
-  Eigen::Matrix<double, -1, 1> Catch;
+  Eigen::Matrix<double, -1, 1> prop_catch;
   std::vector<int> Fkg;
   std::vector<int> fSel;
   int NP;
@@ -925,25 +925,26 @@ public:
             pos__ = (pos__ + 1);}}
       }
       current_statement__ = 99;
-      validate_non_negative_index("Catch", "NF", NF);
+      validate_non_negative_index("prop_catch", "NF", NF);
       current_statement__ = 100;
-      context__.validate_dims("data initialization","Catch","double",
+      context__.validate_dims("data initialization","prop_catch","double",
           context__.to_vec(NF));
-      Catch = Eigen::Matrix<double, -1, 1>(NF);
-      stan::math::fill(Catch, std::numeric_limits<double>::quiet_NaN());
+      prop_catch = Eigen::Matrix<double, -1, 1>(NF);
+      stan::math::fill(prop_catch, std::numeric_limits<double>::quiet_NaN());
       
       {
-        std::vector<local_scalar_t__> Catch_flat__;
+        std::vector<local_scalar_t__> prop_catch_flat__;
         current_statement__ = 100;
-        assign(Catch_flat__, nil_index_list(), context__.vals_r("Catch"),
-          "assigning variable Catch_flat__");
+        assign(prop_catch_flat__, nil_index_list(),
+          context__.vals_r("prop_catch"),
+          "assigning variable prop_catch_flat__");
         current_statement__ = 100;
         pos__ = 1;
         current_statement__ = 100;
         for (int sym1__ = 1; sym1__ <= NF; ++sym1__) {
           current_statement__ = 100;
-          assign(Catch, cons_list(index_uni(sym1__), nil_index_list()),
-            Catch_flat__[(pos__ - 1)], "assigning variable Catch");
+          assign(prop_catch, cons_list(index_uni(sym1__), nil_index_list()),
+            prop_catch_flat__[(pos__ - 1)], "assigning variable prop_catch");
           current_statement__ = 100;
           pos__ = (pos__ + 1);}
       }
@@ -1334,11 +1335,12 @@ public:
           for (int gi = 1; gi <= NF; ++gi) {
             current_statement__ = 145;
             assign(olC, cons_list(index_uni(gi), nil_index_list()),
-              stan::math::log(Catch[(gi - 1)]), "assigning variable olC");}
+              stan::math::log(prop_catch[(gi - 1)]), "assigning variable olC");
+          }
           current_statement__ = 148;
           assign(olC, nil_index_list(),
             subtract(stan::model::deep_copy(olC),
-              stan::math::log(sum(Catch))), "assigning variable olC");
+              stan::math::log(sum(prop_catch))), "assigning variable olC");
         }
       }
       current_statement__ = 154;

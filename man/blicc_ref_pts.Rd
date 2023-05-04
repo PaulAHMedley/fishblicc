@@ -7,59 +7,58 @@
 blicc_ref_pts(slimf, blicc_ld, vdir = NA, a = NA, b = NA, L50 = NA, L95 = NA)
 }
 \arguments{
-\item{slimf}{An object from the \code{blicc_fit} or \code{blicc_mpd} function.}
+\item{slimf}{An object from the \code{\link[=blicc_fit]{blicc_fit()}} or \code{\link[=blicc_mpd]{blicc_mpd()}}
+functions.}
 
-\item{blicc_ld}{A standard data list suitable for the model
-(see function \code{blicc_dat()})}
+\item{blicc_ld}{A standard data list suitable for the model (see function
+\link{blicc_dat})}
 
-\item{vdir}{A search direction vector with maximum value 1 and
-minimum 0 applied to changes across gears.}
+\item{vdir}{A search direction vector with maximum value 1 and minimum
+0 applied to changes across gears.}
 
-\item{a}{The length-weight parameter: a*L^b. Not used in model fitting,
-but for plots etc. Optional.}
+\item{a}{The length-weight parameter: a*L^b. Not used in model fitting, but
+for plots etc. Optional.}
 
-\item{b}{The length-weight exponent (a*L^b, usually close
-to 3.0) Optional.}
+\item{b}{The length-weight exponent (a*L^b, usually close to 3.0) Optional.}
 
-\item{L50}{The length at 50\% maturity, often referred to as "first"
-maturity, and primarily applies to females. Must be less than Linf, usually
-around 0.66 Linf, which is assumed if it is not provided. Optional.}
+\item{L50}{The length at 50\% maturity, often referred to as "first" maturity,
+and primarily applies to females. Must be less than Linf, usually around
+0.66 Linf, which is assumed if it is not provided. Optional.}
 
 \item{L95}{The length at 95\% maturity. Must be greater than L50 and less
 than Linf. A small increment is added L50 if it is not provided. Optional.}
 }
 \value{
-A list of a tibble containing posterior draws or mpd point estimates
-of important parameters and per-recruit reference points, the search
-direction vector and the blicc_ld data object used.
+A list of posterior draws or mpd point estimates of important
+parameters and per-recruit reference points, the search direction vector
+and the blicc_ld data object used.
 }
 \description{
-The functions returns a list consisting of the search direction
-vector, a tibble of draws from the posterior MCMC stanfit (or the
-mpd estimate) including SPR 20\%, 30\% and 40\% reference points,
-expected number in each length bin and the data object used to
-generate these.  The tibble of draws is suitable for use in
-the \code{posterior} and \code{bayesplot} packages and can be used in various
-functions to show results. Note that the function can take a little time
-to run and may be moderately large, depending on the number of
+The function returns a list consisting of the search direction vector, a
+tibble of draws from the posterior MCMC stanfit (or the mpd estimate)
+including SPR 20\%, 30\% and 40\% reference points, expected number in each
+length bin and the data object used to generate these.  The tibble of draws
+is suitable for use in the posterior and bayesplot packages and can be used
+in various functions to show results. Note that the function can take a
+little time to run and may be moderately large, depending on the number of
 draws. Some reference points may not exist (indicated by \code{NA}).
 }
 \details{
-Reference points are found where possible for the parameter draw from the MCMC.
-The reference points are found along line representing the relative impact
-across gears. The default is to apply the same adjustments proportionately
-to every gear that has a fishing mortality, but alternative scenarios can be
-defined. For example, if there are two gears, and only the first will be
-adjusted, then the direction would be \code{vdir=c(1, 0)}.
-Where reference points do not exist an \code{NA} is returned. It is quite
-possible reference points do not exist in many cases due to the effects of
-selectivity. Strictly speaking, reference points may not exist within
-specific constraints on F and selectivity. Within more general bounds on F
-and selectivity, all reference "points" exist as lines or points. In these
-functions, reference points in relation to a control (Fk or Sm) are
-calculated based on the other being fixed at the current estimated value.
-To see how the fishery might respond when they are adjusted together,
-the yield or SPR surface must be plotted.
+Reference points are found where possible for the parameter draw
+from the MCMC. The reference points are found along line representing the
+relative impact across gears. The default is to apply the same adjustments
+proportionately to every gear that has a fishing mortality, but alternative
+scenarios can be defined. For example, for two gears the default is
+\code{vdir=c(1, 1)}. if there are two gears, and only the first will be adjusted,
+then the direction would be \code{vdir=c(1, 0)}. Where reference points do not
+exist an \code{NA} is returned. It is quite possible reference points do not exist
+in many cases due to the effects of selectivity. Strictly speaking, reference
+points may not exist within specific constraints on F and selectivity. Within
+more general bounds on F and selectivity, all reference "points" exist as
+lines or points. In these functions, reference points in relation to a
+control (Fk or Sm) are calculated based on the other being fixed at the
+current estimated value. To see how the fishery might respond when they are
+adjusted together, the yield or SPR surface must be plotted.
 }
 \examples{
 \dontrun{

@@ -7,9 +7,8 @@
 Rsel_dsnormal(Sp, LMP)
 }
 \arguments{
-\item{Sp}{Vector (length 3) of the selectivity parameters (mode,
-left  and right side 1/sigma^2) for the normal
-selectivity function}
+\item{Sp}{Vector (length 3) of the selectivity parameters (mode, left  and
+right side 1/sigma^2) for the normal selectivity function}
 
 \item{LMP}{A vector of lengths (usually mid-points for length bins)}
 }
@@ -18,12 +17,12 @@ selectivity function}
 }\if{html}{\out{</div>}}
 }
 \description{
-A double-sided normal takes two separate slope (1/sigma^2) parameters
-around the mode parameter (mu) that change the slope independently
-on either side of the mode. The selectivity varies from 0 to 1.0,
-with 1.0 being at the mode. It is calculated for each position defined
-in the length vector. Setting the second slope parameter to zero
-creates a flat-top selectivity (see \code{Rsel_ssnormal}).
+A double-sided normal takes two separate slope (1/sigma^2) parameters around
+the mode parameter (mu) that change the slope independently on either side of
+the mode. The selectivity varies from 0 to 1.0, with 1.0 being at the mode.
+It is calculated for each position defined in the length vector. Setting the
+second slope parameter to zero creates a flat-top selectivity (see
+\link{Rsel_ssnormal}).
 }
 \examples{
 Sel <- Rsel_dsnormal(Sp = c(35, 0.1, 0.2), LMP = seq(15.5, 55.5, by=1.0))

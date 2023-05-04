@@ -7,15 +7,15 @@
 plot_FkF40_density(blicc_rp)
 }
 \arguments{
-\item{blicc_rp}{A list of posterior draws, reference points with
-associated direction, the data object and expected lengths
-from \code{blicc_ref_pts} function.}
+\item{blicc_rp}{A list of posterior draws, reference points with associated
+direction, the data object and expected lengths from \link{blicc_ref_pts}
+function.}
 }
 \value{
 ggplot geom object for plotting
 }
 \description{
-Plot fishing mortality relative to the SPR 40\% reference point (Fk/F40)
+This plot requires the MCMC to have been run.
 }
 \examples{
 plot_FkF40_density(eg_rp)

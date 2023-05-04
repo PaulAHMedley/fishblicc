@@ -7,8 +7,8 @@
 Rsel_logistic(Sp, LMP)
 }
 \arguments{
-\item{Sp}{Vector (length 2) of the selectivity parameters (50\%,
-and slope) for the logistic selectivity function.}
+\item{Sp}{Vector (length 2) of the selectivity parameters (50\%, and slope)
+for the logistic selectivity function.}
 
 \item{LMP}{A vector of lengths (usually mid-points for length bins)}
 }

@@ -43,10 +43,10 @@ Calc_SPR <-
 #'
 #' @inheritParams blicc_get_expected
 #' @param  tarSPR target SPR reference point: usually 0.2, 0.3 or 0.4
-#' @param  vdir  A search direction vector with maximum value 1 and
-#' minimum 0 applied to changes across gears.
+#' @param  vdir  A search direction vector with maximum value 1 and minimum 0
+#'   applied to changes across gears.
 #' @return Spawning potential ratio per-recruit fishing mortalities consistent
-#' with parameters and reference point
+#'   with parameters and reference point
 #' @noRd
 #'
 FSPR_solve <-
@@ -99,8 +99,8 @@ FSPR_solve <-
 #'
 #' @inheritParams FSPR_solve
 #' @return The selectivity parameter vector with modes (full selectivity)
-#' adjusted to achieve the target SPR. NA indicates this target cannot
-#' be achieved.
+#'   adjusted to achieve the target SPR. NA indicates this target cannot be
+#'   achieved.
 #' @noRd
 #'
 SSPR_solve <-
@@ -262,9 +262,8 @@ SMY_solve <-
 #'
 #' @inheritParams FSPR_solve
 #' @param Gbeta  Rate parameter for the Gamma distribution growth variability
-#' (=Galpha/Linf)
-#' @param RSel   Vector of selectivity from function `Rsel_dsnormal()` or
-#' another source
+#'   (=Galpha/Linf)
+#' @param RSel   List of selectivities
 #' @return yield-per-recruit
 #' @noRd
 #'

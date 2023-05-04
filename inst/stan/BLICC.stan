@@ -142,7 +142,7 @@ data {
 
   vector[NB]              LLB;            // Bin lower bounds
   int                     fq[NG, NB];     // Frequency in each bin for each gear
-  vector[NF]              Catch;          // Estimated total relative catch in numbers of fish, excluding zeroes for surveys etc.
+  vector[NF]              prop_catch;     // Estimated total relative catch in numbers of fish, excluding zeroes for surveys etc.
   int<lower=0, upper=NG>  Fkg[NG];        // Index of the Fk associated with the gear gi. 0 implies catch negligible
   int<lower=1, upper=4>   fSel[NG];       // Selectivity function to use: 1 = logistic, 2 = normal, 3 = ss_normal, 4 = ds_normal
   int<lower=2>            NP;           // Number of selectivity parameters
@@ -186,9 +186,9 @@ transformed data {
       olC[1] = 0;
     } else {  // Identify gears contributing to catch
       for (gi in 1:NF) {
-        olC[gi] = log(Catch[gi]);
+        olC[gi] = log(prop_catch[gi]);
         }
-      olC -= log(sum(Catch));
+      olC -= log(sum(prop_catch));  //ensures catches proportional
     }
   }
   eps = 0.001/sum(NObs);

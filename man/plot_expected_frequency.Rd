@@ -7,9 +7,9 @@
 plot_expected_frequency(blicc_rp, Gear = NA)
 }
 \arguments{
-\item{blicc_rp}{A list of posterior draws, reference points with
-associated direction, the data object and expected lengths
-from \code{blicc_ref_pts} function.}
+\item{blicc_rp}{A list of posterior draws, reference points with associated
+direction, the data object and expected lengths from \link{blicc_ref_pts}
+function.}
 
 \item{Gear}{Specifies the gear to plot}
 }
@@ -17,12 +17,12 @@ from \code{blicc_ref_pts} function.}
 ggplot geom object plotting observed and expected frequency
 }
 \description{
-The graph shows the observed frequency and the expected frequency
-for the specified gears. The plots include the 80\% credible intervals
-for the estimate (if an MCMC is provided) and 80\% credible intervals
-for the observations. The latter takes into account the negative
-binomial observation error, so on average 8 out of ten observations
-would be expected within these bounds.
+The graph shows the observed frequency and the expected frequency for the
+specified gears. The plots include the 80\% credible intervals for the
+estimate (if an MCMC is provided) and 80\% credible intervals for the
+observations. The latter takes into account the negative binomial observation
+error, so on average 8 out of ten observations would be expected within these
+bounds.
 }
 \examples{
 plot_expected_frequency(eg_rp)

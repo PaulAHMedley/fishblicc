@@ -21,8 +21,8 @@ length bin}
 \item{Sm}{Vector of parameters for all the selectivity functions
 flat-topped selectivity}
 
-\item{blicc_ld}{A standard data list suitable for the model
-(see function \code{blicc_dat()})}
+\item{blicc_ld}{A standard data list suitable for the model (see function
+\link{blicc_dat})}
 }
 \value{
 A tibble of expected values for each length bin for each gear
@@ -37,7 +37,7 @@ values for selectivity, survival, relative population numbers,
 total mortality and expected length frequency for each length bin.
 Input parameters are point estimates (reals). The standard data list
 provides the model dimensions and is produced by the function
-blicc_dat().
+\code{\link[=blicc_dat]{blicc_dat()}}.
 }
 \examples{
 blicc_get_expected(Linf = 32, Galpha = 100, Mk = 1.5, Fk = 1.5,

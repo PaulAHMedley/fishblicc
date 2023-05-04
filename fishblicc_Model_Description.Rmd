@@ -20,16 +20,14 @@ library("tidyr")
 library("ggplot2")
 library("cowplot")
 library("ggExtra")  # Marginal histogram
+library("fishblicc")  # Marginal histogram
 theme_set(theme_cowplot())
 options(dplyr.summarise.inform=FALSE)
-system2("powershell", args=c("Set-Content", "-Path", paste0(here(),"\\.git"), "-Stream", "com.dropbox.ignored", "-Value", "1"))
-system2("powershell", args=c("Set-Content", "-Path", paste0(here(),"\\.Rproj.user"), "-Stream", "com.dropbox.ignored", "-Value", "1"))
-system2("powershell", args=c("Set-Content", "-Path", paste0(here(),"\\.gitignore"), "-Stream", "com.dropbox.ignored", "-Value", "1"))
 ```
 
 # Introduction
 
-It is not uncommon for fisheries to depend upon single samples of length frequency to provide scientific advice for management. These data are much easier to collect and less expensive than other information, and, it is hoped, they provide a snapshot of the fishery's impact on the stock without necessarily requiring a time series of observations. However, interpretation of these data is not always straightforward. fishblicc intends to provide a way to examine such data, including testing of assumptions, incorporating better assessments of uncertainty and determining suitability of these data for stock monitoring purposes.  
+It is not uncommon for fisheries to depend upon single samples of length frequency to provide scientific advice for management. These data are much easier to collect and less expensive than other information, and, it is hoped, they provide a snapshot of the fishery's impact on the stock without necessarily requiring a time series of observations which is much harder to obtain. However, interpretation of these data is not always straightforward. The fishblicc package intends to provide a way to examine such data, including testing of assumptions, incorporating better assessments of uncertainty and determining suitability of these data for stock monitoring purposes.  
 
 # Model Summary
 
@@ -38,17 +36,17 @@ The fishblicc model estimates the mortality across length intervals and therefor
 The model has the following assumptions:  
 1. The population has been in an approximate steady-state for a generation or more. The model does not account for changes over time directly.  
 2. Mean growth follows the von Bertalanffy growth curve, and the asymptotic size of individual fish is Gamma distributed, which governs growth variability.  
-3. Mortality is fixed within length intervals, but may vary between intervals. Intervals can be any width. Because mortality need only be fixed inside intervals, different selectivities among any number of fishing gears and other changes in mortality such as size related natural mortality can be accounted for relatively easily. A general parametric selectivity function is suggested (double-sided normal) that has been used to account for a wide range of selectivity that might be encountered.  
+3. Mortality is fixed within length intervals, but may vary between intervals and intervals can be any width. Because mortality need only be fixed inside intervals, different selectivities among any number of fishing gears and other changes in mortality such as size related natural mortality can be accounted for. A general parametric selectivity function is suggested (double-sided normal) that has been used to account for a wide range of selectivity that might be encountered.  
 
-One of the motivations for developing this model was to make it simple enough to fit the model to length frequency data using a Bayesian approach that accounts for uncertainties.  
+One of the motivations for developing this model was to make it simple enough to fit to length frequency data using a Bayesian approach that accounts for uncertainties.  
 
 # The Population Model  
 
-This section deals with the effect of length-based mortality (e.g. selectivity, length dependent natural mortality) on mortality on the length composition. The aim is to generalized the mortality function so that the effect of variable mortality on the length composition is accounted for. To generalize accounting for changing mortality with length due to selectivity, it is necessary to account for two processes: 1) change in mortality due to selectivity or other effects 2) deceleration of growth as fish get larger.  
+This section deals with the effect of length-based mortality (e.g. selectivity, length dependent natural mortality) on the length composition. The aim is to generalized the mortality function so that the effect of variable mortality on the length composition is accounted for. To generalize mortality-at-length, it is necessary to account for two processes: 1) the deceleration of growth as fish get larger and 2) change in mortality due to selectivity or other effects .  
 
 ## Growth Model
 
-In common with most length-based modelling, growth is assumed to be well approximated by the von Bertalanffy growth function:
+In common with most length-based modelling, mean growth is assumed to be well approximated by the von Bertalanffy growth function:
 
 $$
  L_t  = L_\infty \left ( 1 - {\large e}^{-k (t -t_0)} \right ) 
@@ -126,7 +124,7 @@ ggplot(df2, aes(x=Time, y=Length, group=id)) +
   geom_line(data=df1, aes(x=Time, y=Length))
 ```
 
-For ease of reference, the subscript $k$ is dropped for the mortality parameter, but note that time is effectively measured in units of the growth rate parameter $k$.  
+For ease of reference, the subscript $k$ is dropped for the mortality parameter, but note that time is effectively measured in units of the von Bertalanffy growth rate parameter $k$.  
 
 If the mortality can be defined for sequential length intervals each with a fixed mortality, the survival for particular fish starting at length $L_0$ to length $L_n$ can be defined as the product of surviving each interval between:  
 
@@ -241,7 +239,7 @@ sel_dsnormal <- function(theta) {
 
 I_x_a0 <- function(x, theta, n) {
   # vectorised integral function based on x, to be integrated 0 - Inf 
-  # with exp(-x) removed for Laguerre quadrature
+  # with exp(-x) removed for the Gauss Laguerre quadrature
   Ln <- theta$Len[n]
   x_beta <- x/theta$beta
   v3 <- with(theta, beta*Ln + lgamma(alpha))
@@ -318,7 +316,7 @@ ggplot(res, aes(x=Li, y=ca, fill=Fk)) +
   labs(y="Catch", x="Length")
 ```
 
-As show above, firstly, the general effect of mortality is to change the abundance of large, animals in the population and in the catch.  Generally, when natural mortality is less than the growth rate, ($M_k < 1.0$), it is possible to have a mode around the asymptotic mean length ($L_\infty$). For most fish populations this is unlikely where $M_k$ is usually expected to be around 1.5 (Kenchington 2014).  
+As shown above, firstly, the general effect of mortality is to change the abundance of large, animals in the population and in the catch.  Generally, when natural mortality is less than the growth rate, ($M_k < 1.0$), it is possible to have a mode around the asymptotic mean length ($L_\infty$). For most fish populations this is unlikely where $M_k$ is usually expected to be around 1.5 (Kenchington 2014).  
 
 Dome-shaped selectivity allows fish to escape mortality as they grow. This not only affects the population length composition, and also the abundance in the catches. While the abundance of larger fish may increase in the population, the selectivity may still prevent them appearing in the catch.  
 
@@ -398,7 +396,7 @@ ggplot(res, aes(x=Li, y=ca, fill=Steep)) +
 
 # Appendix: Practical Implementation of the Length Integral  
 
-There is no analytical solution to the integration above, so an efficient numerical integration method will be needed to calculate survival. Gauss-Laguerre quadrature provides a fast, accurate and stable way to calculate the integral. To make the integral consistent with Gauss-Laguerre quadrature, the lower bound for the integral needs to be adjusted to 0 by a change of variable:   
+There is no analytical solution to the integration over $L_\infty$, so an efficient numerical integration method will be needed to calculate survival. Gauss-Laguerre quadrature provides a fast, accurate and stable way to calculate the integral. To make the integral consistent with Gauss-Laguerre quadrature, the lower bound for the integral needs to be adjusted to 0 by a change of variable:   
 
 $$
 \begin{align}
@@ -431,8 +429,9 @@ I(L_0, L_n | \alpha, \beta) \ & =
 \end{align}  
 $$  
 
-The function is calculated at each Gauss-Laguerre node for $x$, and the weighted sum provides an estimate of the integral. Tests of the Gauss-Laguerre integral found 110 nodes provided stable results across the whole range of parameters that would be apply in this model, but fewer nodes may be adequate dependent on the desired accuracy. Fewer nodes reduces the calculation cost proportionately.  
+The function is calculated at each Gauss-Laguerre node for $x$, and the weighted sum provides an estimate of the integral. Tests of the Gauss-Laguerre integral found 110 nodes provided stable results across the whole range of parameters that would be apply in this model, but fewer nodes may be adequate dependent on the desired accuracy. Fewer nodes reduces the function calculation cost proportionately.  
 
 # References
 
 Kenchington, T.J. 2014. Natural mortality estimators for information-limited fisheries. Fish and Fisheries, 15, 533–562  
+Lorenzen, K. 2022. Size- and age-dependent natural mortality in fish populations: Biology, models, implications, and a generalized length-inverse mortality paradigm. Fisheries Research 255: 106454 https://doi.org/10.1016/j.fishres.2022.106454

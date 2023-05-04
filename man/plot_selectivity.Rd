@@ -2,20 +2,22 @@
 % Please edit documentation in R/BLICC_Plots.R
 \name{plot_selectivity}
 \alias{plot_selectivity}
-\title{Plot selectivity and 50\% and 80\% credible intervals by length}
+\title{Plot selectivity and 80\% credible interval, if available, by
+length.}
 \usage{
 plot_selectivity(blicc_rp)
 }
 \arguments{
-\item{blicc_rp}{A list of posterior draws, reference points with
-associated direction, the data object and expected lengths
-from \code{blicc_ref_pts} function.}
+\item{blicc_rp}{A list of posterior draws, reference points with associated
+direction, the data object and expected lengths from \link{blicc_ref_pts}
+function.}
 }
 \value{
 ggplot geom object for plotting
 }
 \description{
-Plot selectivity and 50\% and 80\% credible intervals by length
+Plot selectivity and 80\% credible interval, if available, by
+length.
 }
 \examples{
 plot_selectivity(eg_rp)
