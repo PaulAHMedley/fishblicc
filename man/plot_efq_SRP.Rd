@@ -7,9 +7,9 @@
 plot_efq_SRP(blicc_rp, Gear = NA)
 }
 \arguments{
-\item{blicc_rp}{A list of posterior draws, reference points with
-associated direction, the data object and expected lengths
-from \code{blicc_ref_pts} function.}
+\item{blicc_rp}{A list of posterior draws, reference points with associated
+direction, the data object and expected lengths from \link{blicc_ref_pts}
+function.}
 
 \item{Gear}{Specifies the gear to plot}
 }
@@ -18,13 +18,14 @@ ggplot geom object plotting expected length frequencies by
 selectivity
 }
 \description{
-The facet plot covers the current estimated selectivity mode (Smx), together
-with selectivity changes required to obtain SPR 20\%, SPR 40\% and the maximum
-yield. The graphs show the expected values and 80\% credible intervals
+The facet plot covers the current estimated selectivity location parameters,
+together with selectivity changes required to obtain SPR 20\%, SPR 40\% and the
+maximum yield. The graphs show the expected values and 80\% credible intervals
 compared to current observations, and can be used to assess whether length
 frequencies should be able to detect changes in selectivity to these
 different levels. Note that if reference points do not exist, they are not
-plotted, so some graphs may be blank except for data.
+plotted, so some graphs may be blank except for data.  The graphs show the
+number of MCMC draws for which the reference points exist in each case.
 }
 \examples{
 plot_efq_SRP(eg_rp)

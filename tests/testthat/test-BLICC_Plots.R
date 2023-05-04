@@ -1,5 +1,3 @@
-library("ggplot2")
-library("testthat")
 
 # The following carries out basic checks that plot routines run and produce
 # the expected output. If they do not, it might imply something wrong
@@ -82,48 +80,48 @@ test_that("Plot mcmc FkF40 density exists",{
 
 test_that("Plot mpd expected frequencies for F reference points exists",{
   p <- plot_efq_FRP(mpd_rp)
-  expect_true(is.ggplot(p))
+  expect_true(ggplot2::is.ggplot(p))
 })
 
 test_that("Plot mcmc expected frequencies for F reference points exists",{
   p <- plot_efq_FRP(eg_rp)
-  expect_true(is.ggplot(p))
+  expect_true(ggplot2::is.ggplot(p))
 })
 
 # plot_efq_SRP
 
 test_that("Plot mpd expected frequencies for selectivity reference points exists",{
   p <- plot_efq_SRP(mpd_rp)
-  expect_true(is.ggplot(p))
+  expect_true(ggplot2::is.ggplot(p))
 })
 
 test_that("Plot mcmc expected frequencies for selectivity reference points exists",{
   p <- plot_efq_SRP(eg_rp)
-  expect_true(is.ggplot(p))
+  expect_true(ggplot2::is.ggplot(p))
 })
 
 # plot_SPR_contour
 
 test_that("Plot mpd SPR contour plot exists",{
   p <- plot_SPR_contour(mpd_rp)
-  expect_true(is.ggplot(p))
+  expect_true(ggplot2::is.ggplot(p))
 })
 
 test_that("Plot mcmc SPR contour plot exists",{
   p <- plot_SPR_contour(eg_rp)
-  expect_true(is.ggplot(p))
+  expect_true(ggplot2::is.ggplot(p))
 })
 
 # plot_YPR_contour
 
 test_that("Plot mpd YPR contour plot exists",{
   p <- plot_YPR_contour(mpd_rp)
-  expect_true(is.ggplot(p))
+  expect_true(ggplot2::is.ggplot(p))
 })
 
 
 test_that("Plot mcmc YPR contour plot exists",{
   p <- plot_YPR_contour(eg_rp)
-  expect_true(is.ggplot(p))
+  expect_true(ggplot2::is.ggplot(p))
 })
 

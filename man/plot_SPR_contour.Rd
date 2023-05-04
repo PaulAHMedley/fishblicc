@@ -7,20 +7,21 @@
 plot_SPR_contour(blicc_rp)
 }
 \arguments{
-\item{blicc_rp}{A list of posterior draws, reference points with
-associated direction, the data object and expected lengths
-from \code{blicc_ref_pts} function.}
+\item{blicc_rp}{A list of posterior draws, reference points with associated
+direction, the data object and expected lengths from \link{blicc_ref_pts}
+function.}
 }
 \value{
 ggplot geom object for plotting
 }
 \description{
 The plot shows the SPR surface plotted against the fishing mortality (Fk) and
-the full selectivity (Smx). The current state of the stock is marked as a
-point and the SPR 40\% reference point is marked as a line.
-All values are calculated as means and uncertainty is not represented to
-maintain simplicity. The reference line is plotted if it exists within a
-reasonable range of the current estimated status.
+the 50\% or maximum selectivity, dependent on the selectivity function. The
+current state of the stock is marked as a point and the SPR 40\% reference
+point is marked as a line. All values are calculated as means and uncertainty
+is not represented to maintain simplicity. The reference line is plotted if
+it exists within a reasonable range of the current estimated status. For
+multiple gears, the surface is calculated for a single reference gear.
 }
 \examples{
 plot_SPR_contour(eg_rp)

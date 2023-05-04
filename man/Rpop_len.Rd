@@ -2,7 +2,7 @@
 % Please edit documentation in R/BLICC_Model.R
 \name{Rpop_len}
 \alias{Rpop_len}
-\title{Calculate the survival of a fish cohort to sequential length boundaries}
+\title{Calculate the population size within length bins}
 \usage{
 Rpop_len(node, wt, Len, Zki, Galpha, Gbeta)
 }
@@ -14,30 +14,31 @@ Rpop_len(node, wt, Len, Zki, Galpha, Gbeta)
 \item{Len}{Vector of lower-bounds for length intervals}
 
 \item{Zki}{Vector of total mortality (in time units of growth rate
-parameter K) to be applied in each length interval.
-This vector should be the same length as Len.}
+parameter K) to be applied in each length interval. This vector should be
+the same length as Len}
 
-\item{Galpha}{Alpha parameter for the Gamma probability density function
-that governs growth variability.}
+\item{Galpha}{Alpha parameter for the Gamma probability density function that
+governs growth variability.}
 
 \item{Gbeta}{Rate parameter for the Gamma distribution growth variability
 (=Galpha/Linf)}
 }
 \value{
-A vector of proportion surviving to each length bin lower bound.
+A vector of population size in each length bin
 }
 \description{
 The model integrates over growth rate variability and sums mortality
-piece-wise over intervening length intervals to derive the
-relative population number in each length bin taking into account
-variation in growth and varying mortality-at-length. This is
-analogous to an age based catch curve model, but for length.
-The model uses the Gauss-Laguerre quadrature rule for integration,
-so nodes and weights for this must be provided.
+piece-wise over intervening length intervals to derive the relative
+population number in each length bin taking into account variation in growth
+and varying mortality-at-length. This is analogous to an age based catch
+curve model, but for length. The model uses the Gauss-Laguerre quadrature
+rule for integration, so nodes and weights for this must be provided. This
+function is the same as \link{Rpop_F}, but does not return fishing mortality.
 }
 \examples{
 glq <- statmod::gauss.quad(90, kind = "laguerre", alpha = 0.0)
 S <- Rpop_len(glq$nodes, glq$weights, Len=15:55,
               Zki=c(rep(1.5, 10), rep(3, 31)), 100, 100/50)
 plot(y=S, x=15:55, type="l")
+
 }

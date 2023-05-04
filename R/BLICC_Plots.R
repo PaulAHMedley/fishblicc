@@ -4,17 +4,17 @@
 # ><> <>< ><> <>< ><> <>< ><> <>< ><> <>< ><> <>< ><> <><
 #' Plot the observed and expected frequency data
 #'
-#' The graph shows the observed frequency and the expected frequency
-#' for the specified gears. The plots include the 80% credible intervals
-#' for the estimate (if an MCMC is provided) and 80% credible intervals
-#' for the observations. The latter takes into account the negative
-#' binomial observation error, so on average 8 out of ten observations
-#' would be expected within these bounds.
+#' The graph shows the observed frequency and the expected frequency for the
+#' specified gears. The plots include the 80% credible intervals for the
+#' estimate (if an MCMC is provided) and 80% credible intervals for the
+#' observations. The latter takes into account the negative binomial observation
+#' error, so on average 8 out of ten observations would be expected within these
+#' bounds.
 #'
 #' @export
-#' @param blicc_rp  A list of posterior draws, reference points with
-#' associated direction, the data object and expected lengths
-#' from `blicc_ref_pts` function.
+#' @param blicc_rp  A list of posterior draws, reference points with associated
+#'   direction, the data object and expected lengths from [blicc_ref_pts]
+#'   function.
 #' @param Gear Specifies the gear to plot
 #' @return ggplot geom object plotting observed and expected frequency
 #' @examples
@@ -157,7 +157,8 @@ plot_residuals <- function(blicc_rp) {
 }
 
 
-#' Plot selectivity and 50% and 80% credible intervals by length
+#' Plot selectivity and 80% credible interval, if available, by
+#' length.
 #'
 #' @export
 #' @inheritParams plot_expected_frequency
@@ -195,7 +196,9 @@ plot_selectivity <- function(blicc_rp) {
 }
 
 
-#' Plot of the estimated spawning potential ratio probability density
+#' Plot the estimated spawning potential ratio probability density, if available.
+#'
+#' This plot requires the MCMC to have been run.
 #'
 #' @export
 #' @inheritParams plot_expected_frequency
@@ -224,6 +227,8 @@ plot_SPR_density <- function(blicc_rp) {
 
 
 #' Plot fishing mortality relative to the SPR 40% reference point (Fk/F40)
+#'
+#' This plot requires the MCMC to have been run.
 #'
 #' @export
 #' @inheritParams plot_expected_frequency
@@ -317,16 +322,17 @@ plot_FkF40_density <- function(blicc_rp) {
 }
 
 
-#' Plot expected length frequencies for a range of fishing mortality
-#' reference points
+#' Plot expected length frequencies for a range of fishing mortality reference
+#' points
 #'
 #' The facet plot covers the current estimated fishing mortality, together with
 #' fishing mortalities required to obtain SPR 20%, SPR 30% and SPR 40%. The
 #' graphs show the expected values and 80% credible intervals compared to
 #' current observations, and can be used to assess whether length frequencies
 #' should be able to detect changes in fishing mortality to these different
-#' levels. Note that if reference points do not exist, they are not
-#' plotted, so some graphs may be blank except for data.
+#' levels. Note that if reference points do not exist, they are not plotted, so
+#' some graphs may be blank except for the data. The graphs show the number of
+#' MCMC draws for which the reference points exist in each case.
 #'
 #' @export
 #' @inheritParams plot_expected_frequency
@@ -453,18 +459,19 @@ plot_efq_FRP <- function(blicc_rp, Gear = NA) {
 
 #' Plot expected length frequencies for a range of selectivity reference points
 #'
-#' The facet plot covers the current estimated selectivity mode (Smx), together
-#' with selectivity changes required to obtain SPR 20%, SPR 40% and the maximum
-#' yield. The graphs show the expected values and 80% credible intervals
+#' The facet plot covers the current estimated selectivity location parameters,
+#' together with selectivity changes required to obtain SPR 20%, SPR 40% and the
+#' maximum yield. The graphs show the expected values and 80% credible intervals
 #' compared to current observations, and can be used to assess whether length
 #' frequencies should be able to detect changes in selectivity to these
 #' different levels. Note that if reference points do not exist, they are not
-#' plotted, so some graphs may be blank except for data.
+#' plotted, so some graphs may be blank except for data.  The graphs show the
+#' number of MCMC draws for which the reference points exist in each case.
 #'
 #' @export
 #' @inheritParams plot_expected_frequency
 #' @return ggplot geom object plotting expected length frequencies by
-#' selectivity
+#'   selectivity
 #' @examples
 #' plot_efq_SRP(eg_rp)
 #'
@@ -589,11 +596,12 @@ plot_efq_SRP <- function(blicc_rp, Gear = NA) {
 #' Spawning potential ratio surface contour plot
 #'
 #' The plot shows the SPR surface plotted against the fishing mortality (Fk) and
-#' the full selectivity (Smx). The current state of the stock is marked as a
-#' point and the SPR 40% reference point is marked as a line.
-#' All values are calculated as means and uncertainty is not represented to
-#' maintain simplicity. The reference line is plotted if it exists within a
-#' reasonable range of the current estimated status.
+#' the 50% or maximum selectivity, dependent on the selectivity function. The
+#' current state of the stock is marked as a point and the SPR 40% reference
+#' point is marked as a line. All values are calculated as means and uncertainty
+#' is not represented to maintain simplicity. The reference line is plotted if
+#' it exists within a reasonable range of the current estimated status. For
+#' multiple gears, the surface is calculated for a single reference gear.
 #'
 #' @export
 #' @inheritParams plot_expected_frequency
@@ -730,11 +738,12 @@ plot_SPR_contour <- function(blicc_rp) {
 #' Yield-per-recruit surface contour plot
 #'
 #' The plot shows the YPR surface plotted against the fishing mortality (Fk) and
-#' the full selectivity (Smx). The current state of the stock is marked as a
-#' point and the F0.1 reference point is marked as a line. All values are
-#' calculated as means and uncertainty is not represented to maintain
-#' simplicity. The reference line is plotted if it exists within a
-#' reasonable range of the current estimated status.
+#' the 50% or maximum selectivity, dependent on the selectivity function. The
+#' current state of the stock is marked as a point and the F0.1 reference point
+#' is marked as a line. All values are calculated as means and uncertainty is
+#' not represented to maintain simplicity. The reference line is plotted if it
+#' exists within a reasonable range of the current estimated status. For
+#' multiple gears, the surface is calculated for a single reference gear.
 #'
 #' @export
 #' @inheritParams plot_expected_frequency

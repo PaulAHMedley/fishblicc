@@ -2,13 +2,14 @@
 % Please edit documentation in R/BLICC_Model.R
 \name{Rpop_F}
 \alias{Rpop_F}
-\title{Calculate the survival of a fish cohort to sequential length boundaries}
+\title{Calculate the population size and fishing mortality applied within length
+bins}
 \usage{
 Rpop_F(Galpha, Gbeta, Mk, Fk, FSel, blicc_ld)
 }
 \arguments{
-\item{Galpha}{Alpha parameter for the Gamma probability density function
-that governs growth variability.}
+\item{Galpha}{Alpha parameter for the Gamma probability density function that
+governs growth variability.}
 
 \item{Gbeta}{Rate parameter for the Gamma distribution growth variability
 (=Galpha/Linf)}
@@ -20,8 +21,8 @@ making a contribution}
 
 \item{FSel}{A list of all the selectivities for each length bin}
 
-\item{blicc_ld}{A standard data list suitable for the model
-(see function \code{blicc_dat()})}
+\item{blicc_ld}{A standard data list suitable for the model (see function
+\link{blicc_dat})}
 }
 \value{
 A list of the population size in each length bin and a list of
@@ -29,13 +30,13 @@ fishing mortalities at length for each gear.
 }
 \description{
 The model integrates over growth rate variability and sums mortality
-piece-wise over intervening length intervals to derive the
-survival to each length bin boundary taking into account variation in growth
+piece-wise over intervening length intervals to derive the relative
+population number in each length bin taking into account variation in growth
 and varying mortality-at-length. This is analogous to an age based catch
-curve model, but for length. Survival can be used to estimate population
-numbers-at-length and catch length frequency, among other things.
-The model uses the Gauss-Laguerre quadrature rule for integration,
-so nodes and weights for this must be provided.
+curve model, but for length. The model uses the Gauss-Laguerre quadrature
+rule for integration, so nodes and weights for this must be provided. The
+function returns the expected population size in each length bin, and the
+fishing mortalities.
 }
 \examples{
 Sel <- Rselectivities(exp(eg_ld$polSm), eg_ld)

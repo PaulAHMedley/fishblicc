@@ -7,8 +7,8 @@
 Rsel_normal(Sp, LMP)
 }
 \arguments{
-\item{Sp}{Vector (length 2) of the selectivity parameters (mode,
-and 1/sigma^2) for the normal selectivity function.}
+\item{Sp}{Vector (length 2) of the selectivity parameters (mode, and
+1/sigma^2) for the normal selectivity function.}
 
 \item{LMP}{A vector of lengths (usually mid-points for length bins)}
 }
@@ -17,10 +17,10 @@ and 1/sigma^2) for the normal selectivity function.}
 }\if{html}{\out{</div>}}
 }
 \description{
-A normal takes one slope (1/sigma^2) parameter for the
-both sides of the mode parameter (mu). The resulting selectivity varies
-from 0 to 1.0, with 1.0 being the mode. It is calculated for each position
-defined in the length vector.
+A normal takes one slope (1/sigma^2) parameter for the both sides of the mode
+parameter (mu). The resulting selectivity varies from 0 to 1.0, with 1.0
+being the mode. It is calculated for each position defined in the length
+vector.
 }
 \examples{
 Sel <- Rsel_normal(Sp = c(35, 0.2), LMP = seq(15.5, 55.5, by=1.0))

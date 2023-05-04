@@ -2,20 +2,20 @@
 % Please edit documentation in R/BLICC_Plots.R
 \name{plot_SPR_density}
 \alias{plot_SPR_density}
-\title{Plot of the estimated spawning potential ratio probability density}
+\title{Plot the estimated spawning potential ratio probability density, if available.}
 \usage{
 plot_SPR_density(blicc_rp)
 }
 \arguments{
-\item{blicc_rp}{A list of posterior draws, reference points with
-associated direction, the data object and expected lengths
-from \code{blicc_ref_pts} function.}
+\item{blicc_rp}{A list of posterior draws, reference points with associated
+direction, the data object and expected lengths from \link{blicc_ref_pts}
+function.}
 }
 \value{
 ggplot geom object for plotting
 }
 \description{
-Plot of the estimated spawning potential ratio probability density
+This plot requires the MCMC to have been run.
 }
 \examples{
 plot_SPR_density(eg_rp)

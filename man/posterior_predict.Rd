@@ -7,12 +7,12 @@
 posterior_predict(blicc_rp, Gear = NA, draws = 0)
 }
 \arguments{
-\item{blicc_rp}{List of fishblicc result tables from \code{blicc_ref_pts()}}
+\item{blicc_rp}{List of fishblicc result tables from \code{\link[=blicc_ref_pts]{blicc_ref_pts()}}}
 
 \item{Gear}{Identifies the single gear (selectivity) providing predictions}
 
-\item{draws}{The number of random draws up to the number of
-draws from the MCMC (the default).}
+\item{draws}{The number of random draws up to the number of draws from the
+MCMC (the default).}
 }
 \value{
 A matrix with rows equal to gears*draws and columns to length

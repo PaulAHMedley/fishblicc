@@ -34,8 +34,8 @@ Rsel_functions <- function() {
 
 #' Parse the selectivity function, converting to an integer if necessary
 #'
-#' The selectivity function parameter is converted to an integer index of the function, or `NA`
-#' is returned with an error message.
+#' The selectivity function parameter is converted to an integer index of the
+#' function, or `NA` is returned with an error message.
 #'
 #' @inheritParams blicc_mpd
 #' @param sel_fun  A number or string representing a valid available function
@@ -115,6 +115,7 @@ parse_gear <- function(Gear, blicc_ld) {
 
 
 # Model 1
+
 #' Calculate a logistic selectivity curve for a length vector
 #'
 #' A logistic takes a 50% selectivity and a slope parameter. The resulting
@@ -122,8 +123,8 @@ parse_gear <- function(Gear, blicc_ld) {
 #' calculated for each position defined in the length vector.
 #'
 #' @export
-#' @param  Sp   Vector (length 2) of the selectivity parameters (50%,
-#'              and slope) for the logistic selectivity function.
+#' @param  Sp   Vector (length 2) of the selectivity parameters (50%, and slope)
+#'   for the logistic selectivity function.
 #' @param  LMP  A vector of lengths (usually mid-points for length bins)
 #' @return      A vector of selectivity values varying from 0.0 to 1.0
 #' @examples
@@ -138,17 +139,18 @@ Rsel_logistic <- function(Sp, LMP) {
 }
 
 # Model 2
+
 #' Calculate a normal selectivity curve for a length vector
 #'
-#' A normal takes one slope (1/sigma^2) parameter for the
-#' both sides of the mode parameter (mu). The resulting selectivity varies
-#' from 0 to 1.0, with 1.0 being the mode. It is calculated for each position
-#' defined in the length vector.
+#' A normal takes one slope (1/sigma^2) parameter for the both sides of the mode
+#' parameter (mu). The resulting selectivity varies from 0 to 1.0, with 1.0
+#' being the mode. It is calculated for each position defined in the length
+#' vector.
 #'
 #' @export
 #' @inheritParams Rsel_logistic
-#' @param  Sp   Vector (length 2) of the selectivity parameters (mode,
-#'              and 1/sigma^2) for the normal selectivity function.
+#' @param  Sp   Vector (length 2) of the selectivity parameters (mode, and
+#'   1/sigma^2) for the normal selectivity function.
 #' @return      A vector of selectivity values varying from 0.0 to 1.0
 #' @examples
 #' Sel <- Rsel_normal(Sp = c(35, 0.2), LMP = seq(15.5, 55.5, by=1.0))
@@ -162,18 +164,18 @@ Rsel_normal <- function(Sp, LMP) {
 }
 
 # Model 3
+
 #' Calculate a single-sided normal selectivity curve for a length vector
 #'
-#' A single-sided normal takes one slope (1/sigma^2) parameter for the
-#' left side of the mode parameter (mu). For the right side the slope is assumed
-#' to be zero. The resulting selectivity varies from 0 to 1.0,
-#' with 1.0 being the asymptote. It is calculated for each position defined
-#' in the length vector.
+#' A single-sided normal takes one slope (1/sigma^2) parameter for the left side
+#' of the mode parameter (mu). For the right side the slope is assumed to be
+#' zero. The resulting selectivity varies from 0 to 1.0, with 1.0 being the
+#' asymptote. It is calculated for each position defined in the length vector.
 #'
 #' @export
 #' @inheritParams Rsel_logistic
-#' @param  Sp   Vector (length 2) of the selectivity parameters (mode,
-#'              and left side 1/sigma^2) for the normal selectivity function.
+#' @param  Sp   Vector (length 2) of the selectivity parameters (mode, and left
+#'   side 1/sigma^2) for the normal selectivity function.
 #' @return      A vector of selectivity values varying from 0.0 to 1.0
 #' @examples
 #' Sel <- Rsel_ssnormal(Sp = c(35, 0.2), LMP = seq(15.5, 55.5, by=1.0))
@@ -188,20 +190,20 @@ Rsel_ssnormal <- function(Sp, LMP) {
 }
 
 # Model 4
+
 #' Calculate a double-sided normal selectivity curve for a length vector
 #'
-#' A double-sided normal takes two separate slope (1/sigma^2) parameters
-#' around the mode parameter (mu) that change the slope independently
-#' on either side of the mode. The selectivity varies from 0 to 1.0,
-#' with 1.0 being at the mode. It is calculated for each position defined
-#' in the length vector. Setting the second slope parameter to zero
-#' creates a flat-top selectivity (see `Rsel_ssnormal`).
+#' A double-sided normal takes two separate slope (1/sigma^2) parameters around
+#' the mode parameter (mu) that change the slope independently on either side of
+#' the mode. The selectivity varies from 0 to 1.0, with 1.0 being at the mode.
+#' It is calculated for each position defined in the length vector. Setting the
+#' second slope parameter to zero creates a flat-top selectivity (see
+#' [Rsel_ssnormal]).
 #'
 #' @export
 #' @inheritParams Rsel_logistic
-#' @param  Sp   Vector (length 3) of the selectivity parameters (mode,
-#'              left  and right side 1/sigma^2) for the normal
-#'              selectivity function
+#' @param  Sp   Vector (length 3) of the selectivity parameters (mode, left  and
+#'   right side 1/sigma^2) for the normal selectivity function
 #' @return      A vector of selectivity values varying from 0.0 to 1.0
 #' @examples
 #' Sel <- Rsel_dsnormal(Sp = c(35, 0.1, 0.2), LMP = seq(15.5, 55.5, by=1.0))
@@ -217,29 +219,30 @@ Rsel_dsnormal <- function(Sp, LMP) {
 }
 
 
-#' Calculate the survival of a fish cohort to sequential length boundaries
+#' Calculate the population size and fishing mortality applied within length
+#' bins
 #'
 #' The model integrates over growth rate variability and sums mortality
-#' piece-wise over intervening length intervals to derive the
-#' survival to each length bin boundary taking into account variation in growth
+#' piece-wise over intervening length intervals to derive the relative
+#' population number in each length bin taking into account variation in growth
 #' and varying mortality-at-length. This is analogous to an age based catch
-#' curve model, but for length. Survival can be used to estimate population
-#' numbers-at-length and catch length frequency, among other things.
-#' The model uses the Gauss-Laguerre quadrature rule for integration,
-#' so nodes and weights for this must be provided.
+#' curve model, but for length. The model uses the Gauss-Laguerre quadrature
+#' rule for integration, so nodes and weights for this must be provided. The
+#' function returns the expected population size in each length bin, and the
+#' fishing mortalities.
 #'
 #' @export
 #' @inheritParams blicc_mpd
-#' @param Galpha Alpha parameter for the Gamma probability density function
-#' that governs growth variability.
+#' @param Galpha Alpha parameter for the Gamma probability density function that
+#'   governs growth variability.
 #' @param Gbeta  Rate parameter for the Gamma distribution growth variability
-#' (=Galpha/Linf)
+#'   (=Galpha/Linf)
 #' @param Mk     Natural mortality divided by the growth rate K
 #' @param Fk     Fishing mortality divided by the growth rate K for each gear
-#' making a contribution
+#'   making a contribution
 #' @param FSel    A list of all the selectivities for each length bin
 #' @return A list of the population size in each length bin and a list of
-#' fishing mortalities at length for each gear.
+#'   fishing mortalities at length for each gear.
 #' @examples
 #' Sel <- Rselectivities(exp(eg_ld$polSm), eg_ld)
 #' S <- Rpop_F(100, 100/50, Mk=1.5, Fk=exp(eg_ld$polFkm),
@@ -262,15 +265,15 @@ Rpop_F <- function(Galpha, Gbeta, Mk, Fk, FSel, blicc_ld) {
 }
 
 
-#' Calculate the survival of a fish cohort to sequential length boundaries
+#' Calculate the population size within length bins
 #'
 #' The model integrates over growth rate variability and sums mortality
-#' piece-wise over intervening length intervals to derive the
-#' relative population number in each length bin taking into account
-#' variation in growth and varying mortality-at-length. This is
-#' analogous to an age based catch curve model, but for length.
-#' The model uses the Gauss-Laguerre quadrature rule for integration,
-#' so nodes and weights for this must be provided.
+#' piece-wise over intervening length intervals to derive the relative
+#' population number in each length bin taking into account variation in growth
+#' and varying mortality-at-length. This is analogous to an age based catch
+#' curve model, but for length. The model uses the Gauss-Laguerre quadrature
+#' rule for integration, so nodes and weights for this must be provided. This
+#' function is the same as [Rpop_F], but does not return fishing mortality.
 #'
 #' @export
 #' @inheritParams Rpop_F
@@ -278,14 +281,15 @@ Rpop_F <- function(Galpha, Gbeta, Mk, Fk, FSel, blicc_ld) {
 #' @param  wt     Weights for the Gauss-Laguerre quadrature rule
 #' @param  Len    Vector of lower-bounds for length intervals
 #' @param  Zki    Vector of total mortality (in time units of growth rate
-#' parameter K) to be applied in each length interval.
-#' This vector should be the same length as Len.
-#' @return A vector of proportion surviving to each length bin lower bound.
+#'   parameter K) to be applied in each length interval. This vector should be
+#'   the same length as Len
+#' @return A vector of population size in each length bin
 #' @examples
 #' glq <- statmod::gauss.quad(90, kind = "laguerre", alpha = 0.0)
 #' S <- Rpop_len(glq$nodes, glq$weights, Len=15:55,
 #'               Zki=c(rep(1.5, 10), rep(3, 31)), 100, 100/50)
 #' plot(y=S, x=15:55, type="l")
+#'
 Rpop_len <- function(node, wt, Len, Zki, Galpha, Gbeta)  {
   zsum <- function(x, Lr, Z) {
     # used to apply sequenced sum of mortality
@@ -330,22 +334,15 @@ Rpop_len <- function(node, wt, Len, Zki, Galpha, Gbeta)  {
 }
 
 
-#' Calculate the survival of a fish cohort to sequential length boundaries
+#' Calculate the selectivities for each length bin for each gear
 #'
-#' The model integrates over growth rate variability and sums mortality
-#' piece-wise over intervening length intervals to derive the
-#' survival to each length bin boundary taking into account variation in growth
-#' and varying mortality-at-length. This is analogous to an age based catch
-#' curve model, but for length. Survival can be used to estimate population
-#' numbers-at-length and catch length frequency, among other things.
-#' The model uses the Gauss-Laguerre quadrature rule for integration,
-#' so nodes and weights for this must be provided.
+#' The function calculates the selectivities for each gear based on the relevant
+#' selectivity functions and their parameters.
 #'
 #' @export
 #' @inheritParams blicc_mpd
-#' @param Sm  Vector of selectivity parameters for all the
-#' selectivity functions
-#' @return A list of fishing mortalities at length for each gear.
+#' @param Sm  Vector of selectivity parameters for all the selectivity functions
+#' @return Selectivities as a vector for each length bin in a list for each gear.
 #' @examples
 #' S <- Rselectivities(exp(eg_ld$polSm), eg_ld)
 #' plot(y=S[[1]], x=eg_ld$LMP, type="l")

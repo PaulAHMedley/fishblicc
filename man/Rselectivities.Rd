@@ -2,29 +2,22 @@
 % Please edit documentation in R/BLICC_Model.R
 \name{Rselectivities}
 \alias{Rselectivities}
-\title{Calculate the survival of a fish cohort to sequential length boundaries}
+\title{Calculate the selectivities for each length bin for each gear}
 \usage{
 Rselectivities(Sm, blicc_ld)
 }
 \arguments{
-\item{Sm}{Vector of selectivity parameters for all the
-selectivity functions}
+\item{Sm}{Vector of selectivity parameters for all the selectivity functions}
 
-\item{blicc_ld}{A standard data list suitable for the model
-(see function \code{blicc_dat()})}
+\item{blicc_ld}{A standard data list suitable for the model (see function
+\link{blicc_dat})}
 }
 \value{
-A list of fishing mortalities at length for each gear.
+Selectivities as a vector for each length bin in a list for each gear.
 }
 \description{
-The model integrates over growth rate variability and sums mortality
-piece-wise over intervening length intervals to derive the
-survival to each length bin boundary taking into account variation in growth
-and varying mortality-at-length. This is analogous to an age based catch
-curve model, but for length. Survival can be used to estimate population
-numbers-at-length and catch length frequency, among other things.
-The model uses the Gauss-Laguerre quadrature rule for integration,
-so nodes and weights for this must be provided.
+The function calculates the selectivities for each gear based on the relevant
+selectivity functions and their parameters.
 }
 \examples{
 S <- Rselectivities(exp(eg_ld$polSm), eg_ld)
