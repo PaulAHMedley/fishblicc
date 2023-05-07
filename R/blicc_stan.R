@@ -552,9 +552,15 @@ blip_Linf <- function(blicc_ld,
 #'
 blip_Galpha <- function(blicc_ld,
                         lGalpha) {
+<<<<<<< HEAD
   if (!(is.numeric(lGalpha) & length(lGalpha)==2))
     stop("Error: LGalpha must be numeric vector of the mu,sd for the Galpha lognormal prior.")
   if (lGalpha[1] > log(1/0.05^2) | lGalpha[1] < log(1/0.3^2))
+=======
+  if (!is.numeric(lGalpha) & length(lGalpha)==2)
+    stop("Error: LGalpha must be numeric vector of the mu,sd for the Galpha lognormal prior.")
+  if (lGalpha[1] < log(1/0.05^2) | lGalpha[1] > log(1/0.3^2))
+>>>>>>> master
     warning("The Galpha prior lognormal mean is outside the expected 5-30% CV.")
   # Growth mean CV
   blicc_ld$polGam <- lGalpha[1]
