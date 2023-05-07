@@ -111,7 +111,7 @@ spawning potential ratio reference points, and then the expected catch,
 selectivity and so on by length. (Note that because the fit uses MCMC,
 estimation take some time.)
 
-These data are taken from a bombay duck (**Harpadon nehereus**) fishery,
+These data are taken from a bombay duck (*Harpadon nehereus*) fishery,
 where bombay duck are caught predominantly in three artisanal gears.
 (Note that this is an example only - the analysis is incomplete as trawl
 catches are missing from these data).
@@ -141,8 +141,6 @@ dl <- blicc_dat(
   b = 3.146168,           # Length-weight exponent
   L50 = 23.2335           # Length at 50% maturity
 )
-><> Warning in blip_Galpha(dl, c(log(1/0.1^2), 0.25)): The Galpha prior lognormal
-><> mean is outside the expected 5-30% CV.
 
 ## Fit the model to these data 
 slim <- blicc_mpd(dl)
@@ -217,24 +215,24 @@ blicc_results(slim)
 ><> # A tibble: 19 × 3
 ><>    Parameter `Max. Posterior`        SE
 ><>    <chr>                <dbl>     <dbl>
-><>  1 Linf              42.3      1.38    
-><>  2 Galpha            97.3     24.8     
-><>  3 Mk                 2.02     0.195   
-><>  4 Fk[1]              0.122    0.0223  
-><>  5 Fk[2]              0.409    0.0928  
-><>  6 Fk[3]              1.08     0.230   
-><>  7 Sm[1]             13.8      0.578   
-><>  8 Sm[2]              0.0513   0.00733 
-><>  9 Sm[3]              0.00289  0.000739
-><> 10 Sm[4]             25.3      0.774   
+><>  1 Linf              42.3      1.39    
+><>  2 Galpha            97.3     24.9     
+><>  3 Mk                 2.02     0.197   
+><>  4 Fk[1]              0.122    0.0224  
+><>  5 Fk[2]              0.409    0.0915  
+><>  6 Fk[3]              1.08     0.228   
+><>  7 Sm[1]             13.8      0.602   
+><>  8 Sm[2]              0.0513   0.00747 
+><>  9 Sm[3]              0.00289  0.000784
+><> 10 Sm[4]             25.3      0.770   
 ><> 11 Sm[5]              0.0228   0.00236 
-><> 12 Sm[6]              0.0112   0.00176 
-><> 13 Sm[7]             24.3      0.657   
-><> 14 Sm[8]              0.0247   0.00216 
-><> 15 Sm[9]              0.00985  0.00139 
-><> 16 NB_phi            18.0      4.06    
-><> 17 Gbeta              2.30     0.560   
-><> 18 SPR                0.328    0.0766  
+><> 12 Sm[6]              0.0112   0.00181 
+><> 13 Sm[7]             24.3      0.656   
+><> 14 Sm[8]              0.0247   0.00213 
+><> 15 Sm[9]              0.00985  0.00143 
+><> 16 NB_phi            18.0      4.08    
+><> 17 Gbeta              2.30     0.563   
+><> 18 SPR                0.328    0.0752  
 ><> 19 lp__            -536.      NA
 ```
 

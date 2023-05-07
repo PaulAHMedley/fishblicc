@@ -67,7 +67,7 @@ In this basic example, there is a single representative sample of lengths from a
 
 The analysis consists of fitting the model to the data, determining the spawning potential ratio reference points, and then the expected catch, selectivity and so on by length. (Note that because the fit uses MCMC, estimation take some time.)  
 
-These data are taken from a bombay duck (__Harpadon nehereus__) fishery, where bombay duck are caught predominantly in three artisanal gears. (Note that this is an example only - the analysis is incomplete as trawl catches are missing from these data).  
+These data are taken from a bombay duck (_Harpadon nehereus_) fishery, where bombay duck are caught predominantly in three artisanal gears. (Note that this is an example only - the analysis is incomplete as trawl catches are missing from these data).  
 
 
 
