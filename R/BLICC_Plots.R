@@ -15,7 +15,7 @@
 #' @param blicc_rp  A list of posterior draws, reference points with associated
 #'   direction, the data object and expected lengths from [blicc_ref_pts]
 #'   function.
-#' @param Gear Specifies the gear to plot
+#' @param Gear Specifies the gear to plot as an integer index or full name
 #' @return ggplot geom object plotting observed and expected frequency
 #' @examples
 #' plot_expected_frequency(eg_rp)
@@ -31,7 +31,6 @@ plot_expected_frequency <-
     blicc_lx <- blicc_rp$lx_df
 
     Gear <- parse_gear(Gear, blicc_ld)
-    # if (any(is.na(Gear))) return()
 
     gear2plot <- blicc_ld$gname[Gear]
     blicc_lx <- blicc_lx |>
@@ -119,7 +118,9 @@ plot_expected_frequency <-
 #'
 #' The graph shows the standardised residuals plotted against length for all
 #' gears combined, separated by colour. Due to the variance weighting, outliers
-#' can be expected at the tails of the frequency.
+#' can most be expected at the tails of the frequency. For the MCMC output, the
+#' residuals are plotted as 99% quartiles using error bars, together with the
+#' outliers as points outside this range.
 #'
 #' @export
 #' @inheritParams plot_expected_frequency
@@ -127,32 +128,76 @@ plot_expected_frequency <-
 #' @examples
 #' plot_residuals(eg_rp)
 #'
-plot_residuals <- function(blicc_rp) {
+plot_residuals <- function(blicc_rp, Gear = "All") {
   .draw = NB_phi = Sgroup = Lgroup = efq = ofq = LMP = std_res = NULL
 
+  rp_df <- blicc_rp$rp_df
   blicc_ld <- blicc_rp$ld
   blicc_lx <- blicc_rp$lx_df
+
+  if (any(is.na(Gear))) {
+    Gear_i <- 1:blicc_ld$NG
+    Gear_s = blicc_ld$gname
+  } else  {
+    Gear_i <- parse_gear(Gear, blicc_ld)
+    Gear_s = blicc_ld$gname[Gear_i]
+    blicc_lx <- dplyr::filter(blicc_lx, Sgroup %in% Gear_s)
+  }
+
   dat_df <-
     with(blicc_ld,
          tibble::tibble(
-           Sgroup = rep(gname, each = NB),
-           Lgroup = factor(rep(LLB, NG)),
-           LMP = rep(LMP, NG),
-           ofq = unlist(fq)
+           Sgroup = rep(Gear_s, each = NB),
+           Lgroup = factor(rep(LLB, length(Gear_s))),
+           LMP = rep(LMP, length(Gear_s)),
+           ofq = unlist(fq[Gear_i], use.names = FALSE)
          ))
   suppressWarnings(
-    df1 <- blicc_rp$rp_df |>
+    df1 <- rp_df |>
       dplyr::select(.draw, NB_phi) |>
       dplyr::right_join(blicc_lx, by = ".draw") |>
       dplyr::select(.draw, Sgroup, Lgroup, efq, NB_phi) |>
       dplyr::left_join(dat_df, by = c("Sgroup", "Lgroup")) |>
       dplyr::mutate(std_res = (ofq - efq) / sqrt(efq + (efq ^ 2) / NB_phi))
   )
-  gp <-
-    ggplot2::ggplot(df1, ggplot2::aes(x = LMP, y = std_res, colour = Sgroup)) +
-    ggplot2::geom_point() +
+
+  if (nrow(rp_df) == 1) {
+    gp <-
+      ggplot2::ggplot(df1, ggplot2::aes(x = LMP, y = std_res, colour = Sgroup)) +
+      ggplot2::geom_point() +
+      ggplot2::geom_line(alpha=0.4)
+  } else {
+    df2 <- df1 |>
+      dplyr::select(Sgroup, Lgroup, std_res) |>
+      dplyr::group_by(Sgroup, Lgroup) |>
+      dplyr::summarise(
+        std_res_m = median(std_res),
+        std_res_005 = stats::quantile(std_res, probs = c(0.005), names = F),
+        std_res_995 = stats::quantile(std_res, probs = c(0.995), names = F),
+      ) |>
+      dplyr::ungroup() |>
+      dplyr::mutate(LMP = blicc_ld$LMP[as.integer(Lgroup)])
+
+    outlier_df <- df1 |>
+      dplyr::select(Sgroup, Lgroup, std_res) |>
+      dplyr::left_join(df2, by = c("Sgroup", "Lgroup")) |>
+      dplyr::filter(std_res < std_res_005 | std_res > std_res_995)
+
+    gp <-
+      ggplot2::ggplot(data = df2) +
+      ggplot2::geom_errorbar(ggplot2::aes(x = LMP,
+                                          ymin = std_res_005,
+                                          ymax = std_res_995,
+                                          colour = Sgroup), width=0.2) +
+      ggplot2::geom_point(ggplot2::aes(x=LMP, y=std_res_m,
+                                      colour = Sgroup), shape="+") +
+      ggplot2::geom_point(data=outlier_df, ggplot2::aes(x=LMP, y=std_res,
+                                                   colour = Sgroup), alpha=0.5)
+  }
+  gp <- gp +
     ggplot2::labs(x = "Length", y = "Standardised Residuals", colour = "Gear") +
     ggplot2::geom_hline(yintercept = 0)
+
   return(gp)
 }
 
@@ -166,17 +211,22 @@ plot_residuals <- function(blicc_rp) {
 #' @examples
 #' plot_selectivity(eg_rp)
 #'
-plot_selectivity <- function(blicc_rp) {
-  Lgroup = sel = LMP = sel_01 = sel_90 = sel_25 = sel_75 = sel_m = NULL
-  Sgroup = sel_10 = NULL
+plot_selectivity <- function(blicc_rp, Gear = NA) {
+  Lgroup = sel = LMP = sel_10 = sel_90 = sel_m = Sgroup = NULL
 
   blicc_ld <- blicc_rp$ld
   blicc_lx <- blicc_rp$lx_df
+
+  if (!any(is.na(Gear)))  {
+    Gear_s = blicc_ld$gname[parse_gear(Gear, blicc_ld)]
+    blicc_lx <- dplyr::filter(blicc_lx, Sgroup %in% Gear_s)
+  }
+
   gp <- blicc_lx |>
     dplyr::select(Sgroup, Lgroup, sel) |>
     dplyr::group_by(Sgroup, Lgroup) |>
     dplyr::summarise(
-      sel_m = mean(sel),
+      sel_m = median(sel),
       sel_10 = stats::quantile(sel, probs = c(0.10), names = F),
       sel_90 = stats::quantile(sel, probs = c(0.90), names = F),
     ) |>
@@ -209,8 +259,8 @@ plot_selectivity <- function(blicc_rp) {
 plot_SPR_density <- function(blicc_rp) {
   SPR = NULL
   rp_df <- blicc_rp$rp_df
-  if (nrow(rp_df) <= 100) {
-    stop("To obtain a density, you will need to obtain sufficient values (>100) from MCMC.")
+  if (nrow(rp_df) <= 500) {
+    stop("To obtain a density, you will need to obtain sufficient values (>500) from MCMC.")
   }
   ggplot2::ggplot(rp_df, ggplot2::aes(SPR)) +
     ggplot2::geom_density(fill = "lightblue") +
@@ -337,6 +387,7 @@ plot_FkF40_density <- function(blicc_rp) {
 #' @export
 #' @inheritParams plot_expected_frequency
 #' @return ggplot geom object for plotting expected length frequencies by SPR
+#'   level
 #' @examples
 #' plot_efq_FRP(eg_rp)
 #'
@@ -351,16 +402,17 @@ plot_efq_FRP <- function(blicc_rp, Gear = NA) {
   blicc_ld <- blicc_rp$ld
   blicc_lx <- blicc_rp$lx_df
 
-  Gear <- parse_gear(Gear, blicc_ld)
-  if (is.na(Gear))
-    return()
+  if (any(is.na(Gear)))
+    Gear_i <- which.max(blicc_ld$prop_catch)
+  else
+    Gear_i = parse_gear(Gear, blicc_ld)[1]
 
-  gear2plot <- blicc_ld$gname[Gear]
+  gear2plot <- blicc_ld$gname[Gear_i]
   blicc_lx <- blicc_lx |>
     dplyr::filter(Sgroup == gear2plot)
 
   df_dat <-
-    tibble::tibble(LMP = blicc_ld$LMP, fq = blicc_ld$fq[[Gear]])
+    tibble::tibble(LMP = blicc_ld$LMP, fq = blicc_ld$fq[[Gear_i]])
 
   suppressWarnings(
     df <- blicc_rp$rp_df |>
@@ -369,19 +421,19 @@ plot_efq_FRP <- function(blicc_rp, Gear = NA) {
         SPR20 = purrr::pmap(
           list(Linf, Galpha, Mk, F20, Sm),
           blicc_get_efq,
-          Gear_i = Gear,
+          Gear_i = Gear_i,
           blicc_ld = blicc_ld
         ),
         SPR30 = purrr::pmap(
           list(Linf, Galpha, Mk, F30, Sm),
           blicc_get_efq,
-          Gear_i = Gear,
+          Gear_i = Gear_i,
           blicc_ld = blicc_ld
         ),
         SPR40 = purrr::pmap(
           list(Linf, Galpha, Mk, F40, Sm),
           blicc_get_efq,
-          Gear_i = Gear,
+          Gear_i = Gear_i,
           blicc_ld = blicc_ld
         )
       ) |>
@@ -487,16 +539,18 @@ plot_efq_SRP <- function(blicc_rp, Gear = NA) {
 
   Max_Yield = Selectivity = NULL
   blicc_ld <- blicc_rp$ld
-  Gear <- parse_gear(Gear, blicc_ld)
-  if (is.na(Gear))
-    return()
 
-  gear2plot <- blicc_ld$gname[Gear]
+  if (any(is.na(Gear)))
+    Gear_i <- which.max(blicc_ld$prop_catch)
+  else
+    Gear_i = parse_gear(Gear, blicc_ld)[1]
+
+  gear2plot <- blicc_ld$gname[Gear_i]
   blicc_lx <- blicc_lx |>
     dplyr::filter(Sgroup == gear2plot)
 
   df_dat <-
-    tibble::tibble(LMP = blicc_ld$LMP, fq = blicc_ld$fq[[Gear]])
+    tibble::tibble(LMP = blicc_ld$LMP, fq = blicc_ld$fq[[Gear_i]])
 
   suppressWarnings(
     df <- blicc_rp$rp_df |>
@@ -505,19 +559,19 @@ plot_efq_SRP <- function(blicc_rp, Gear = NA) {
         SPR20 = purrr::pmap(
           list(Linf, Galpha, Mk, Fk, S20),
           blicc_get_efq,
-          Gear_i = Gear,
+          Gear_i = Gear_i,
           blicc_ld = blicc_ld
         ),
         SPR40 = purrr::pmap(
           list(Linf, Galpha, Mk, Fk, S40),
           blicc_get_efq,
-          Gear_i = Gear,
+          Gear_i = Gear_i,
           blicc_ld = blicc_ld
         ),
         Max_Yield = purrr::pmap(
           list(Linf, Galpha, Mk, Fk, SMY),
           blicc_get_efq,
-          Gear_i = Gear,
+          Gear_i = Gear_i,
           blicc_ld = blicc_ld
         )
       ) |>
@@ -596,12 +650,13 @@ plot_efq_SRP <- function(blicc_rp, Gear = NA) {
 #' Spawning potential ratio surface contour plot
 #'
 #' The plot shows the SPR surface plotted against the fishing mortality (Fk) and
-#' the 50% or maximum selectivity, dependent on the selectivity function. The
-#' current state of the stock is marked as a point and the SPR 40% reference
-#' point is marked as a line. All values are calculated as means and uncertainty
-#' is not represented to maintain simplicity. The reference line is plotted if
-#' it exists within a reasonable range of the current estimated status. For
-#' multiple gears, the surface is calculated for a single reference gear.
+#' the 50% or maximum selectivity, dependent on the selectivity function of the
+#' reference gear. The current state of the stock is marked as a point and the
+#' SPR 40% reference point is marked as a line. All values are calculated as
+#' means and uncertainty is not represented to maintain simplicity. The
+#' reference line is plotted if it exists within a reasonable range of the
+#' current estimated status. For multiple gears, the surface is calculated for a
+#' single reference gear.
 #'
 #' @export
 #' @inheritParams plot_expected_frequency
@@ -609,7 +664,7 @@ plot_efq_SRP <- function(blicc_rp, Gear = NA) {
 #' @examples
 #' plot_SPR_contour(eg_rp)
 #'
-plot_SPR_contour <- function(blicc_rp) {
+plot_SPR_contour <- function(blicc_rp, Gear = NA) {
   Smx_rp = spr = Lcur = Fcur = `..level..` = NULL  #R CMD Notes
   Smx = dF = level = NULL
 
@@ -622,6 +677,14 @@ plot_SPR_contour <- function(blicc_rp) {
   }
 
   blicc_ld <- blicc_rp$ld
+
+  # If no reference gear defined, use gear with highest fishing
+  # mortality to be controlled
+  if (any(is.na(Gear)))
+    Gear_i <- which.max(blicc_ld$Catch)
+  else
+    Gear_i = parse_gear(Gear, blicc_ld)[1]
+  gear2plot <- blicc_ld$gname[Gear_i]
 
   GridN <- 40
   Linf <- mean(blicc_rp$rp_df$Linf)
@@ -651,15 +714,11 @@ plot_SPR_contour <- function(blicc_rp) {
     na.rm = TRUE
   )
 
-  # Decide reference gear on highest fishing mortality to be controlled
-  Gear_i <- which.max(Fk * unname(blicc_rp$vdir[blicc_ld$Fkg > 0]))
-  gear2plot <- blicc_ld$gname[Gear_i]
-
   SPR0 <-
     RSPR_0(Galpha, Gbeta, Mk, blicc_ld) # Unexploited SPR
 
   MaxF <- 2 * max(Fk[Gear_i], F20[Gear_i], na.rm = T)
-  Gear_Smx <- Sm[blicc_ld$spar[, 1]]
+  Gear_Smx <- Sm[blicc_ld$sp_i]
 
   # Grid Points
   mSmx <- seq(min(blicc_ld$LLB - 1), Linf,
@@ -668,7 +727,7 @@ plot_SPR_contour <- function(blicc_rp) {
   dL <- (mSmx / Gear_Smx[Gear_i] - 1) / blicc_rp$vdir[Gear_i]
 
   vSm <- Sm
-  indx <- with(blicc_ld, as.vector(t(spar[Fkg > 0, 1])))
+  indx <- with(blicc_ld, sp_i[Fkg > 0])
 
   svdir <- blicc_rp$vdir[blicc_ld$Fkg > 0]
 
@@ -751,7 +810,7 @@ plot_SPR_contour <- function(blicc_rp) {
 #' @examples
 #' plot_YPR_contour(eg_rp)
 #'
-plot_YPR_contour <- function(blicc_rp) {
+plot_YPR_contour <- function(blicc_rp, Gear = NA) {
   Smx_rp = ypr = F0.1 = Lcur = Fcur = `..level..` = NULL  # R CMD Notes
   Smx = dF = level = NULL
 
@@ -770,6 +829,15 @@ plot_YPR_contour <- function(blicc_rp) {
   }
 
   blicc_ld <- blicc_rp$ld
+
+  # If no reference gear defined, use gear with highest fishing
+  # mortality to be controlled
+  if (any(is.na(Gear)))
+    Gear_i <- which.max(blicc_ld$Catch)
+  else
+    Gear_i = parse_gear(Gear, blicc_ld)[1]
+
+  gear2plot <- blicc_ld$gname[Gear_i]
   GridN <- 40
   Linf <- mean(blicc_rp$rp_df$Linf)
   Galpha <- mean(blicc_rp$rp_df$Galpha)
@@ -802,12 +870,8 @@ plot_YPR_contour <- function(blicc_rp) {
       na.rm = TRUE
     )
 
-  # Decide reference gear on highest fishing mortality to be controlled
-  Gear_i <- which.max(Fk * unname(blicc_rp$vdir[blicc_ld$Fkg > 0]))
-  gear2plot <- blicc_ld$gname[Gear_i]
-
   MaxF <- 2 * max(Fk[Gear_i], F20[Gear_i], na.rm = T)
-  Gear_Smx <- Sm[blicc_ld$spar[, 1]]
+  Gear_Smx <- Sm[blicc_ld$sp_i]
 
   # Grid Points
   mSmx <- seq(min(blicc_ld$LLB - 1), Linf,
@@ -816,7 +880,7 @@ plot_YPR_contour <- function(blicc_rp) {
   dL <- (mSmx / Gear_Smx[Gear_i] - 1) / blicc_rp$vdir[Gear_i]
 
   vSm <- Sm
-  indx <- with(blicc_ld, as.vector(t(spar[Fkg > 0, 1])))
+  indx <- with(blicc_ld, sp_i[Fkg > 0])
 
   svdir <- blicc_rp$vdir[blicc_ld$Fkg > 0]
 

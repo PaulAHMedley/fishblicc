@@ -12,10 +12,11 @@ plot_efq_FRP(blicc_rp, Gear = NA)
 direction, the data object and expected lengths from \link{blicc_ref_pts}
 function.}
 
-\item{Gear}{Specifies the gear to plot}
+\item{Gear}{Specifies the gear to plot as an integer index or full name}
 }
 \value{
 ggplot geom object for plotting expected length frequencies by SPR
+level
 }
 \description{
 The facet plot covers the current estimated fishing mortality, together with

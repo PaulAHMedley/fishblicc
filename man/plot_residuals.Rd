@@ -4,12 +4,14 @@
 \alias{plot_residuals}
 \title{Plot standardised residuals against length}
 \usage{
-plot_residuals(blicc_rp)
+plot_residuals(blicc_rp, Gear = "All")
 }
 \arguments{
 \item{blicc_rp}{A list of posterior draws, reference points with associated
 direction, the data object and expected lengths from \link{blicc_ref_pts}
 function.}
+
+\item{Gear}{Specifies the gear to plot as an integer index or full name}
 }
 \value{
 ggplot geom object plotting standardised residuals
@@ -17,7 +19,9 @@ ggplot geom object plotting standardised residuals
 \description{
 The graph shows the standardised residuals plotted against length for all
 gears combined, separated by colour. Due to the variance weighting, outliers
-can be expected at the tails of the frequency.
+can most be expected at the tails of the frequency. For the MCMC output, the
+residuals are plotted as 99\% quartiles using error bars, together with the
+outliers as points outside this range.
 }
 \examples{
 plot_residuals(eg_rp)
