@@ -1,6 +1,6 @@
 Package: fishblicc
 Title: Bayesian Length Interval Catch Curve
-Version: 0.8.1
+Version: 0.8.3
 Authors@R: 
     person("Paul A.H.", "Medley", , "paulahmedley@gmail.com", role = c("aut", "cre"))
 Description: The package provides functions for fitting a catch curve to
@@ -9,9 +9,9 @@ Description: The package provides functions for fitting a catch curve to
     with a fixed CV and mean following the von Bertalanffy function, and
     mortality is constant within each length interval. The model provides
     the expected frequency in each length interval for a negative binomial
-    likelihood. The model can fit to multiple length frequencies each
-    with different selectivities (e.g. logistic or double-sided normal) 
-    representing different fishing gears.  The model is fitted using Stan. 
+    likelihood. The model can fit to multiple length frequencies each with
+    different selectivities (e.g. logistic or double-sided normal)
+    representing different fishing gears.  The model is fitted using Stan.
 License: MIT + file LICENSE
 URL: https://github.com/PaulAHMedley/fishblicc
 BugReports: https://github.com/PaulAHMedley/fishblicc/issues
@@ -25,6 +25,7 @@ Imports:
     purrr,
     Rcpp (>= 0.12.0),
     rstan (>= 2.18.1),
+    rstantools,
     statmod,
     stats,
     tibble,
@@ -38,8 +39,8 @@ LinkingTo:
     Rcpp (>= 0.12.0),
     RcppEigen (>= 0.3.3.3.0),
     RcppParallel (>= 5.0.1),
-    rstantools,
     rstan (>= 2.18.1),
+    rstantools,
     StanHeaders (>= 2.18.0)
 Biarch: true
 Config/testthat/edition: 3

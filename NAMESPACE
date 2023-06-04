@@ -3,6 +3,7 @@
 export(RSPR_0)
 export(Rpop_F)
 export(Rpop_len)
+export(Rsel_dsnmix)
 export(Rsel_dsnormal)
 export(Rsel_logistic)
 export(Rsel_normal)

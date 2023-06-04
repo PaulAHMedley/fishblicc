@@ -120,13 +120,13 @@ SSPR_solve <-
       return(SPR / SPR0 - tarSPR)
     }
 
-    ref_par <- max(Sm[blicc_ld$spar[which.max(vdir), 1]])
+    ref_par <- max(Sm[blicc_ld$sp_i[which.max(vdir)]]) # location par
     maxdL <- Linf/ref_par - 1
     vdir <- vdir[blicc_ld$Fkg>0]
     Gbeta <- Galpha / Linf
     vSm <- Sm
     SPR0 <- RSPR_0(Galpha, Gbeta, Mk, blicc_ld) # Unexploited SPR
-    indx <- with(blicc_ld, as.vector(t(spar[Fkg>0, 1])))
+    indx <- with(blicc_ld, as.vector(t(sp_i[Fkg>0])))
 
     # First need to bracket tarSPR
     S2 <- maxdL
@@ -240,8 +240,8 @@ SMY_solve <-
     Gbeta <- Galpha / Linf
     vSm <- Sm
     # index location parameters for gears contributing to fishing mortality
-    indx <- with(blicc_ld, as.vector(t(spar[Fkg>0, 1])))
-    maxdL <- Linf/max(Sm[blicc_ld$spar[which.max(vdir), 1]]) - 1
+    indx <- with(blicc_ld, as.vector(t(sp_i[Fkg>0])))
+    maxdL <- Linf/max(Sm[blicc_ld$sp_i[which.max(vdir)]]) - 1
     vdir <- vdir[blicc_ld$Fkg>0]
 
     res <- stats::optimize(

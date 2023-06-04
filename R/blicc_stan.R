@@ -367,7 +367,7 @@ blicc_dat <-
     }
 
     dl <- list(
-      mname = model_name,
+      model_name = model_name,
       # Number of gears: separate length frequencies
       NG = Ngear,
       # Number of F's: gears associated with non-zero catches
@@ -481,14 +481,16 @@ blicc_selfun <-
     npar <- Rsel_functions()$npar[blicc_ld$fSel]
 
     blicc_ld$NP <- sum(npar)
-    blicc_ld$Pmx <- max(npar)
-    spar <- matrix(0, nrow = blicc_ld$NG, ncol = blicc_ld$Pmx)
-    np <- 1
+    spar <- integer(blicc_ld$NG)
+    spare <- spar
+    np <- 1L
     for (i in 1:blicc_ld$NG) {
-      spar[i, 1:npar[i]] <- np:(np+npar[i]-1)
+      spar[i] <- np
       np <- np + npar[i]
+      spare[i] <- np-1L
     }
-    blicc_ld$spar <- spar
+    blicc_ld$sp_i <- spar    #start
+    blicc_ld$sp_e <- spare   #end
     if (!is.na(model_name))
       blicc_ld$model_name <- model_name
     blicc_ld <- blip_selectivity(blicc_ld)
@@ -772,10 +774,20 @@ blip_selectivity <- function(blicc_ld) {
       sm <- with(blicc_ld, c(log((LMP[1]+LMP[which.max(fq[[i]])])*0.75), -1))
     } else if (blicc_ld$fSel[i]==4) {
       sm <- with(blicc_ld, c(log(LMP[which.max(fq[[i]])]), -4, -4))
+    } else if (blicc_ld$fSel[i]==5) {
+      # This will need reworking...
+      sm1 <- with(blicc_ld, LMP[which.max(fq[[i]])])
+      if (sm1 > 0.5*(blicc_ld$LMP[1]+blicc_ld$LMP[blicc_ld$NB]))
+        sm2 <- with(blicc_ld, 0.5*(LMP[1]+sm1))
+      else
+        sm2 <- with(blicc_ld, 0.5*(LMP[NB]+sm1))
+      sm3 <- 0.2 #with(blicc_ld, 0.02 + fq[[i]][as.integer(sm2)] / max(fq[[i]]))
+      sm <- c(log(c(sm1, sm2, sm3)), -5, -5, -5, -5)
+      sms <- c(1, 1, 1, 1, 1, 1, 1)
     } else {
       sm <- with(blicc_ld, c(log(LMP[which.max(fq[[i]])]), -4))
     }
-    indx <- with(blicc_ld, spar[i, spar[i,]>0])
+    indx <- with(blicc_ld, sp_i[i]:(sp_i[i]+length(sm)-1L))
     sel_par[indx] <- sm
     sel_pars[indx] <- 1.5
   }
@@ -845,7 +857,6 @@ blicc_mcmc_ini <- function(blicc_ld, pchain = 4, par = NULL) {
     return(rep(list(par), pchain))
   }
 }
-
 
 
 #' Estimate a minimum number of Gauss-Laguerre quadrature nodes for a defined tolerance

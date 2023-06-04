@@ -16,16 +16,21 @@ Rsel_functions <- function() {
   sel <- list(long_name = c("Logistic",
                       "Normal",
                       "Single-sided Normal",
-                      "Double-sided Normal"),
+                      "Double-sided Normal",
+                      "Double-sided Normal Mixture"),
         short_name = c("logistic",
                        "normal",
                        "ssnormal",
-                       "dsnormal"),
+                       "dsnormal",
+                       "dsn_mix"),
         par_names  = list(
                        logistic = c("Sel 50%", "Steepness"),
                        normal = c("Mode", "SD"),
                        ssnormal = c("Mode", "Left SD"),
-                       dsnormal = c("Mode", "Left SD", "Right SD"))
+                       dsnormal = c("Mode", "Left SD", "Right SD"),
+                       dsn_mix = c("Mode1", "Mode2", "Weight2",
+                                   "Left SD1", "Right SD1",
+                                   "Left SD2", "Right SD2"))
         )
    sel$npar <- sapply(sel$par_names, FUN=length)
    return(sel)
@@ -85,26 +90,30 @@ parse_gear <- function(Gear, blicc_ld) {
     if (any(is.na(Gear))) {
       stop(
         paste0(
-          "Error: Gears must be specified that exactly matches a gear name or be an integer between 1 and ",
+          "Error: Gears must be specified as 'All', or exact matches for gear names or integers between 1 and ",
           as.character(blicc_ld$NG)
         )
       )
     } else {
       if (is.character(Gear[1])) {
-        Gear <- match(Gear, blicc_ld$gname)
-        if (any(is.na(Gear))) {
-          stop(
-            paste0(
-              "Error: Specified gears must exactly match a gear name or be an integer between 1 and ",
-              as.character(blicc_ld$NG)
+        if (Gear[1] == "All")
+          Gear <- 1:blicc_ld$NG
+        else {
+          Gear <- match(Gear, blicc_ld$gname)
+          if (any(is.na(Gear))) {
+            stop(
+              paste0(
+                "Error: Gears must be specified as 'All', or exact matches for gear names or integers between 1 and ",
+                as.character(blicc_ld$NG)
+              )
             )
-          )
+          }
         }
       }
       Gear <- as.integer(unique(Gear))
       if (!all(dplyr::between(Gear, 1, blicc_ld$NG))) {
         stop(paste0(
-          "Error: Specified gear must be between 1 and ",
+          "Error: Specified gears must be between 1 and ",
           as.character(blicc_ld$NG)
         ))
       }
@@ -215,6 +224,48 @@ Rsel_dsnormal <- function(Sp, LMP) {
   S1 <- LMP < Sp[1L]
   SL[S1] <- exp(-Sp[2L] * (LMP[S1] - Sp[1L]) ^ 2)
   SL[!S1] <- exp(-Sp[3L] * (LMP[!S1] - Sp[1L]) ^ 2)
+  return(SL)
+}
+
+# Model 5
+
+#' Calculate double-sided normal mixture selectivity for a length vector
+#'
+#' Two double-sided normal form a mixture allowing two modes in the selectivity.
+#' See [Rsel_dsnormal] description. In addition, the model takes a weight
+#' parameter to fit the height of the second curve relative to the first curve.
+#'
+#' @export
+#' @inheritParams Rsel_logistic
+#' @param  Sp   Vector (length 7) of the selectivity parameters (mode1, mode2,
+#'   weight2, then left  and right side 1/sigma^2 for the first and then second)
+#'   normal mixture.
+#' @return      A vector of selectivity values varying from 0.0 to 1.0
+#' @examples
+#' Sel <- Rsel_dsnmix(Sp = c(40, 25, 0.5, 0.01, 0.02, 0.1, 0.1), LMP = seq(15.5, 55.5, by=1.0))
+#' plot(y=Sel, x=seq(15.5, 55.5, by=1.0))
+#'
+Rsel_dsnmix <- function(Sp, LMP) {
+  # Double sided normal mixture
+  # Location 1, Location 2, Height for 2, Slope 1.1, Slope 1.2,
+  # Slope 2.1, Slope 2.2 (could be set to zero)
+  SL <- double(length(LMP))
+  corr <- SL
+
+  adiff2 <- (LMP - Sp[1L])^2
+  bdiff2 <- (LMP - Sp[2L])^2
+  Sa <- LMP < Sp[1L]
+  Sb <- LMP < Sp[2L]
+  if (Sp[2L] > Sp[1L])
+    corr <- -log(1 + Sp[3L]*exp(-((Sp[2L]-Sp[1L])^2)*Sp[6L]))
+  else
+    corr <- -log(1 + Sp[3L]*exp(-((Sp[2L]-Sp[1L])^2)*Sp[7L]))
+
+  SL[Sa] <- exp(- Sp[4L] * adiff2[Sa] + corr)
+  SL[!Sa] <- exp(- Sp[5L] * adiff2[!Sa] + corr)
+
+  SL[Sb] <- SL[Sb] + Sp[3L]*exp(-Sp[6L] * bdiff2[Sb] + corr)
+  SL[!Sb] <- SL[!Sb] + Sp[3L]*exp(-Sp[7L] * bdiff2[!Sb] + corr)
   return(SL)
 }
 
@@ -349,8 +400,7 @@ Rpop_len <- function(node, wt, Len, Zki, Galpha, Gbeta)  {
 Rselectivities <- function(Sm, blicc_ld) {
   Ski <- list()
   for (gi in 1:blicc_ld$NG) {
-    Indx <- blicc_ld$spar[gi,]
-    Indx <- Indx[Indx>0]
+    Indx <- blicc_ld$sp_i[gi] : blicc_ld$sp_e[gi]
     #
     # Need to be changed to C functions or a C function
     #
@@ -358,7 +408,8 @@ Rselectivities <- function(Sm, blicc_ld) {
                         Rsel_logistic(Sm[Indx], blicc_ld$LMP),
                         Rsel_normal(Sm[Indx], blicc_ld$LMP),
                         Rsel_ssnormal(Sm[Indx], blicc_ld$LMP),
-                        Rsel_dsnormal(Sm[Indx], blicc_ld$LMP))
+                        Rsel_dsnormal(Sm[Indx], blicc_ld$LMP),
+                        Rsel_dsnmix(Sm[Indx], blicc_ld$LMP))
   }
   return(Ski)
 }

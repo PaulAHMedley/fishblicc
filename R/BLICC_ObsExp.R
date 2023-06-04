@@ -61,10 +61,10 @@ blicc_ref_pts <-
     Gbeta = NULL
 
     vdir <- as.vector(vdir)
-    if (is.na(vdir)) {
+    if (any(is.na(vdir))) {
       vdir <- double(blicc_ld$NG)
       vdir[blicc_ld$Fkg] <- 1
-    } else if (max(vdir) != 1.0 | min(vdir) < 0)
+    } else if (length(vdir) != blicc_ld$NG | max(vdir) != 1.0 | min(vdir) < 0)
       stop(
         "Error: vdir - the direction vector must have at least
             one value equal to 1.0, and no values outside the 0-1 range."
