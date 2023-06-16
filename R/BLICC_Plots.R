@@ -681,7 +681,7 @@ plot_SPR_contour <- function(blicc_rp, Gear = NA) {
   # If no reference gear defined, use gear with highest fishing
   # mortality to be controlled
   if (any(is.na(Gear)))
-    Gear_i <- which.max(blicc_ld$Catch)
+    Gear_i <- which.max(blicc_ld$prop_catch)
   else
     Gear_i = parse_gear(Gear, blicc_ld)[1]
   gear2plot <- blicc_ld$gname[Gear_i]
@@ -833,7 +833,7 @@ plot_YPR_contour <- function(blicc_rp, Gear = NA) {
   # If no reference gear defined, use gear with highest fishing
   # mortality to be controlled
   if (any(is.na(Gear)))
-    Gear_i <- which.max(blicc_ld$Catch)
+    Gear_i <- which.max(blicc_ld$prop_catch)
   else
     Gear_i = parse_gear(Gear, blicc_ld)[1]
 
