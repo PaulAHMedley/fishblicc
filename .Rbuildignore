@@ -10,3 +10,4 @@
 ^fishblicc_Model_Description_files$
 ^fishblicc_example\.rda$
 ^temp\.rda$
+^tmp\.rda$

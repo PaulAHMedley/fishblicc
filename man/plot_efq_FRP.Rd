@@ -5,14 +5,14 @@
 \title{Plot expected length frequencies for a range of fishing mortality reference
 points}
 \usage{
-plot_efq_FRP(blicc_rp, Gear = NA)
+plot_efq_FRP(blicc_rp, gear = NULL)
 }
 \arguments{
 \item{blicc_rp}{A list of posterior draws, reference points with associated
 direction, the data object and expected lengths from \link{blicc_ref_pts}
 function.}
 
-\item{Gear}{Specifies the gear to plot as an integer index or full name}
+\item{gear}{Specifies the gear to plot as an integer index or full name}
 }
 \value{
 ggplot geom object for plotting expected length frequencies by SPR

@@ -18,28 +18,36 @@
 #' draws. Some reference points may not exist (indicated by `NA`).
 #'
 #' @details Reference points are found where possible for the parameter draw
-#' from the MCMC. The reference points are found along line representing the
-#' relative impact across gears. The default is to apply the same adjustments
-#' proportionately to every gear that has a fishing mortality, but alternative
-#' scenarios can be defined. For example, for two gears the default is
-#' `vdir=c(1, 1)`. if there are two gears, and only the first will be adjusted,
-#' then the direction would be `vdir=c(1, 0)`. Where reference points do not
-#' exist an `NA` is returned. It is quite possible reference points do not exist
-#' in many cases due to the effects of selectivity. Strictly speaking, reference
-#' points may not exist within specific constraints on F and selectivity. Within
-#' more general bounds on F and selectivity, all reference "points" exist as
-#' lines or points. In these functions, reference points in relation to a
-#' control (Fk or Sm) are calculated based on the other being fixed at the
-#' current estimated value. To see how the fishery might respond when they are
-#' adjusted together, the yield or SPR surface must be plotted.
+#'   from the MCMC. The reference points are found along line representing the
+#'   relative impact across gears. The default is to apply the same adjustments
+#'   proportionately to every gear that has a fishing mortality, but alternative
+#'   scenarios can be defined. For example, for two gears the default is
+#'   `vdir=c(1, 1)`. if there are two gears, and only the first will be
+#'   adjusted, then the direction would be `vdir=c(1, 0)`. It is possible to
+#'   provide a vector such as `vdir=c(1, 0.5)` to represent only a 50% reduction
+#'   in the second gear compared to the first, for example. This will only be
+#'   applied to the fishing mortality. The selectivty changes will continue to
+#'   use a the vector as a dummy variable, so for selectivity `vdir = c(1.0,
+#'   0.5)` is equivalent to `vdir = c(1, 1)`. It is likely that proper
+#'   simulation projections would be required for more these more complex cases
+#'   where gears are not be simply excluded from management action.
+#'
+#'   Where reference points do not exist an `NA` is returned. It is quite
+#'   possible reference points do not exist in many cases due to the effects of
+#'   selectivity. Strictly speaking, reference points may not exist within
+#'   specific constraints on F and selectivity. Within more general bounds on F
+#'   and selectivity, all reference "points" exist as lines or points. In these
+#'   functions, reference points in relation to a control (Fk or Sm) are
+#'   calculated based on the other being fixed at the current estimated value.
+#'   To see how the fishery might respond when they are adjusted together, the
+#'   yield or SPR surface must be plotted.
 #'
 #' @export
 #' @inheritParams blicc_mpd
 #' @inheritParams blicc_dat
-#' @param slimf An object from the [blicc_fit()] or [blicc_mpd()]
-#'   functions.
-#' @param vdir  A search direction vector with maximum value 1 and minimum
-#'   0 applied to changes across gears.
+#' @param slimf An object from the [blicc_fit()] or [blicc_mpd()] functions.
+#' @param vdir  A search direction vector with maximum value 1 and minimum 0
+#'   applied to changes across gears.
 #' @return A list of posterior draws or mpd point estimates of important
 #'   parameters and per-recruit reference points, the search direction vector
 #'   and the blicc_ld data object used.
@@ -52,7 +60,7 @@
 blicc_ref_pts <-
   function(slimf,
            blicc_ld,
-           vdir = NA,
+           vdir = NULL,
            a = NA,
            b = NA,
            L50 = NA,
@@ -60,8 +68,7 @@ blicc_ref_pts <-
     Linf = Galpha = Mk = Fk = Sm = mpd = par = .draw = name2 = se = NULL
     Gbeta = NULL
 
-    vdir <- as.vector(vdir)
-    if (any(is.na(vdir))) {
+    if (is.null(vdir)) {
       vdir <- double(blicc_ld$NG)
       vdir[blicc_ld$Fkg] <- 1
     } else if (length(vdir) != blicc_ld$NG | max(vdir) != 1.0 | min(vdir) < 0)
@@ -78,7 +85,7 @@ blicc_ref_pts <-
       rp_df <- posterior::as_draws_df(slimf) |>
         dplyr::select(Linf:`.draw`)
 
-      par_c <- paste0("Sm[", as.character(1:blicc_ld$NP), "]")
+      par_c <- paste0("Sm[", as.character(1:(blicc_ld$NP+blicc_ld$NM)), "]")
       suppressWarnings(
         sel_tmp <- rp_df |>
           dplyr::select(.draw, tidyselect::all_of(par_c)) |>
@@ -117,7 +124,7 @@ blicc_ref_pts <-
 
     } else if (class(slimf)[1] == "tbl_df" &&
                all(names(slimf) == c("par", "mpd", "se"))) {
-      par_c <- paste0("Sm[", as.character(1:blicc_ld$NP), "]")
+      par_c <- paste0("Sm[", as.character(1:(blicc_ld$NP+blicc_ld$NM)), "]")
       S_v <- dplyr::pull(dplyr::filter(slimf, par %in% par_c), mpd)
       rp_df <- dplyr::filter(slimf,!(par %in% par_c))
       par_c <- paste0("Fk[", as.character(1:blicc_ld$NF), "]")
@@ -226,7 +233,11 @@ blicc_ref_pts <-
           .progress = "SMY"
         )
       )
+
+
     lx_df <- blicc_expect_len(rp_df, blicc_ld)
+
+
     return(list(
       vdir = vdir,
       rp_df = rp_df,
@@ -274,16 +285,15 @@ blicc_expect_len <- function(rp_df, blicc_ld) {
 #' For a set of parameter values, returns the expected selectivity, mortality,
 #' survival, and catch in each length bin based on the BLICC model as a tibble.
 #'
-#' @details
-#' The model and provided parameter values are used to calculate the expected
-#' values for selectivity, survival, relative population numbers,
-#' total mortality and expected length frequency for each length bin.
-#' Input parameters are point estimates (reals). The standard data list
-#' provides the model dimensions and is produced by the function
-#' [blicc_dat()].
+#' @details The model and provided parameter values are used to calculate the
+#'   expected values for selectivity, survival, relative population numbers,
+#'   total mortality and expected length frequency for each length bin. Input
+#'   parameters are point estimates (reals). The standard data list provides the
+#'   model dimensions and is produced by the function [blicc_dat()].
 #'
 #' @export
 #' @inheritParams blicc_mpd
+#' @inheritParams Rselectivities
 #' @param  Linf     Maximum mean length fish in the population can grow to
 #' @param  Galpha   Alpha parameter for the Gamma probability density function
 #'   that governs growth variability.
@@ -291,8 +301,6 @@ blicc_expect_len <- function(rp_df, blicc_ld) {
 #' @param  Fk       Vector of fishing mortality (time in units of the growth
 #'   rate K) to be multiplied by selectivity to get fishing mortality in each
 #'   length bin
-#' @param  Sm       Vector of parameters for all the selectivity functions
-#'   flat-topped selectivity
 #' @return A tibble of expected values for each length bin for each gear
 #' @examples
 #' blicc_get_expected(Linf = 32, Galpha = 100, Mk = 1.5, Fk = 1.5,
@@ -331,13 +339,13 @@ blicc_get_expected <-
 #' frequency. Used for predictive posterior some plots.
 #'
 #' @inheritParams blicc_get_expected
-#' @param Gear_i A integer vector of gears to obtain the expected catch for
+#' @param gear_i A integer vector of gears to obtain the expected catch for
 #' @return A list of two vectors: the gear names, and a vector of the expected
 #'   length bin frequency
 #' @noRd
 #'
 blicc_get_efq <-
-  function(Linf, Galpha, Mk, Fk, Sm, Gear_i, blicc_ld) {
+  function(Linf, Galpha, Mk, Fk, Sm, gear_i, blicc_ld) {
     if (any(is.na(Fk)) | any(is.na(Sm))) {
       return(NA)
     }
@@ -345,12 +353,12 @@ blicc_get_efq <-
     Pop <- Rpop_F(Galpha, Galpha/Linf, Mk, Fk, Rsel, blicc_ld)
 
     efq <- double(0)
-    for (gi in Gear_i) {
+    for (gi in gear_i) {
       ex_fq <- Pop$N_L * Pop$Fki[[gi]] # Catch
       ex_fq <- sum(blicc_ld$fq[[gi]]) * ex_fq / sum(ex_fq) # Normalise
       efq <- c(efq, ex_fq)
     }
-    # interleaved gear_names=rep(blicc_ld$gear_names[Gear_i], each=blicc_ld$NB)
+    # interleaved gear_names=rep(blicc_ld$gear_names[gear_i], each=blicc_ld$NB)
     return(efq)
   }
 
@@ -364,17 +372,17 @@ blicc_get_efq <-
 #'
 #' @export
 #' @param blicc_rp List of fishblicc result tables from [blicc_ref_pts()]
-#' @param Gear Identifies the single gear (selectivity) providing predictions
+#' @param gear Identifies the single gear (selectivity) providing predictions
 #' @param draws  The number of random draws up to the number of draws from the
 #'   MCMC (the default).
 #' @return A matrix with rows equal to gears*draws and columns to length
 #' @examples
-#' yrep <- posterior_predict(blicc_rp = eg_rp, Gear=1, draws=100)
+#' yrep <- posterior_predict(blicc_rp = eg_rp, gear=1, draws=100)
 #'
-posterior_predict <- function(blicc_rp, Gear=NA, draws = 0) {
+posterior_predict <- function(blicc_rp, gear=NULL, draws = 0) {
   .draw = Lgroup = Sgroup = efq = NULL
-  Gear <- parse_gear(Gear, blicc_rp$ld)
-  if (length(Gear) > 1)
+  gear <- parse_gear(gear, blicc_rp$ld)
+  if (length(gear) > 1)
     stop("Error: a single gear must be specified.")
 
   if ((draws <= 0) | (draws >= nrow(blicc_rp$rp_df))) {
@@ -386,7 +394,7 @@ posterior_predict <- function(blicc_rp, Gear=NA, draws = 0) {
 
   if (blicc_rp$ld$NG > 1)
     df <- df |>
-      dplyr::filter(Sgroup==blicc_rp$ld$gname[Gear])
+      dplyr::filter(Sgroup==blicc_rp$ld$gname[gear])
 
   # Check order is correct, then extract expected lengths as vector
   ex <- df |>

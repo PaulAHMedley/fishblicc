@@ -4,14 +4,14 @@
 \alias{plot_expected_frequency}
 \title{Plot the observed and expected frequency data}
 \usage{
-plot_expected_frequency(blicc_rp, Gear = NA)
+plot_expected_frequency(blicc_rp, gear = NA)
 }
 \arguments{
 \item{blicc_rp}{A list of posterior draws, reference points with associated
 direction, the data object and expected lengths from \link{blicc_ref_pts}
 function.}
 
-\item{Gear}{Specifies the gear to plot as an integer index or full name}
+\item{gear}{Specifies the gear to plot as an integer index or full name}
 }
 \value{
 ggplot geom object plotting observed and expected frequency

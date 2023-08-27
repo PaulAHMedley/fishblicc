@@ -18,31 +18,31 @@ The maximum posterior density point is found using on the likelihood for the
 length frequency data and the priors.  The model assumes constant
 recruitment, double-sided normal selectivity, a single natural mortality
 parameter, and Gamma-distributed von Bertalanffy growth to define expected
-numbers of fish in pre-defined length bins. The model also assumes
-a negative binomial likelihood function to fit to a single
-length frequency sample. Selectivity, mortality, asymptotic mean length and
-scale parameters are fitted to generate the spawning potential ratio as a
-measure of the stock status.
+numbers of fish in pre-defined length bins. The model also assumes a negative
+binomial likelihood function to fit to a single length frequency sample.
+Selectivity, mortality, asymptotic mean length and scale parameters are
+fitted to generate the spawning potential ratio as a measure of the stock
+status.
 }
 \details{
 It is recommended to test the model and data object using this procedure
-before investing in the MCMC fit using \code{\link[=blicc_fit]{blicc_fit()}}.
+before investing in the MCMC fit using \link{blicc_fit}.
 
-Unlike \code{\link[=blicc_fit]{blicc_fit()}}, the model finds a point estimate. This is much faster
-than the MCMC, but does not provide full information on uncertainty.
-The model estimates mortality and survival through sequential length
-intervals. This is then used to derive abundance and catch in numbers within
-each length bin. The mortality is required to remain constant within each
-bin, but otherwise can vary arbitrarily. However, in this implementation
-mortality is constrained by a parametric model with constant natural
-mortality by length and a double-sided normal selectivity function for
-fishing mortality. See \code{\link[=blicc_dat]{blicc_dat()}} and \code{\link[=blicc_fit]{blicc_fit()}} documentation for
-a description of the model and data requirements.
+Unlike \link{blicc_fit}, the model finds a single maximum posterior point
+estimate. This is much faster than the MCMC, but does not provide full
+information on uncertainty. The model estimates mortality and survival
+through sequential length intervals. This is then used to derive abundance
+and catch in numbers within each length bin. The mortality is required to
+remain constant within each bin, but otherwise can vary arbitrarily. However,
+in this implementation mortality is constrained by a parametric model with
+constant natural mortality by length and a double-sided normal selectivity
+function for fishing mortality. See \link{blicc_dat} and \link{blicc_fit} documentation
+for a description of the model and data requirements.
 
 The standard errors are estimated from 1000 random draws from a multivariate
 normal with mean at the MPD mode and covariance estimated from the inverted
-Hessian matrix. This is an approximation and SE estimates may differ from
-the full MCMC sampling.
+Hessian matrix. This is an approximation and SE estimates may differ from the
+full MCMC sampling.
 
 In addtion to the parameters, the fit reports the spawning potential ratio
 (SPR) and the log probability at the mode (\code{lp__}).

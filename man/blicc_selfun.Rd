@@ -2,33 +2,33 @@
 % Please edit documentation in R/blicc_stan.R
 \name{blicc_selfun}
 \alias{blicc_selfun}
-\title{Sets data object from \code{\link[=blicc_dat]{blicc_dat()}} to have a new selectivity functions}
+\title{Sets data object from \link{blicc_dat} to have new selectivity functions}
 \usage{
-blicc_selfun(blicc_ld, Gear, sel_fun, model_name = NA)
+blicc_selfun(blicc_ld, sel_fun, seli = NULL, model_name = NULL)
 }
 \arguments{
 \item{blicc_ld}{A standard data list suitable for the model (see function
 \link{blicc_dat})}
 
-\item{Gear}{The gears for which the selectivity functions are being
-changed}
+\item{sel_fun}{A vector of selectivity function names (character) or index
+(1-4), with 1="logistic", 2="normal", 3="ss_normal", 4="ds_normal". Length
+must be the same as fq if \code{gear_sel} is not provided. Required.}
 
-\item{sel_fun}{The selectivity functions that gears are being set to either
-as integers or strings.}
+\item{seli}{An integer vector index of the selectivity functions to be
+changed.}
 
-\item{model_name}{A string for a replacement model name in the data
-object. Optional.}
+\item{model_name}{A name for the model (species or fishery). Optional.}
 }
 \value{
-The data object blicc_ld with the new selectivities
+The data object \code{blicc_ld} with the new selectivities
 }
 \description{
-Checks the gear and selectivity are valid, then sets up the data object
-so that the parameters and parameter references for the selectivity
-functions are valid. New references are replaced in the data object,
-which is then returned.
+Checks selectivity functions are valid, then updates the data object with the
+new functions so that the parameters and parameter references for the
+selectivity functions are valid. New references are replaced in the data
+object, which is then returned.
 }
 \examples{
-new_ld <- blicc_selfun(eg_ld, Gear=1, sel_fun="logistic", model_name = "Logistic Selectivity")
+new_ld <- blicc_selfun(eg_ld, sel_fun="logistic", model_name = "Logistic Selectivity")
 
 }

@@ -33,18 +33,25 @@ Calc_SPR <-
 #' Solve for a fishing mortality which produces the target SPR
 #'
 #' The function finds the fishing mortality that gives the `tarSPR` spawning
-#' potential ratio (SPR). The SPR is calculated as a ratio between the
-#' spawning biomass per recruit for a particular fishing mortality divided
-#' by the spawning biomass per recruit with no fishing. The method used
-#' should generally work for sensible reference point target.
+#' potential ratio (SPR). The SPR is calculated as a ratio between the spawning
+#' biomass per recruit for a particular fishing mortality divided by the
+#' spawning biomass per recruit with no fishing. The method used should
+#' generally work for sensible reference point target.
 #'
-#' However, note that fishing mortality estimate may not be finite,
-#' dependent on the selectivity.
+#' However, note that fishing mortality estimate may not be finite, dependent on
+#' the selectivity.
+#'
+#' @details `vdir` should be the same length as gear. It is a weight variable used to
+#' select gears based on values greater than zero. For weights gretare than
+#' zero, it implies proportional adjustment to F for each gear relative to the
+#' largest change (1). This is a simple linear change for estimating reference
+#' points. More complex scenarios will need full simulation.
 #'
 #' @inheritParams blicc_get_expected
 #' @param  tarSPR target SPR reference point: usually 0.2, 0.3 or 0.4
 #' @param  vdir  A search direction vector with maximum value 1 and minimum 0
-#'   applied to changes across gears.
+#'   applied to changes across gears. Must be the same length as the number of
+#'   gear. See details.
 #' @return Spawning potential ratio per-recruit fishing mortalities consistent
 #'   with parameters and reference point
 #' @noRd
@@ -87,15 +94,21 @@ FSPR_solve <-
 
 #' Solve for a selectivity mode which produces the target SPR
 #'
-#' The function finds the selectivity location parameters that gives
-#' the `tarSPR` spawning potential ratio (SPR).
+#' The function finds the selectivity location parameters that gives the
+#' `tarSPR` spawning potential ratio (SPR).
 #'
-#' Calculates the adjusted location selectivity parameters along a
-#' direction vector to achieve a target spawning potential ratio.
-#' This should often work for sensible reference point target.
-#' However, note that selectivity may not achieve any
-#' particular reference point if the fishing mortality is too low.
+#' Calculates the adjusted location selectivity parameters along a direction
+#' vector to achieve a target spawning potential ratio. This should often work
+#' for sensible reference point target. However, note that selectivity may not
+#' achieve any particular reference point if the fishing mortality is too low.
 #' In these cases, `NA` is returned.
+#'
+#' @details `vdir` should be the same length as gear. It is a dummy
+#' variable used to select gears based on values greater than zero. Unlike for
+#' the fishing mortality, `vdir` is used to select gears where `vdir` > 0. The
+#' value of vdir does not matter. This allows for selectivity mixtures where
+#' changes to selectivity are complex and therefore would need proper simulation
+#' rather than simple linear adjustment available from this implementation.
 #'
 #' @inheritParams FSPR_solve
 #' @return The selectivity parameter vector with modes (full selectivity)
@@ -114,19 +127,22 @@ SSPR_solve <-
            blicc_ld) {
 
     SRP_eval <- function(dL) {
-      vSm[indx] <- (1 + vdir*dL)*Sm[indx]
+      vSm[indx] <- (1 + dL)*Sm[indx]
       Rsel <- Rselectivities(vSm, blicc_ld)
       SPR <- fSPR(Galpha, Gbeta, Mk, Fk, Rsel, blicc_ld)
       return(SPR / SPR0 - tarSPR)
     }
 
-    ref_par <- max(Sm[blicc_ld$sp_i[which.max(vdir)]]) # location par
+    # select selectivities
+    sindx <- get_selectivities(which(blicc_ld$Fkg>0 & vdir>0), blicc_ld)
+    indx <- blicc_ld$sp_i[sindx]
+
+    ref_par <- max(Sm[indx]) # location par
     maxdL <- Linf/ref_par - 1
-    vdir <- vdir[blicc_ld$Fkg>0]
+
     Gbeta <- Galpha / Linf
     vSm <- Sm
     SPR0 <- RSPR_0(Galpha, Gbeta, Mk, blicc_ld) # Unexploited SPR
-    indx <- with(blicc_ld, as.vector(t(sp_i[Fkg>0])))
 
     # First need to bracket tarSPR
     S2 <- maxdL
@@ -158,7 +174,7 @@ SSPR_solve <-
                          interval = c(S1, S2),
                          tol=1e-5,         # Depends on binwidth precision
                          maxiter=500)$root
-    vSm[indx] <- (1 + vdir*dL)*Sm[indx]
+    vSm[indx] <- (1 + dL)*Sm[indx]
     return(vSm)
   }
 
@@ -232,17 +248,20 @@ SMY_solve <-
   function(Linf, Galpha, Mk, Fk, Sm, vdir, blicc_ld) {
 
     YPR_S <- function(dL) {
-      vSm[indx] <- (1 + vdir*dL)*Sm[indx]
+      vSm[indx] <- (1 + dL)*Sm[indx]
       Rsel <- Rselectivities(vSm, blicc_ld)
       Yield <- fYPR(Galpha, Gbeta, Mk, Fk, Rsel, blicc_ld)
       return(Yield)
     }
+
     Gbeta <- Galpha / Linf
     vSm <- Sm
     # index location parameters for gears contributing to fishing mortality
-    indx <- with(blicc_ld, as.vector(t(sp_i[Fkg>0])))
-    maxdL <- Linf/max(Sm[blicc_ld$sp_i[which.max(vdir)]]) - 1
-    vdir <- vdir[blicc_ld$Fkg>0]
+    # select selectivities
+    sindx <- get_selectivities(which(blicc_ld$Fkg>0 & vdir>0), blicc_ld)
+    indx <- blicc_ld$sp_i[sindx]
+
+    maxdL <- Linf/max(Sm[indx]) - 1
 
     res <- stats::optimize(
       YPR_S,
@@ -251,7 +270,7 @@ SMY_solve <-
       maximum = TRUE,
       tol = 1.0e-5)
 
-    vSm[indx] <- (1 + vdir*res$maximum)*Sm[indx]
+    vSm[indx] <- (1 + res$maximum)*Sm[indx]
     return(vSm)
   }
 

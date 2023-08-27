@@ -5,12 +5,14 @@
  /////////////    Multiple Selectivity Fit                           /////////////
  /////////////    PAUL MEDLEY                                        /////////////
  /////////////    paulahmedley@gmail.com                             /////////////
- /////////////    May 2023                                        /////////////
+ /////////////    July 2023                                        /////////////
  //><>  ><>  ><>  ><>  ><>  ><>  ><>  ><>  ><>  ><>  ><>  ><>  ><>  ><>  ><>
  // ><>  ><>  ><>  ><>  ><>  ><>  ><>  ><>  ><>  ><>  ><>  ><>  ><>  ><>  ><>
 
- // Fits a length catch curve with with constant mortality within specified length interval (i.e. length bins).
+ // Fits a length catch curve with with constant mortality within specified
+ // length intervals (i.e. length bins).
  // Fits to multiple length frequency data
+ // Selectivity models are uncoupled from gears to allow mixtures
 
  /////////////////////////////////////////////
  //////  FUNCTIONS   /////////////////////////
@@ -46,15 +48,16 @@ vector sel_ssnormal(vector LMP, vector par) {
   int nl = rows(LMP);
   int nv = 1;
   vector[nl] Sel;
-  // copy correct scale parameter
-  while (LMP[nv] < par[1])
+  while (LMP[nv] < par[1])   //find bin above mode
     nv += 1;
   if (nv >= nl)
     Sel = exp(-par[2] * (LMP - par[1])^2);
   else {
-    Sel[1:nv] = exp(-par[2] * (LMP[1:nv] - par[1])^2);
-    nv += 1;
-    Sel[nv:nl] = rep_vector(1.0, nl-nv+1);
+    Sel = rep_vector(1.0, nl);
+    if (nv > 1) {
+      nv -= 1;
+      Sel[1:nv] = exp(-par[2] * (LMP[1:nv] - par[1])^2);
+    }
   }
   return Sel;
 } //sel_ssnormal
@@ -73,37 +76,6 @@ vector sel_dsnormal(vector LMP, vector par) {
   return Sel;
 } //sel_dsnormal
 
-// MODEL 5
-
-vector sel_dsnmix(vector LMP, vector par) {
-  // 1 Location 1
-  // 2 Location 2
-  // 3 Height 1
-  // 4 Slope 1
-  // 5 Slope 2
-  // 6 Slope 3
-  // 7 Slope 4 (could be set to zero)
-  int nl = rows(LMP);
-  vector[nl] Sel = rep_vector(0, nl);
-  vector[nl] Adiff2 = (LMP - par[1])^2;
-  vector[nl] Bdiff2 = (LMP - par[2])^2;
-  vector[nl] Apars;  //scale parameter
-  vector[nl] Bpars;  //scale parameter
-  real       lwt;
-
-  if (par[1] < par[2])
-    lwt = -log(1 + par[3]*exp(-((par[2]-par[1])^2)*par[6]));
-  else
-    lwt = -log(1 + par[3]*exp(-((par[2]-par[1])^2)*par[7]));
-
-  for (i in 1:nl) {
-    if (LMP[i] < par[1]) Apars[i] = par[4]; else Apars[i] = par[5];
-    if (LMP[i] < par[2]) Bpars[i] = par[6]; else Bpars[i] = par[7];
-  }
-  Sel = exp(-Apars .* Adiff2 + lwt) + par[3]*exp(-Bpars .* Bdiff2 + lwt);
-  return Sel;
-}
-
 
 // Population model: survival
 
@@ -111,10 +83,6 @@ vector Pop_L(vector gl_node, vector gl_wt, vector Len, vector Zki, real alpha, r
   // Expected numbers of fish within each length interval
   // survival function based on x to be integrated 0 - Inf using Gauss-Laguerre quadrature
   // (exp(-x) removed for Laguerre quadrature)
-  // Due to numerical error, it is possible zero or, more likely, a very small negative number will be returned,
-  // which will be rejected by the sampler.
-  // Whether this is a problem in practice is not clear. Fixing it by setting minimum values might upset the sampler which uses gradients
-  // and assumes continuous variables. Keep the length bins tight around observations (e.g. bracket the observations with a single zero).
   int            nl = rows(Len);
   int            nv = rows(gl_node);
   real           lg_alpha = lgamma(alpha);
@@ -160,47 +128,68 @@ data {
   //Likelihood are strictly applied to the bins supplied.
   //It is important to include all zero observations with non-negligible probability
   int<lower=1>            NG;           // Number of gears: separate length frequencies
-  int<lower=1, upper=NG>  NF;           // Number of F's: gears associated with non-zero catches
+  int<lower=1>            NS;           // Number of selectivity models
+  int<lower=0, upper=NG>  NF;           // Number of F's: gears associated with non-zero catches
   int<lower=1>            NB;           // Number of length bins
+  int<lower=2>            NP;           // Number of selectivity parameters
+  int<lower=0>            NM;           // Number of mixture functions, & therefore mixture weights. Can be zero.
 
   vector[NB]              LLB;            // Bin lower bounds
   int                     fq[NG, NB];     // Frequency in each bin for each gear
   vector[NF]              prop_catch;     // Estimated total relative catch in numbers of fish, excluding zeroes for surveys etc.
   int<lower=0, upper=NG>  Fkg[NG];        // Index of the Fk associated with the gear gi. 0 implies catch negligible
-  int<lower=1, upper=5>   fSel[NG];       // Selectivity function to use: 1 = logistic, 2 = normal, 3 = ss_normal, 4 = ds_normal
-  int<lower=2>            NP;             // Number of selectivity parameters
-  int<lower=1, upper=NP>  sp_i[NG];       // Selectivity function parameter start index
+  int<lower=1, upper=4>   fSel[NS];       // Selectivity function to use: 1 = logistic, 2 = normal, 3 = ss_normal, 4 = ds_normal
+  int<lower=1, upper=NP>  sp_i[NS];       // Selectivity function parameter start index
+  int<lower=1, upper=NS>  GSbase[NG];     // Integers linking gear to a selectivity function reference in fSel
+  int<lower=0, upper=NM>  GSmix1[NG*2];   // Integer pairs linking gear to selectivity function reference in GSMix2
+  int<lower=1, upper=NS>  GSmix2[NM];     // Integer references to fSel for mixtures. Could be zero length.
   row_vector[NB]          ma_L;           // Mature biomass at length
   //Constant Hyperparameters for priors - Linf has a normal prior; all other priors are log normal
   //see https://github.com/stan-dev/stan/wiki/Prior-Choice-Recommendations
-  real         poLinfm;
-  real         poLinfs;
-  real         polGam;
-  real         polGas;
-  vector[NB]   M_L;          // Length-based adjustment for natural mortality
-  real         polMkm;
-  real         polMks;
-  vector[NF]   polFkm;
-  real         polFks;
-  vector[NP]   polSm;
-  vector[NP]   polSs;
-  real         polNB_phim;
-  real         polNB_phis;
-  real         polCs;       // Catch sigma for lognormal
-  int<lower=5> NK;          // Number of Gauss-Laguerre nodes
-  vector[NK]   gl_nodes;
-  vector[NK]   gl_weights;
+  real            poLinfm;
+  real            poLinfs;
+  real            polGam;
+  real            polGas;
+  vector[NB]      M_L;          // Length-based adjustment for natural mortality
+  real            polMkm;
+  real            polMks;
+  vector[NF]      polFkm;
+  real            polFks;
+  vector[NP+NM]   polSm;
+  vector[NP+NM]   polSs;
+  real            polNB_phim;
+  real            polNB_phis;
+  real            polCs;       // Catch sigma for lognormal
+  int<lower=5>    NK;          // Number of Gauss-Laguerre nodes
+  vector[NK]      gl_nodes;
+  vector[NK]      gl_weights;
 }
 
 
 transformed data {
-  real          eps;     // small number to avoid zeroes and assoicated numerical failure. It should have no influence on results.
+  real          eps;         // small number to avoid zeroes and assoicated numerical failure. It should have no influence on results.
   vector[NG]    NObs;
-  vector[NF]    olC;     // Normalized observed log catch by gear
-  vector[NB]    LMP;     // Length bin mid point
+  vector[NF]    olC;         // Normalized observed log catch by gear
+  vector[NB]    LMP;         // Length bin mid point
+  array[NG] int GSmix0;  // Whether the gear selectivity includes mixtures > 0
 
-  for (gi in 1:NG) {
+  for (gi in 1:NG)
     NObs[gi] = sum(fq[gi]);
+
+  {  //Check mixtures
+    int Nmix = 0;
+    if (NM == 0) {
+      GSmix0 = rep_array(0, NG);
+    } else {
+      for (gi in 1:NG) {
+        int si = 1+2*(gi-1);
+        GSmix0[gi] = GSmix1[si];
+        if (GSmix1[si] > 0)
+          Nmix += GSmix1[si+1] - GSmix1[si] + 1;
+      }
+    }
+    if (Nmix != NM)
+      reject("Data object error: Number of mixtures / mixture references incorrect.");
   }
 
   {
@@ -215,7 +204,7 @@ transformed data {
   }
   eps = 0.001/sum(NObs);
 
-  // LMP is only used for selectivity models
+  // Length mid-point for bins: only used for selectivity models
   for (i in 1:(NB-1))
     LMP[i] = 0.5*(LLB[i] + LLB[i+1]);
   LMP[NB] = LLB[NB] + 0.5*(LLB[NB] - LLB[NB-1]);
@@ -232,7 +221,7 @@ parameters {  //modelled param
   real                            nGalpha;
   real                            nMk;
   vector[NF]                      nFk;
-  vector[NP]                      nSm;   // 1-NG are Ss1, thereafter Ss2
+  vector[NP+NM]                   nSm; //Includes selectivity mixture weights. NM may be zero.
   real                            nNB_phi;
 }
 
@@ -240,8 +229,8 @@ transformed parameters {
   real Linf = poLinfm + nLinf*poLinfs;
   real Galpha = exp(polGam + nGalpha*polGas);
   real Mk = exp(polMkm + nMk*polMks);
-  vector[NF] Fk = exp(polFkm + nFk*polFks);
-  vector[NP] Sm = exp(polSm + nSm .* polSs);
+  vector[NF] Fk = exp(polFkm + nFk * polFks);
+  vector[NP+NM] Sm = exp(polSm + nSm .* polSs);
   real NB_phi = exp(polNB_phim + nNB_phi*polNB_phis);
   real Gbeta = Galpha / Linf;
 }
@@ -256,12 +245,12 @@ model {
   /////   PRIORS   ///  <><  ><>  <><  ><>  <><  ><>
   //<><  ><>  <><  ><>  <><  ><>  <><  ><>  <><  ><>
 
-  target += normal_lpdf(nLinf   | 0, 1);
-  target += normal_lpdf(nGalpha | 0, 1);
-  target += normal_lpdf(nMk     | 0, 1);
-  target += normal_lpdf(nFk     | 0, 1);
-  target += normal_lpdf(nSm     | 0, 1);
-  target += normal_lpdf(nNB_phi | 0, 1);
+  target += std_normal_lupdf(nLinf);
+  target += std_normal_lupdf(nGalpha);
+  target += std_normal_lupdf(nMk);
+  target += std_normal_lupdf(nFk);
+  target += std_normal_lupdf(nSm);
+  target += std_normal_lupdf(nNB_phi);
 
   //<><  ><>  <><  ><>  <><  ><>  <><  ><>  <><  ><>
   ///// Expecteds ///  <><  ><>  <><  ><>  <><  ><>
@@ -273,27 +262,37 @@ model {
     vector[NF] elC;
     real       eC_sum;
     vector[NB] eC;
+    vector[NS] Seli[NS];                    // Selectivity models
     vector[NB] Fki[NG];                     // fishing mortality
     vector[NB] Zki = Mk * M_L;              // Total mortality
     vector[NB] Pop;                         // Population
 
+    for (si in 1:NS) {
+      if (fSel[si] == 1)
+        Seli[si] = sel_logistic(LMP, segment(Sm, sp_i[si], 2));  // Logistic selectivity
+      else if (fSel[si] == 2)
+        Seli[si] = sel_normal(LMP, segment(Sm, sp_i[si], 2));    // Normal selectivity
+      else if (fSel[si] == 3)
+        Seli[si] = sel_ssnormal(LMP, segment(Sm, sp_i[si], 2));  // Normal flat selectivity
+      else if (fSel[si] == 4)
+        Seli[si] = sel_dsnormal(LMP, segment(Sm, sp_i[si], 3));  // Domed selectivity
+    }
+
     for (gi in 1:NG) {
-      if (fSel[gi] == 1)
-        Fki[gi] = sel_logistic(LMP, segment(Sm, sp_i[gi], 2));  // Logistic selectivity
-      else if (fSel[gi] == 2)
-        Fki[gi] = sel_normal(LMP, segment(Sm, sp_i[gi], 2));    // Normal selectivity
-      else if (fSel[gi] == 3)
-        Fki[gi] = sel_ssnormal(LMP, segment(Sm, sp_i[gi], 2));  // Normal flat selectivity
-      else if (fSel[gi] == 4)
-        Fki[gi] = sel_dsnormal(LMP, segment(Sm, sp_i[gi], 3));  // Domed selectivity
-      else
-        Fki[gi] = sel_dsnmix(LMP, segment(Sm, sp_i[gi], 7));    // Mixture selectivity
+      Fki[gi] = Seli[GSbase[gi]];
+      if (GSmix0[gi] != 0) {  // Add other selectivity if they exist
+        int si = 1 + (gi-1)*2;
+        for (i in GSmix1[si]:GSmix1[si+1])
+          Fki[gi] += Sm[NP+i] * Seli[GSmix2[i]];
+      }
 
       if (Fkg[gi] > 0) {
         Fki[gi] *= Fk[Fkg[gi]];                   // Fishing mortality
         Zki += Fki[gi];                           // Total mortality
       }
     }
+
+
     //calculate the expected survival at each length point integrating over age
     Pop = Pop_L(gl_nodes, gl_weights, LLB, Zki, Galpha, Gbeta);
 
@@ -305,14 +304,14 @@ model {
       eC = Fki[gi] .* Pop;
       eC_sum = sum(eC);
       efq = eC * NObs[gi]/eC_sum + eps;    // Normalise and raise to the expected numbers in the sample
-      target += neg_binomial_2_lpmf(fq[gi] | efq, NB_phi);
+      target += neg_binomial_2_lupmf(fq[gi] | efq, NB_phi);
       if (Fkg[gi] > 0) {
         Total_Catch += eC_sum;
         elC[Fkg[gi]] = log(eC_sum);
       }
     }
     elC -= log(Total_Catch);         // Normalise
-    target += normal_lpdf(olC | elC, polCs);
+    target += normal_lupdf(olC | elC, polCs);
   }
 
 
@@ -328,6 +327,7 @@ generated quantities {
   {
     real SPR0;
     real SPRF;
+    vector[NS] Seli[NS];                    // Selectivity models
     vector[NB] Zki = Mk * M_L;             // Mortality with no fishing
     vector[NB] Sv;                         // Survival
 
@@ -335,18 +335,25 @@ generated quantities {
     SPR0 = ma_L * Pop_L(gl_nodes, gl_weights, LLB, Zki, Galpha, Gbeta);
 
     // Add fishing mortality rate to each length bin
+    for (gi in 1:NS) {
+      if (fSel[gi] == 1)
+        Seli[gi] = sel_logistic(LMP, segment(Sm, sp_i[gi], 2));  // Logistic selectivity
+      else if (fSel[gi] == 2)
+        Seli[gi] = sel_normal(LMP, segment(Sm, sp_i[gi], 2));    // Normal selectivity
+      else if (fSel[gi] == 3)
+        Seli[gi] = sel_ssnormal(LMP, segment(Sm, sp_i[gi], 2));  // Normal flat selectivity
+      else if (fSel[gi] == 4)
+        Seli[gi] = sel_dsnormal(LMP, segment(Sm, sp_i[gi], 3));  // Domed selectivity
+    }
+
     for (gi in 1:NG) {
       if (Fkg[gi] > 0) {
-        if (fSel[gi] == 1)
-          Zki += sel_logistic(LMP, segment(Sm, sp_i[gi], 2))*Fk[Fkg[gi]];  // Flat top selectivity
-        else if (fSel[gi] == 2)
-          Zki += sel_normal(LMP, segment(Sm, sp_i[gi], 2))*Fk[Fkg[gi]];    // Normal selectivity
-        else if (fSel[gi] == 3)
-          Zki += sel_ssnormal(LMP, segment(Sm, sp_i[gi], 2))*Fk[Fkg[gi]];  // Flat top selectivity
-        else if (fSel[gi] == 4)
-          Zki += sel_dsnormal(LMP, segment(Sm, sp_i[gi], 3))*Fk[Fkg[gi]];  // Domed selectivity
-        else
-          Zki += sel_dsnmix(LMP, segment(Sm, sp_i[gi], 7))*Fk[Fkg[gi]];    // Mixed selectivity
+        Zki += Seli[GSbase[gi]] * Fk[Fkg[gi]];
+        if (GSmix0[gi] != 0) {  // Add other selectivity if they exist
+          int si = 1 + (gi-1)*2;
+          for (i in GSmix1[si]:GSmix1[si+1])
+            Zki += Sm[NP+i] * Seli[GSmix2[i]] * Fk[Fkg[gi]];
+        }
       }
     }
     //calculate the expected survival at each length point integrating over age

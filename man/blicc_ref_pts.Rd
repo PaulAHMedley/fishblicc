@@ -26,7 +26,8 @@ and primarily applies to females. Must be less than Linf, usually around
 0.66 Linf, which is assumed if it is not provided. Optional.}
 
 \item{L95}{The length at 95\% maturity. Must be greater than L50 and less
-than Linf. A small increment is added L50 if it is not provided. Optional.}
+than Linf. A small increment is added to L50 if it is not provided.
+Optional.}
 }
 \value{
 A list of posterior draws or mpd point estimates of important

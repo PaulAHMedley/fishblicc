@@ -4,14 +4,14 @@
 \alias{plot_residuals}
 \title{Plot standardised residuals against length}
 \usage{
-plot_residuals(blicc_rp, Gear = "All")
+plot_residuals(blicc_rp, gear = "All")
 }
 \arguments{
 \item{blicc_rp}{A list of posterior draws, reference points with associated
 direction, the data object and expected lengths from \link{blicc_ref_pts}
 function.}
 
-\item{Gear}{Specifies the gear to plot as an integer index or full name}
+\item{gear}{Specifies the gear to plot as an integer index or full name}
 }
 \value{
 ggplot geom object plotting standardised residuals

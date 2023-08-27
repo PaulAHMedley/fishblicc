@@ -4,12 +4,12 @@
 \alias{posterior_predict}
 \title{A posterior predicted length frequency data set}
 \usage{
-posterior_predict(blicc_rp, Gear = NA, draws = 0)
+posterior_predict(blicc_rp, gear = NULL, draws = 0)
 }
 \arguments{
 \item{blicc_rp}{List of fishblicc result tables from \code{\link[=blicc_ref_pts]{blicc_ref_pts()}}}
 
-\item{Gear}{Identifies the single gear (selectivity) providing predictions}
+\item{gear}{Identifies the single gear (selectivity) providing predictions}
 
 \item{draws}{The number of random draws up to the number of draws from the
 MCMC (the default).}
@@ -24,6 +24,6 @@ might be expected if the model is correct, can be used in the posterior
 and bayesplot packages for evaluation.
 }
 \examples{
-yrep <- posterior_predict(blicc_rp = eg_rp, Gear=1, draws=100)
+yrep <- posterior_predict(blicc_rp = eg_rp, gear=1, draws=100)
 
 }

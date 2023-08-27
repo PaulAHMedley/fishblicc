@@ -7,13 +7,15 @@
 Rselectivities(Sm, blicc_ld)
 }
 \arguments{
-\item{Sm}{Vector of selectivity parameters for all the selectivity functions}
+\item{Sm}{Vector of parameters for all the selectivity functions
+including mixture weights at the end of the vector}
 
 \item{blicc_ld}{A standard data list suitable for the model (see function
 \link{blicc_dat})}
 }
 \value{
-Selectivities as a vector for each length bin in a list for each gear.
+Selectivities as a vector for each length bin in a list for each
+gear.
 }
 \description{
 The function calculates the selectivities for each gear based on the relevant

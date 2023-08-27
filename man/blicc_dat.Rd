@@ -10,13 +10,14 @@ blicc_dat(
   fq,
   Linf,
   sel_fun,
+  gear_sel = NULL,
   Catch = 1,
   gear_names = NA,
   Mk = NA,
   ref_length = -1,
   wt_L = NA,
   ma_L = NA,
-  a = 1,
+  a = 0.001,
   b = 3,
   L50 = NA,
   L95 = NA,
@@ -30,18 +31,22 @@ blicc_dat(
 bin. Required.}
 
 \item{fq}{A list of vectors, each the same length as LLB, containing the
-frequency data. Zeroes must be included. If only one gear, can be a vector.
-Required.}
+frequency data for each gear. Zeroes must be included. If only one gear,
+can be a vector. Required.}
 
 \item{Linf}{A vector of two values: mean and sd of the prior maximum mean
 length for the stock. Required.}
 
 \item{sel_fun}{A vector of selectivity function names (character) or index
-(1-4), with 1="logistic", 2="normal", 3="ss_normal", 4="ds_normal" for each
-vector in fq. Required.}
+(1-4), with 1="logistic", 2="normal", 3="ss_normal", 4="ds_normal". Length
+must be the same as fq if \code{gear_sel} is not provided. Required.}
 
-\item{Catch}{A vector of relative catches. Required, if the number of gears
-is more than one.}
+\item{gear_sel}{A list of integer vectors indexing which \code{sel_fun} are used
+for which gear. It can include multiple selectivity functions for each
+gear.  Optional.}
+
+\item{Catch}{A vector of relative catches, one for each gear. Required if the
+number of gears is more than one.}
 
 \item{gear_names}{A vector of names for the gears for reference. Optional.}
 
@@ -49,7 +54,7 @@ is more than one.}
 1.5). Optional.}
 
 \item{ref_length}{The reference length for the inverse length function if it
-is used. (default is NA i.e. fixed natural mortality)}
+is used. (default is NA i.e. constant natural mortality)}
 
 \item{wt_L}{Weight (biomass) for each length bin. Optional.}
 
@@ -65,16 +70,18 @@ and primarily applies to females. Must be less than Linf, usually around
 0.66 Linf, which is assumed if it is not provided. Optional.}
 
 \item{L95}{The length at 95\% maturity. Must be greater than L50 and less
-than Linf. A small increment is added L50 if it is not provided. Optional.}
+than Linf. A small increment is added to L50 if it is not provided.
+Optional.}
 
 \item{NK}{Number of nodes for the Gauss Laguerre quadrature rule. 110 is a
-safe value, but extends the run time of all calculations.  Optional.}
+safe value, but extends the run time of all calculations.  If not provided
+it is estimated. Optional.}
 }
 \value{
-\if{html}{\out{<div class="sourceCode">}}\preformatted{A list of vectors and numbers structured suitable for use in the
+\if{html}{\out{<div class="sourceCode">}}\preformatted{A list structured in a manner suitable for use in the Stan model
 }\if{html}{\out{</div>}}
 
-Stan model \code{BLICC.stan}.
+\code{BLICC.stan}.
 }
 \description{
 Vectors for the lower bound for each length bin and the number of fish in
@@ -82,24 +89,24 @@ each length bin and combined with prior parameters into a data list as
 expected by the BLICC model.
 }
 \details{
-This is a convenience function. The fitting and other functions accept a
-linked list of values providing necessary information for the BLICC model,
-including the length bin boundaries and length frequencies. Some basic error
-checking is carried out and error message is given if the inputs are
-incorrect.
+This is a convenience function. The fitting and other functions
+accept a linked list of values providing necessary information for the
+BLICC model, including the length bin boundaries and length frequencies.
+Some basic error checking is carried out and error message is given if the
+inputs are incorrect.
 
 The data list produced as output contains data and parameters suitable for
-the model fit and producing output. These values can be changed in the list,
-but must have the same format. The majority of information is the length
-bin, frequency data and prior parameters (normal for Linf and log-normal
-for all other parameters). However, the list also contains NK, the number
-of knots (nodes) used in the quadrature integration. The default is 110,
-which is safe but extends running times. Lower values risk inaccurate
-integration but result in faster fitting.
+the model fit and producing output. These values can be changed in the
+list, but must have the same format. The majority of information is the
+length bin, frequency data and prior parameters (normal for Linf and
+log-normal for all other parameters). However, the list also contains NK,
+the number of knots (nodes) used in the quadrature integration. The default
+is 110, which is safe but extends running times. Lower values risk
+inaccurate integration but result in faster fitting.
 
-The length frequencies should include zeros for bins which
-contained no fish. The length frequency should be bounded by a single zero
-bin as the first and last bin in the frequency.
+The length frequencies should include zeros for bins which contained no
+fish. The length frequency should be bounded by a single zero bin as the
+first and last bin in the frequency.
 
 To allow maximum flexibility, prior hyper-parameters for the selectivity
 functions (as log-values for means in the log-normal distribution) are

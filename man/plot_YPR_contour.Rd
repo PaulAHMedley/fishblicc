@@ -4,14 +4,14 @@
 \alias{plot_YPR_contour}
 \title{Yield-per-recruit surface contour plot}
 \usage{
-plot_YPR_contour(blicc_rp, Gear = NA)
+plot_YPR_contour(blicc_rp, gear = NULL)
 }
 \arguments{
 \item{blicc_rp}{A list of posterior draws, reference points with associated
 direction, the data object and expected lengths from \link{blicc_ref_pts}
 function.}
 
-\item{Gear}{Specifies the gear to plot as an integer index or full name}
+\item{gear}{Specifies the gear to plot as an integer index or full name}
 }
 \value{
 ggplot geom object for plotting

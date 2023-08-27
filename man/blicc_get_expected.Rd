@@ -19,7 +19,7 @@ rate K) to be multiplied by selectivity to get fishing mortality in each
 length bin}
 
 \item{Sm}{Vector of parameters for all the selectivity functions
-flat-topped selectivity}
+including mixture weights at the end of the vector}
 
 \item{blicc_ld}{A standard data list suitable for the model (see function
 \link{blicc_dat})}
@@ -32,12 +32,11 @@ For a set of parameter values, returns the expected selectivity, mortality,
 survival, and catch in each length bin based on the BLICC model as a tibble.
 }
 \details{
-The model and provided parameter values are used to calculate the expected
-values for selectivity, survival, relative population numbers,
-total mortality and expected length frequency for each length bin.
-Input parameters are point estimates (reals). The standard data list
-provides the model dimensions and is produced by the function
-\code{\link[=blicc_dat]{blicc_dat()}}.
+The model and provided parameter values are used to calculate the
+expected values for selectivity, survival, relative population numbers,
+total mortality and expected length frequency for each length bin. Input
+parameters are point estimates (reals). The standard data list provides the
+model dimensions and is produced by the function \code{\link[=blicc_dat]{blicc_dat()}}.
 }
 \examples{
 blicc_get_expected(Linf = 32, Galpha = 100, Mk = 1.5, Fk = 1.5,
