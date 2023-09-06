@@ -37,7 +37,7 @@ vector sel_normal(vector LMP, vector par) {
   // Normal selectivity model (i.e. same steepness on both sides of the mode)
   // par[1] = Smax, par[2] = Ss1
   int nl = rows(LMP);
-  vector[nl] Sel = exp(-par[2] * (LMP - par[1])^2);
+  vector[nl] Sel = exp(-par[2] * square(LMP - par[1]));
   return Sel;
 } //sel_normal
 
@@ -51,12 +51,12 @@ vector sel_ssnormal(vector LMP, vector par) {
   while (LMP[nv] < par[1])   //find bin above mode
     nv += 1;
   if (nv >= nl)
-    Sel = exp(-par[2] * (LMP - par[1])^2);
+    Sel = exp(-par[2] * square(LMP - par[1]));
   else {
     Sel = rep_vector(1.0, nl);
     if (nv > 1) {
       nv -= 1;
-      Sel[1:nv] = exp(-par[2] * (LMP[1:nv] - par[1])^2);
+      Sel[1:nv] = exp(-par[2] * square(LMP[1:nv] - par[1]));
     }
   }
   return Sel;
@@ -72,7 +72,7 @@ vector sel_dsnormal(vector LMP, vector par) {
   // copy correct scale parameter
   for (i in 1:nl)
     if (LMP[i] < par[1]) pars[i] = par[2]; else pars[i] = par[3];
-  Sel = exp(-pars .* (LMP - par[1])^2);
+  Sel = exp(-pars .* square(LMP - par[1]));
   return Sel;
 } //sel_dsnormal
 

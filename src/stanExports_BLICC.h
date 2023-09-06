@@ -281,7 +281,7 @@ static const std::vector<string> locations_array__ = {" (found before start of p
                                                       " (in 'string', line 21, column 44 to line 27, column 1)",
                                                       " (in 'string', line 32, column 2 to column 21)",
                                                       " (in 'string', line 33, column 9 to column 11)",
-                                                      " (in 'string', line 33, column 2 to column 51)",
+                                                      " (in 'string', line 33, column 2 to column 55)",
                                                       " (in 'string', line 34, column 2 to column 13)",
                                                       " (in 'string', line 29, column 42 to line 35, column 1)",
                                                       " (in 'string', line 40, column 2 to column 21)",
@@ -292,11 +292,11 @@ static const std::vector<string> locations_array__ = {" (found before start of p
                                                       " (in 'string', line 43, column 2 to line 44, column 12)",
                                                       " (in 'string', line 48, column 4 to column 30)",
                                                       " (in 'string', line 50, column 6 to column 14)",
-                                                      " (in 'string', line 51, column 6 to column 56)",
+                                                      " (in 'string', line 51, column 6 to column 60)",
                                                       " (in 'string', line 49, column 16 to line 52, column 5)",
                                                       " (in 'string', line 49, column 4 to line 52, column 5)",
                                                       " (in 'string', line 47, column 7 to line 53, column 3)",
-                                                      " (in 'string', line 46, column 4 to column 42)",
+                                                      " (in 'string', line 46, column 4 to column 46)",
                                                       " (in 'string', line 45, column 2 to line 53, column 3)",
                                                       " (in 'string', line 54, column 2 to column 13)",
                                                       " (in 'string', line 37, column 44 to line 55, column 1)",
@@ -309,7 +309,7 @@ static const std::vector<string> locations_array__ = {" (found before start of p
                                                       " (in 'string', line 65, column 25 to column 42)",
                                                       " (in 'string', line 65, column 4 to column 65)",
                                                       " (in 'string', line 64, column 2 to line 65, column 65)",
-                                                      " (in 'string', line 66, column 2 to column 39)",
+                                                      " (in 'string', line 66, column 2 to column 43)",
                                                       " (in 'string', line 67, column 2 to column 13)",
                                                       " (in 'string', line 57, column 44 to line 68, column 1)",
                                                       " (in 'string', line 74, column 2 to column 32)",
@@ -426,7 +426,7 @@ sel_normal(const T0__& LMP_arg__, const T1__& par_arg__,
     current_statement__ = 207;
     assign(Sel, nil_index_list(),
       stan::math::exp(
-        multiply(-par[(2 - 1)], pow(subtract(LMP, par[(1 - 1)]), 2))),
+        multiply(-par[(2 - 1)], square(subtract(LMP, par[(1 - 1)])))),
       "assigning variable Sel");
     current_statement__ = 208;
     return Sel;
@@ -487,7 +487,7 @@ sel_ssnormal(const T0__& LMP_arg__, const T1__& par_arg__,
       current_statement__ = 222;
       assign(Sel, nil_index_list(),
         stan::math::exp(
-          multiply(-par[(2 - 1)], pow(subtract(LMP, par[(1 - 1)]), 2))),
+          multiply(-par[(2 - 1)], square(subtract(LMP, par[(1 - 1)])))),
         "assigning variable Sel");
     } else {
       current_statement__ = 216;
@@ -501,11 +501,11 @@ sel_ssnormal(const T0__& LMP_arg__, const T1__& par_arg__,
         assign(Sel, cons_list(index_min_max(1, nv), nil_index_list()),
           stan::math::exp(
             multiply(-par[(2 - 1)],
-              pow(
+              square(
                 subtract(
                   rvalue(LMP,
                     cons_list(index_min_max(1, nv), nil_index_list()), "LMP"),
-                  par[(1 - 1)]), 2))), "assigning variable Sel");
+                  par[(1 - 1)])))), "assigning variable Sel");
       } 
     }
     current_statement__ = 224;
@@ -573,7 +573,7 @@ sel_dsnormal(const T0__& LMP_arg__, const T1__& par_arg__,
     current_statement__ = 235;
     assign(Sel, nil_index_list(),
       stan::math::exp(
-        elt_multiply(minus(pars), pow(subtract(LMP, par[(1 - 1)]), 2))),
+        elt_multiply(minus(pars), square(subtract(LMP, par[(1 - 1)])))),
       "assigning variable Sel");
     current_statement__ = 236;
     return Sel;

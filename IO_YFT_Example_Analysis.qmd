@@ -1,0 +1,373 @@
+---
+title: "Indian Ocean Yellowfin fishblicc Analysis"
+author: "Paul Medley"
+date:   "August 2023"
+format: pdf
+keep_md: true
+editor: visual
+---
+
+```{r setup}
+library("here")
+library("ggplot2")
+library("dplyr")
+library("tidyr")
+# library("fishblicc")
+library("devtools")
+library("rstantools")
+library("flextable")
+load_all()
+```
+
+# Introduction
+
+This is an example analysis of Indian Ocean yellowfin tuna. This stock undergoes regular Stock Synthesis stock assessments which make use of all available data and undergoes rigorous review through the IOTC science committee. Part of the available data reported by countries that are members of IOTC include length frequency and catch data from a variety of gears. These data are suitable for a multi-selectivity catch curve. This is a useful case study to see how the method compares with the full assessment and consider the problems that arise when dealing with limited data. There is no intention here to provide a competing stock assessment since important informative data that are available for analysis are actively excluded here.
+
+Catch curves are a simple idea - usually to use a snapshot of the age structure to infer the stock status and fishing mortality. This is made more complicated when dealing with lengths as a growth model is required to link length to age. But in principle the length-based catch curve applies the same idea. Is the proportion of larger mature fish in the landings consistent with the stock being sustainably harvested or not?
+
+# Data
+
+## Catch Data
+
+The data used are public length frequency data from \[www.iotc.org\] and is the same as that used in the 2019 SS3 stock assessment. The data is combined over the last 6 years (2013-2019).
+
+```{r}
+load(here("data", "iotc_yft_2013_19.rda"))
+```
+
+
+```{r }
+#| label: fig_catch_data
+#| fig-cap: "Total catch weight for 2013-2019 by gear."  
+ggplot(yft_catch_2013_19, aes(x=gear, y=catch)) +
+  geom_col(fill="green", alpha=0.5) +
+  theme_classic()
+```
+
+```{r }
+lfd <- yft_lenfreq_2013_19 |>
+  pivot_longer(cols=BB:`PS-LS`, names_to="gear", values_to="fq") |>
+  group_by(gear) |>
+  mutate(Proportion=fq/sum(fq)) |>
+  ungroup()
+
+#| label: fig_length_frequency_data
+#| fig-cap: "Length frequency data as proportions for each gear."  
+lfd |>
+  ggplot(aes(x=Len, y=Proportion)) +
+  geom_col(fill="lightblue") +
+  facet_wrap(vars(gear), ncol=4) +
+  theme_classic()
+```
+
+
+
+
+## Life History Parameters
+
+In data poor situations by definition, information available on the stock is usually very limited and often information from other stocks and fisheries, along with local expert opinion is required to compile the likely life history parameters that are necessary to interpret length frequency data. In general, length frequency data will not contain information to support estimates of natural mortality separate from fishing mortality, or information on growth. In a Bayesian context, informative priors on key life history parameters will be required as input to the model.
+
+```{r FitPrep}
+# ( from fishbase)
+L50 <- 103 
+L95 <- 120
+Linf <- c(181.0454545, 15)
+Galpha <- 100
+a <- 0.00002459 
+b <- 2.9667
+Mk <- 1.714011976
+```
+
+## Catch Numbers
+
+For multiple gears, the relative catch in numbers for each gear is required to estimate the relative fishing mortality each gear applies. For data limited cases, these relative catch data are potentially difficult to estimate. In many cases, the relative sample size of length frequency data taken for each gear may be the best indicator of the relative catches. If estimates of catches are available, these should be used.
+
+For IO yellowfin tuna, direct estimates of catch weight are available, and these have been converted to numbers using the mean weights from the length frequency samples. The length-weight conversion is estimated slightly differently between longline and other gears. This alternative length-weight relationship was applied to longline and handline, which catch similar size fish.
+
+```{r }
+# Generate mean weights
+a <- 0.00002459
+b <- 2.9667
+
+LMP <- seq(12, 202, by=4)
+wt_sg <- a * LMP^b
+wt_ll <- 1.13*0.0000094007 * LMP^3.126843987
+
+gr <- pull(yft_catch_2013_19, gear)
+mwt <- double(length(gr))
+i <- 1
+for (g in gr) {
+  c1 <- enquo(g)
+  fq <- pull(yft_lenfreq_2013_19, {{c1}})
+  mwt[i] <- if_else(g=="LL", 
+                    sum(fq * wt_ll)/sum(fq), 
+                    sum(fq * wt_sg)/sum(fq)) 
+  i <- i+1
+}
+
+# catch in t, mwt in kilos, cn in thousands of fish
+yft_catch_2013_19$catch_n <- yft_catch_2013_19$catch/mwt
+
+```
+
+
+
+```{r }
+#| label: catch_numbers
+#| fig-cap: "Estimated catch numbers 2013-2019 for each gear."
+ggplot(yft_catch_2013_19, aes(x=gear, y=catch_n)) +
+  geom_col(fill="lightblue") +
+  theme_classic() +
+  labs(y = "Catch (numbers)", x = "Gear type")
+```
+
+
+```{r }
+cn <- pull(yft_catch_2013_19, catch_n)
+names(cn) <- pull(yft_catch_2013_19, gear)
+
+lfd <- lfd |>
+  group_by(gear) |>
+  mutate(Proportion=cn[gear]*fq/sum(fq))
+```
+
+
+```{r }
+#| label: fig-cum_wt_prop_lfd
+#| fig-cap: "Length frequency proportions for each gear weighted by estimated total catch numbers"
+ggplot(lfd, aes(x=Len, y=Proportion, fill=gear)) +
+  geom_col() +
+  theme_classic()
+```
+
+It would be possible to fit a catch curve to the combined length frequencies as long as they are weighted by the relative catch numbers (@fig-cum_wt_prop_lfd). While it would be possible to fit a catch curve to these combined frequency data, it would be necessary to have a multi-modal function to model the selectivity. Perhaps more importantly, combining the data in this way would limit the advice that can be provided on a gear-by-gear basis. It would make it difficult, for example, to predict the effect of reducing the availability of FADs. Gear specific models would therefore be more desirable because then gear-specific advice can be provided from the model for management decision-making.
+
+# Multiple Gear Model
+
+## Single Selectivity Model
+
+```{r FitMultigear_Stan}
+lfd <- yft_lenfreq_2013_19 |>
+  select(-Len) |>
+  mutate(across(BB:`PS-LS`, ~ round(.x/sqrt(sum(.x))))) |>
+  as.list()
+
+ld <- blicc_dat(
+  model_name = "Test Mix",
+  LLB = yft_lenfreq_2013_19$Len,
+  fq = lfd,
+  Linf = Linf,
+  sel_fun=rep(4L, length(lfd)),
+  Catch = yft_catch_2013_19$catch_n,
+  gear_names = names(lfd),
+  Mk=Mk,
+  a=a,
+  b=b,
+  L50=L50,
+  L95=L95
+)
+```
+
+
+```{r FitMultigear_Stan}
+#| label: fig-prior_lfd
+#| fig-cap: "Estimated length frequency data using prior parameters."
+plot_prior(ld) +
+  theme_classic()
+```
+
+
+```{r }
+fit <- blicc_mpd(ld)
+res <- blicc_ref_pts(fit, ld)
+```
+
+
+```{r}
+#| label: fig-obsexp_1_lfd
+#| fig-cap: "Expected length frequency data after the first fit."
+plot_expected_frequency(res, gear=1:7) +
+  theme_classic()
+```
+
+The model does not fit the data well. With a single mode selectivity function, the selectivity model stretches between the modes to explain the higher or lower values. This increases the model's relative fishing mortality on these lengths between the modes which does not represent the data well. A more flexible selectivity function is required to explain multi-mode length frequencies.   
+
+# Shared-selectivity Mixture Model
+
+# Fit
+
+For the shared selectivity model, the hypothesis is that the gear selectivities are made up of a mixture of normal-like selectivity functions. For example, both pole and line and purse seine take juvenile yellowfin associated with skipjack. The availability and capture of these juveniles might follow the same length-based selectivity function. A normal or double-sided normal selectivity function might be reasonably proposed based on the central limit theorem - fish are caught due to multiple factors linked to length that, when combined, peak at a particular length and decline on either side.
+
+
+
+1. Simultaneous estimation of shared selectivity functions
+2. Correction for mortality, if necessary (weights only?)
+
+```{r}
+#tmp <- blip_selectivity(ld2)
+
+
+ld2 <- blicc_selfun(ld, sel_fun = c(2, 4, 2, 4, 1, 4, 4))
+ld2 <- blicc_gear_sel(ld2, gear_sel=list(BB = c(1, 2),
+                                         GI = c(4),
+                                         HD = c(5, 2),
+                                         LL = c(5),
+                                         OT = c(6),
+                                         `PS-FS` = c(7, 2),
+                                         `PS-LS` = c(1, 2, 3)))
+
+ld2$polSm[ld2$sp_i[2]+2] <- -4.5   # BB
+ld2$polSm[ld2$sp_i[2]] <- log(50)  # BB
+ld2$polSm[ld2$NP+ld2$GSmix1[1]] <- -1.5  # BB
+
+#ld2$polSm[ld2$sp_i[4]+1] <- -4  # GI
+ld2$polSm[ld2$sp_i[4]+2] <- -6  # GI
+#ld2$polSm[ld2$NP+ld2$GSmix1[2]] <- -3  # GI
+
+# HD
+ld2$GSbase[3] <- 5
+ld2$GSmix2[ld2$GSmix1[3*2-1]] <- 1
+ld2$polSm[ld2$NP+ld2$GSmix1[3*2-1]] <- -2  # HD
+
+ld2$GSbase[6] <- 7
+ld2$GSmix2[ld2$GSmix1[6*2-1]] <- 2
+ld2$polSm[ld2$sp_i[5]+1] <- -2.5 # HD / LL logistic slope
+ld2$polSm[ld2$sp_i[7]] <- log(132)   # PS-FS slope
+ld2$polSm[ld2$sp_i[7]+1] <- -4   # PS-FS slope
+ld2$polSm[ld2$sp_i[7]+2] <- -5   # PS-FS slope
+ld2$polSm[ld2$NP+ld2$GSmix1[6*2-1]] <- -3        # PS-FS mix weight
+
+# PS-LS
+ld2$GSbase[7] <- 1
+ld2$GSmix2[ld2$GSmix1[7*2-1]] <- 2
+ld2$polSm[ld2$sp_i[3]] <- log(100)
+ld2$polSm[ld2$NP+ld2$GSmix1[7*2-1]] <- -1.5
+ld2$polSm[ld2$NP+ld2$GSmix1[7*2-1]+1] <- -2
+
+# gears <- c("PS-FS")
+# tmp_c <- filter(yft_catch_2013_19, gear %in% gears)
+# tmp_lf <- lfd[which(names(lfd) %in% gears)]
+#load_all()
+
+# ld2 <- blicc_dat(
+#   model_name = "Test Mix",
+#   LLB = yft_lenfreq_2013_19$Len,
+#   fq = tmp_lf,
+#   Linf = Linf,
+#   sel_fun=c(4L, 4L),
+#   gear_sel = list("PS-FS" = c(1, 2)),
+#   Catch = tmp_c$catch_n,
+#   gear_names = names(tmp_lf),
+#   Mk=Mk,
+#   a=a,
+#   b=b,
+#   L50=L50,
+#   L95=L95
+# )
+
+# print(exp(ld2$polSm))
+# ld2$polSm[1:3] <- log(c(144, 7.128366e-03, 1.026485e-01))
+# ld2$polSm[4:6] <- log(c(56, 2.566212e-02, 8.483345e-03))
+# ld2$polSm[ld2$NP+1] <- log(9.464935e-02)
+
+# Adjust priors to be more informative on growth
+#ld2$polGas <- 0.1
+ld2$poLinfs <- 5
+```
+
+
+```{r}
+#| label: fig-prior_2_lfd
+#| fig-cap: "Estimated length frequency data using prior parameters for the mixture model."
+plot_prior(ld2) +
+  theme_classic()
+```
+
+
+```{r}
+fit <- blicc_mpd(ld2)
+res <- blicc_ref_pts(fit, ld2)
+```
+
+
+```{r}
+#| label: fig-obsexp_2_lfd
+#| fig-cap: "Estimated length frequency from the mixture model plotted against the data."
+plot_expected_frequency(res) +
+  theme_classic()
+```
+
+Lorenzen (20XX) suggests that the default model for natural mortality in fish should be related to the inverse weight or length of the fish. This is the default used for most tuna stock assessments (XXXX) and is easily incorporated into this model by setting a reference length.  
+
+
+```{r}
+#I include: FALSE
+ld2 <- blip_Mk(ld2, lMk = c(ld$polMkm, ld$polMks),
+                    ref_length = 140,
+                    model_name = "Length-Inverse M")
+fit <- blicc_mpd(ld2)
+res <- blicc_ref_pts(fit, ld2)
+```
+
+The model fit slightly improves, but the SPR estimate is not sensitive to this alternative model of natural mortality.  
+
+
+# MCMC Fit
+
+```{r eval=FALSE}
+#I eval: FALSE
+
+fit <- blicc_fit(ld2, ntarget = 2000, nwarmup = 2000, control=list(max_treedepth=14))
+res <- blicc_ref_pts(fit, ld2)
+save(fit, res, file=here("tmp.rda"))
+```
+
+
+## Results
+
+
+
+
+```{r}
+load(file=here("tmp.rda"))
+pairs(fit, pars=c("nNB_phi", "nLinf", "nGalpha"), condition="divergent__")
+```
+
+
+```{r}
+#| label: fig-obsexp_MCMC_lfd
+#| fig-cap: "Estimated length frequency from the mixture model MCMC fit plotted against the data."
+plot_expected_frequency(res) +
+  theme_classic()
+```
+
+
+```{r}
+#| label: tbl-MCMC_results
+#| tbl-cap: "MCMC estimates for the fitted parameters. See text for details."
+blicc_results(res) |>
+  flextable()
+```
+
+
+```{r}
+#| label: fig-selectivity_MCMC
+#| fig-cap: "Estimated selectivities for each gear from the mixture model MCMC fit."
+plot_selectivity(res) +
+  theme_classic()
+```
+
+
+```{r}
+#| label: fig-SPR
+#| fig-cap: "Spawning potential ratio estimate from the mixture model MCMC fit."
+plot_SPR_density(res) +
+  theme_classic()
+```
+
+
+# Conclusions
+
+This is a non-exhaustive approach to fitting a non-standard length-based catch curve to length frequencies from multiple gears with complex inter-related selectivity. The model can be used to provide an estimate of stock status in these circumstances and identify important sensitivities to allow careful review. In data limited situations, the review process is important as almost invariably some subjective decisions have to be made where information is lacking.  
+
+For yellowfin tuna in the example, the results suggest that the stock could well be overfished, although this cannot be fully determined from the length frequency alone.  The estimate of SB/SB0 for the full SS3 model in 2020 was 24-38% (80% CI), compared to the SPR estimate of around 15-37%. The overlap is fortunate here and other reasonable model choices would produce different estimates, so the SPR plausible range would probably be much wider. 

@@ -480,10 +480,12 @@ blip_selectivity <- function(blicc_ld,
                  if (i==1) spar <- cbind(base_loc, ((lo-base_loc)/ssd)^-2)
                  else if (i==ns) spar <- cbind(base_loc, ((hi-base_loc)/ssd)^-2)
                  else spar <- cbind(base_loc, (0.5*(hi-lo)/ssd)^-2)
+                 sel_mat <- apply(spar, 1, Rsel_normal, LMP=LMP)
                },
                { #ssnormal
                  spar <- cbind(base_loc, ((lo-base_loc)/ssd)^-2)
-                 sel_mat <- apply(spar, 1, Rsel_ssnormal, LMP=LMP)},
+                 sel_mat <- apply(spar, 1, Rsel_ssnormal, LMP=LMP)
+               },
                { #dsnormal
                  spar <- cbind(base_loc, ((base_loc-lo)/ssd)^-2, ((hi-base_loc)/ssd)^-2)
                  sel_mat <- apply(spar, 1, Rsel_dsnormal, LMP=LMP)
