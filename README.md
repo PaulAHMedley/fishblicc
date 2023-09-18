@@ -24,10 +24,22 @@ compile.
 For Windows, Rtools can be downloaded from
 “<https://cran.r-project.org/bin/windows/Rtools/>”
 
+Note that for versions of R and RTools 4.2 and 4.3 you will need to
+manually install `rstan` as follows:
+
+``` r
+install.packages("StanHeaders", repos = c("https://mc-stan.org/r-packages/", getOption("repos")))
+install.packages("rstan", repos = c("https://mc-stan.org/r-packages/", getOption("repos")))
+```
+
+This is the preview of rstan 2.26 that will presumably eventually become
+available on CRAN so that this step will be obsolete (see
+<https://github.com/stan-dev/rstan/wiki/Configuring-C---Toolchain-for-Windows>).
+
 You can install the development version of fishblicc:
 
 ``` r
-if (require("remotes")) install.packages("remotes")
+if (! require("remotes")) install.packages("remotes")
 remotes::install_github("PaulAHMedley/fishblicc")
 ```
 
@@ -39,18 +51,25 @@ explicitly a “data-limited” method designed to be used as a risk
 assessment approach rather than provide definitive information on stock
 status. The model does not require a data time series, but it assumes
 that the data are a snapshot of the catch length composition from a
-fishery in a stationary state. It is suitable for end-of-project
-evaluation of length frequency data that may have been collected over a
-short time period (e.g. a year) or to monitor status of many species
-that may take up a small proportion of the catches.
+fishery in a stationary state. The model can account for multiple gears
+with different selectivities and has a flexible approach to estimating
+selectivity, including dome-shaped functions and functions with multiple
+modes. It is suitable for end-of-project evaluation of length frequency
+data that may have been collected over a short time period (e.g. a year)
+or to monitor status of many species that may take up a small proportion
+of the catches.
 
 The method is implemented in R using Stan (mc-stan.org) to carry out the
 MCMC.
 
 In common with other such methods, there are significant assumptions
-that will not be met in practice, therefore the focus is robustness and
-looking for ways to reduce the impact of model structural errors or at
-least spot when such errors may invalidate the results.
+that will not be met in practice, therefore the focus is robustness,
+trying to account for full uncertainty and looking for ways to reduce
+the impact of model structural errors or at least spot when such errors
+may invalidate the results. This is done through a flexible model
+structure that can account for alternative models for
+mortality-at-length as well as alternative life history parameters and
+can be used in a range of sensitivity analyses.
 
 The method can be used to evaluate stock status based on the spawning
 potential ratio (SPR). In general, this uses the ratio of large (older,
@@ -63,15 +82,15 @@ The model used here does not convert length to age, but instead accounts
 for mortality as fish grow through length intervals. The estimation
 method works by assuming that the von Bertalanffy growth model describes
 the mean length at age and variation in individual fish growth is
-governed by their maximum length which is drawn from a gamma probability
-density function (with constant CV). The model is flexible enough to
-include all data, so, for example, observed lengths above $L_\infty$ are
-not rejected. The model allows for the application of piece-wise
-mortality across length bins, so changing mortality-at-length, such as
-that due to gear selectivity or decreasing natural mortality with
-length, can be accommodated.
+governed by their individual maximum length which is drawn from a gamma
+probability density function (with constant CV). The model is flexible
+enough to include all data, so, for example, observed lengths above
+$L_\infty$ are not rejected. The model allows for the application of
+piece-wise mortality across length bins, so changing
+mortality-at-length, such as that due to gear selectivity or decreasing
+natural mortality with length, can be accommodated.
 
-The model fits the following 8 parameters: - Linf the asymptotic mean
+The model fits the following parameters: - Linf the asymptotic mean
 length  
 - Galpha the growth model inverse error parameter ( $CV = Galpha^{-0.5}$
 )  
@@ -100,16 +119,18 @@ information is not available.
 ## Example
 
 In this basic example, there is a single representative sample of
-lengths from a single gear fishery. The objective is to estimate a
-simple selectivity based on the double-sided normal function as well as
+lengths from a three gear fishery. The objective is to estimate the
+selectivities based on the double-sided normal function as well as
 determine the stock status. Because this is data limited, it is also
 valuable to estimate the uncertainty and evaluative how reliable the
-result is.
+result is. In a real assessment, multiple configurations with different
+priors and selectivity functions would be tested.
 
 The analysis consists of fitting the model to the data, determining the
 spawning potential ratio reference points, and then the expected catch,
-selectivity and so on by length. (Note that because the fit uses MCMC,
-estimation take some time.)
+selectivity and so on by length. (Note that if the fit used the MCMC
+facility, estimation would take much more time. The more-rapid maximum
+posterior density estimation is used here.)
 
 These data are taken from a bombay duck (*Harpadon nehereus*) fishery,
 where bombay duck are caught predominantly in three artisanal gears.
@@ -144,20 +165,17 @@ dl <- blicc_dat(
 
 ## Fit the model to these data 
 slim <- blicc_mpd(dl)
-><> Chain 1: Initial log joint probability = -8158.72
+><> Chain 1: Initial log joint probability = -9882.98
 ><> Chain 1:     Iter      log prob        ||dx||      ||grad||       alpha      alpha0  # evals  Notes 
-><> Chain 1: Exception: neg_binomial_2_lpmf: Location parameter[1] is nan, but must be positive finite! (in 'string', line 244, column 6 to column 58)
-><> Exception: neg_binomial_2_lpmf: Location parameter[1] is nan, but must be positive finite! (in 'string', line 244, column 6 to column 58)
-><> Exception: neg_binomial_2_lpmf: Location parameter[1] is nan, but must be positive finite! (in 'string', line 244, column 6 to column 58)
-><> Exception: neg_binomial_2_lpmf: Location parameter[1] is nan, but must be positive finite! (in 'string', line 244, column 6 to column 58)
+><> Chain 1: Exception: neg_binomial_2_lpmf: Location parameter[1] is nan, but must be positive finite! (in 'string', line 263, column 6 to column 59)
+><> Exception: neg_binomial_2_lpmf: Location parameter[1] is nan, but must be positive finite! (in 'string', line 263, column 6 to column 59)
+><> Exception: neg_binomial_2_lpmf: Location parameter[1] is nan, but must be positive finite! (in 'string', line 263, column 6 to column 59)
 ><> 
-><> Chain 1:      499      -535.979   7.19547e-05       1.01379           1           1      566   
+><> Chain 1:      499        -533.7   0.000349046         3.442      0.8663      0.8663      548   
 ><> Chain 1:     Iter      log prob        ||dx||      ||grad||       alpha      alpha0  # evals  Notes 
-><> Chain 1:      999      -535.956   0.000195224      0.812175      0.3322           1     1123   
+><> Chain 1:      999      -533.641   1.97407e-05     0.0725687      0.8664      0.8664     1108   
 ><> Chain 1:     Iter      log prob        ||dx||      ||grad||       alpha      alpha0  # evals  Notes 
-><> Chain 1:     1499      -535.955   0.000194091      0.239476           1           1     1681   
-><> Chain 1:     Iter      log prob        ||dx||      ||grad||       alpha      alpha0  # evals  Notes 
-><> Chain 1:     1623      -535.955    4.8947e-06     0.0196672           1           1     1814   
+><> Chain 1:     1259      -533.641   2.41556e-06     0.0429371      0.4703           1     1390   
 ><> Chain 1: Optimization terminated normally: 
 ><> Chain 1:   Convergence detected: relative gradient magnitude is below tolerance
 ## "slim <- blicc_fit(ld)" to run the full MCMC, but this takes a little time to run.
@@ -172,12 +190,12 @@ This produces the following objects:
 for priors used in the fit.  
 - “slim” is a stanfit object and there are useful tools in the package
 rstan which will allow you to examine the fit.  
-- “rp_res” is a list including the data object used to create it, two
-draws objects, `rp_df` for parameters and reference points and `lx_df`
-for expected length frequencies, that can be used by the packages
-posterior and bayesplot to examine results, and a vector `vdir` giving
-the ‘direction’ of search for reference points only relevant if there is
-more than one gear (see documentation).
+- “rp_res” is a list containing the data object used to create it, and
+two draws objects, `rp_df` for parameters and reference points and
+`lx_df` for expected length frequencies, that can be used by the
+packages `posterior` and `bayesplot` to examine results, and a vector
+`vdir` giving the ‘direction’ of search for reference points only
+relevant if there is more than one gear (see documentation).
 
 The priors used by the model can be inspected and produced as a table.
 
@@ -193,15 +211,15 @@ blicc_priors(dl)
 ><>  5 Estuarine set bagnet Fk        Lognormal         0.385  -0.955  2   
 ><>  6 Gill net             Fk        Lognormal         0.449  -0.802  2   
 ><>  7 Marine set bagnet    Fk        Lognormal         1.30    0.264  2   
-><>  8 Estuarine set bagnet Mode      Lognormal        15.5     2.74   1.5 
-><>  9 <NA>                 Left SD   <NA>              0.0183 -4      1.5 
-><> 10 <NA>                 Right SD  <NA>              0.0183 -4      1.5 
-><> 11 Gill net             Mode      Lognormal        20.5     3.02   1.5 
-><> 12 <NA>                 Left SD   <NA>              0.0183 -4      1.5 
-><> 13 <NA>                 Right SD  <NA>              0.0183 -4      1.5 
-><> 14 Marine set bagnet    Mode      Lognormal        22.5     3.11   1.5 
-><> 15 <NA>                 Left SD   <NA>              0.0183 -4      1.5 
-><> 16 <NA>                 Right SD  <NA>              0.0183 -4      1.5 
+><>  8 Estuarine set bagnet Mode      Lognormal        13.5     2.60   1.5 
+><>  9 <NA>                 Left SD   <NA>              0.132  -2.02   1.5 
+><> 10 <NA>                 Right SD  <NA>              0.0147 -4.22   1.5 
+><> 11 Gill net             Mode      Lognormal        21.5     3.07   1.5 
+><> 12 <NA>                 Left SD   <NA>              0.198  -1.62   1.5 
+><> 13 <NA>                 Right SD  <NA>              0.0166 -4.10   1.5 
+><> 14 Marine set bagnet    Mode      Lognormal        20.5     3.02   1.5 
+><> 15 <NA>                 Left SD   <NA>              0.132  -2.02   1.5 
+><> 16 <NA>                 Right SD  <NA>              0.0147 -4.22   1.5 
 ><> 17 <NA>                 NB_phi    Lognormal       100       4.61   0.5 
 ><> 18 <NA>                 b         <NA>              3.15    3.15  NA   
 ><> 19 <NA>                 L50       <NA>             23.2    23.2   NA   
@@ -215,25 +233,25 @@ blicc_results(slim)
 ><> # A tibble: 19 × 3
 ><>    Parameter `Max. Posterior`        SE
 ><>    <chr>                <dbl>     <dbl>
-><>  1 Linf              42.3      1.39    
-><>  2 Galpha            97.3     24.9     
-><>  3 Mk                 2.02     0.197   
-><>  4 Fk[1]              0.122    0.0224  
-><>  5 Fk[2]              0.409    0.0915  
-><>  6 Fk[3]              1.08     0.228   
-><>  7 Sm[1]             13.8      0.602   
-><>  8 Sm[2]              0.0513   0.00747 
-><>  9 Sm[3]              0.00289  0.000784
-><> 10 Sm[4]             25.3      0.770   
-><> 11 Sm[5]              0.0228   0.00236 
-><> 12 Sm[6]              0.0112   0.00181 
-><> 13 Sm[7]             24.3      0.656   
-><> 14 Sm[8]              0.0247   0.00213 
-><> 15 Sm[9]              0.00985  0.00143 
-><> 16 NB_phi            18.0      4.08    
-><> 17 Gbeta              2.30     0.563   
-><> 18 SPR                0.328    0.0752  
-><> 19 lp__            -536.      NA
+><>  1 Linf              42.2      1.39    
+><>  2 Galpha            97.3     25.0     
+><>  3 Mk                 2.02     0.206   
+><>  4 Fk[1]              0.120    0.0234  
+><>  5 Fk[2]              0.400    0.0926  
+><>  6 Fk[3]              1.06     0.231   
+><>  7 Sm[1]             13.7      0.568   
+><>  8 Sm[2]              0.0523   0.00729 
+><>  9 Sm[3]              0.00289  0.000713
+><> 10 Sm[4]             25.2      0.781   
+><> 11 Sm[5]              0.0232   0.00249 
+><> 12 Sm[6]              0.0111   0.00182 
+><> 13 Sm[7]             24.2      0.657   
+><> 14 Sm[8]              0.0250   0.00218 
+><> 15 Sm[9]              0.00979  0.00136 
+><> 16 NB_phi            17.8      3.95    
+><> 17 Gbeta              2.30     0.569   
+><> 18 SPR                0.336    0.0780  
+><> 19 lp__            -534.      NA
 ```
 
 There are a number of specialised plotting functions specific to length
@@ -243,16 +261,30 @@ interval for the observations (including the expected variation in the
 data).
 
 ``` r
-plot_expected_frequency(rp_res, Gear=1:3) #Plot the results to check the model fit
+plot_expected_frequency(rp_res, gear=1:3) #Plot the results to check the model fit
 ```
 
-<img src="man/figures/README-unnamed-chunk-4-1.png" width="100%" />
+<div class="figure">
+
+<img src="man/figures/README-unnamed-chunk-5-1.png" alt="Figure: Expected frequency" width="100%" />
+<p class="caption">
+Figure: Expected frequency
+</p>
+
+</div>
 
 ``` r
 plot_residuals(rp_res) 
 ```
 
-<img src="man/figures/README-unnamed-chunk-5-1.png" width="100%" />
+<div class="figure">
+
+<img src="man/figures/README-unnamed-chunk-6-1.png" alt="Figure: Residuals" width="100%" />
+<p class="caption">
+Figure: Residuals
+</p>
+
+</div>
 
 The set bagnet shows clear dome-shape, whereas the gill net continues to
 catch some larger fish, so this pattern is less clear. The Trawl survey
@@ -264,9 +296,9 @@ plot_selectivity(rp_res)
 
 <div class="figure">
 
-<img src="man/figures/README-Selectivity_base-1.png" alt="__Fig. Fitted selectivities for the base model__" width="100%" />
+<img src="man/figures/README-unnamed-chunk-7-1.png" alt="Figure: Fitted selectivities " width="100%" />
 <p class="caption">
-**Fig. Fitted selectivities for the base model**
+Figure: Fitted selectivities
 </p>
 
 </div>

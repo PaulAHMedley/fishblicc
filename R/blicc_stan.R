@@ -430,6 +430,7 @@ blicc_dat <-
     #  Catch: sigma for lognormal
     dl$polCs <- 0.01
 
+    dl <- blip_selectivity(dl)
     # Gauss-Laguerre quadrature grid size
     if (is.na(NK)) {
       df <- with(dl,
@@ -461,7 +462,6 @@ blicc_dat <-
       statmod::gauss.quad(dl$NK, kind = "laguerre", alpha = 0.0)
     dl$gl_nodes <- glq$nodes
     dl$gl_weights <- glq$weights
-    dl <- blip_selectivity(dl)
     return(dl)
   }
 
@@ -524,12 +524,12 @@ blicc_selfun <-
     if ( ! is.null(model_name) )
       blicc_ld$model_name <- model_name
 
-    if ( blicc_model_OK(blicc_ld) == "OK" )
-      blicc_ld <- blip_selectivity(blicc_ld)
-    else {
-      blicc_ld$polSm <- double(sum(npar)) # lognormal mu parameters
+    # if ( blicc_model_OK(blicc_ld) == "OK" )
+    #   blicc_ld <- blip_selectivity(blicc_ld)
+    # else {
+      blicc_ld$polSm <- rep(NA_real_, sum(npar)) # lognormal mu parameters
       blicc_ld$polSs <-  blicc_ld$polSm
-    }
+    # }
     return(blicc_ld)
   }
 
@@ -567,7 +567,7 @@ blicc_gear_sel <-
         stop("Error: if gear_sel is not provided, the number of selectivity functions must equal the number of gears. \n")
 
       # 1 selectivity function for each gear
-      if (! is.null(gear)) warning("gear parameter is ignored.")
+      if (! is.null(gear)) warning("gear parameter is ignored. \n")
       blicc_ld$GSbase <- 1L:blicc_ld$NS
       gsmix1 <- integer(2L*blicc_ld$NG)
       gsmix2 <- integer(0)
@@ -635,8 +635,9 @@ blicc_gear_sel <-
     blicc_ld$GSmix1 <- gsmix1
     blicc_ld$GSmix2 <- as.array(gsmix2)
     blicc_ld$NM <- length(gsmix2)
-    blicc_ld$polSm <- double(blicc_ld$NP+blicc_ld$NM)
-    blicc_ld$polSs <- double(blicc_ld$NP+blicc_ld$NM)
+    # extend parameters for mixtures
+    blicc_ld$polSm <- c(blicc_ld$polSm[1:blicc_ld$NP], rep(NA_real_, blicc_ld$NM))
+    blicc_ld$polSs <-  c(blicc_ld$polSs[1:blicc_ld$NP], rep(1.5, blicc_ld$NM))
 
     if (!is.null(model_name))
       blicc_ld$model_name <- model_name
@@ -710,6 +711,8 @@ blicc_model_OK <- function(blicc_ld) {
     return("Error: Gear selectivity reference is out of range. \n")
   if (any(is.na(match(1:blicc_ld$NS, fref))))
     return("Error: A selectivity function is not referenced. \n")
+  if (any(is.na(blicc_ld$polSm)))
+    return("Error: Selectivity priors not set. \n")
 
   return("OK")
 }

@@ -4,7 +4,7 @@
 \alias{plot_expected_frequency}
 \title{Plot the observed and expected frequency data}
 \usage{
-plot_expected_frequency(blicc_rp, gear = NA)
+plot_expected_frequency(blicc_rp, gear = "All")
 }
 \arguments{
 \item{blicc_rp}{A list of posterior draws, reference points with associated

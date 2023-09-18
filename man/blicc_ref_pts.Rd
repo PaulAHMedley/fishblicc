@@ -4,17 +4,16 @@
 \alias{blicc_ref_pts}
 \title{Generate posterior draws and standard reference points}
 \usage{
-blicc_ref_pts(slimf, blicc_ld, vdir = NA, a = NA, b = NA, L50 = NA, L95 = NA)
+blicc_ref_pts(slimf, blicc_ld, vdir = NULL, a = NA, b = NA, L50 = NA, L95 = NA)
 }
 \arguments{
-\item{slimf}{An object from the \code{\link[=blicc_fit]{blicc_fit()}} or \code{\link[=blicc_mpd]{blicc_mpd()}}
-functions.}
+\item{slimf}{An object from the \code{\link[=blicc_fit]{blicc_fit()}} or \code{\link[=blicc_mpd]{blicc_mpd()}} functions.}
 
 \item{blicc_ld}{A standard data list suitable for the model (see function
 \link{blicc_dat})}
 
-\item{vdir}{A search direction vector with maximum value 1 and minimum
-0 applied to changes across gears.}
+\item{vdir}{A search direction vector with maximum value 1 and minimum 0
+applied to changes across gears.}
 
 \item{a}{The length-weight parameter: a*L^b. Not used in model fitting, but
 for plots etc. Optional.}
@@ -50,16 +49,24 @@ from the MCMC. The reference points are found along line representing the
 relative impact across gears. The default is to apply the same adjustments
 proportionately to every gear that has a fishing mortality, but alternative
 scenarios can be defined. For example, for two gears the default is
-\code{vdir=c(1, 1)}. if there are two gears, and only the first will be adjusted,
-then the direction would be \code{vdir=c(1, 0)}. Where reference points do not
-exist an \code{NA} is returned. It is quite possible reference points do not exist
-in many cases due to the effects of selectivity. Strictly speaking, reference
-points may not exist within specific constraints on F and selectivity. Within
-more general bounds on F and selectivity, all reference "points" exist as
-lines or points. In these functions, reference points in relation to a
-control (Fk or Sm) are calculated based on the other being fixed at the
-current estimated value. To see how the fishery might respond when they are
-adjusted together, the yield or SPR surface must be plotted.
+\code{vdir=c(1, 1)}. if there are two gears, and only the first will be
+adjusted, then the direction would be \code{vdir=c(1, 0)}. It is possible to
+provide a vector such as \code{vdir=c(1, 0.5)} to represent only a 50\% reduction
+in the second gear compared to the first, for example. This will only be
+applied to the fishing mortality. The selectivty changes will continue to
+use a the vector as a dummy variable, so for selectivity \code{vdir = c(1.0, 0.5)} is equivalent to \code{vdir = c(1, 1)}. It is likely that proper
+simulation projections would be required for more these more complex cases
+where gears are not be simply excluded from management action.
+
+Where reference points do not exist an \code{NA} is returned. It is quite
+possible reference points do not exist in many cases due to the effects of
+selectivity. Strictly speaking, reference points may not exist within
+specific constraints on F and selectivity. Within more general bounds on F
+and selectivity, all reference "points" exist as lines or points. In these
+functions, reference points in relation to a control (Fk or Sm) are
+calculated based on the other being fixed at the current estimated value.
+To see how the fishery might respond when they are adjusted together, the
+yield or SPR surface must be plotted.
 }
 \examples{
 \dontrun{

@@ -257,8 +257,280 @@ blip_LH_param <-
     return(blicc_ld)
   }
 
-#' Sets data object from [blicc_dat()] to have a new selectivity priors
+#' Sets data object from [blicc_dat] to have a new selectivity priors
 #'
+#' The priors for each function are defined loosely based on the available data
+#' ("empirical Bayes"). It is recommended that priors are weakly informative, so
+#' they are set primarily to aid fitting and discourage values outside a
+#' reasonable range.
+#'
+#' The prior hyper-parameters are "estimated" if there is a single selectivity
+#' for a gear. The estimates are based on the 50% (median), 10% and 90%
+#' quartiles of the cumulative frequency. This ensures that the selectivity
+#' function is centred on the frequency data and provides a robust estimate of
+#' reasonable priors. Alternatively, setting parameters manually can be done
+#' using the [blip_set_sel] function.
+#'
+#' If a selectivity is made up of a mixture of functions, hyper-parameters are
+#' not estimated and [blip_set_sel] must be used to set the hyperparameters
+#' manually. This is necessary because the user must propose the hypothesis for
+#' the mixtures and it is too easy for the selectivity model to be overfitted
+#' otherwise.
+#'
+#' @export
+#' @inheritParams blicc_mpd
+#' @param sel_indx Vector indexing one or more selectivity functions. Optional.
+#' @return The data object blicc_ld but with the new selectivity priors
+blip_selectivity <- function(blicc_ld,
+                             sel_indx = NULL) {
+
+  if (is.null(sel_indx))
+    sel_indx = 1:blicc_ld$NS
+  else {
+    if (! (is.vector(sel_indx) & is.numeric(sel_indx)) |
+        length(sel_indx) != 1 |
+        round(sel_indx) < 1 |
+        round(sel_indx) > blicc_ld$NS)
+      stop(paste0("Error: sel_indx must be an integer with value, when rounded, between 1 and ",
+                  as.character(blicc_ld$NS), ". \n"))
+    sel_indx <- round(sel_indx)
+  }
+
+  # No mixtures, one selectivity function per gear
+
+  if (is.null(blicc_ld$gl_nodes)) {
+    glq <-
+      statmod::gauss.quad(110L, kind = "laguerre", alpha = 0.0)
+    blicc_ld$gl_nodes <- glq$nodes
+    blicc_ld$gl_weights <- glq$weights
+  }
+
+  # ssd <- 1.281552
+  ssd <- 2.0 # sd parameter for selectivity slopes 10%-90% range
+  Galpha <- exp(blicc_ld$polGam)
+  Linf <- blicc_ld$poLinfm
+  Gbeta <- Galpha/Linf
+  LLB <- blicc_ld$LLB
+  LMP <- blicc_ld$LMP
+  Zk <- exp(blicc_ld$polMkm)*blicc_ld$M_L
+  gl <- statmod::gauss.quad(110, "laguerre", alpha=0)
+  pop <- Rpop_len(gl$nodes, gl$weights, LLB, Zk, Galpha, Gbeta)
+
+  for (si in sel_indx) {
+    # find this selectivity function in a gear as a single function
+    ggi <- which(blicc_ld$GSbase == si)
+    gi <- NA
+    if (length(ggi) > 0) {
+      ggi <- ggi[blicc_ld$GSmix1[2L*(ggi-1L) + 1L] == 0]
+      gi <- ggi[1]
+    }
+
+    if (is.na(gi))
+      warning(paste0("Selectivity function ", as.character(si),
+                     " is in a mixture, so the prior will need to be set directly. ",
+                     "See function `blip_set_sel`. \n"))
+    else {
+      pfq <- blicc_ld$fq[[gi]]/pop  # adjust data for mortality
+      pfq <- pfq/sum(pfq)           # normalise
+      cfq <- cumsum(pfq)            # cumulative sum
+      i10 <- max(1L, which(cfq<0.1), na.rm=TRUE)    # 10% quartile index
+      i25 <- min(which(cfq>0.25), blicc_ld$BN-1L, na.rm=TRUE)   # 25% quartile index
+      i50 <- min(which(cfq>0.5), blicc_ld$BN-1L, na.rm=TRUE)    # 50% quartile index
+      i90 <- min(which(cfq>0.9), blicc_ld$BN-1L, na.rm=TRUE)    # 90% quartile index
+
+      switch(blicc_ld$fSel[si],
+             { #logistic
+               blicc_ld$polSm[blicc_ld$sp_i[si]:blicc_ld$sp_e[si]] <-
+                 log(c(LMP[i25],
+                       abs(0.5*(log(exp(0.1)-1)/(LMP[i10]-LMP[i25]) +
+                                  log(exp(0.9)-1)/(LMP[i90]-LMP[i25]) ))))
+                 # slopes very loosely based on integral of the logistic
+             },
+             { #normal
+               blicc_ld$polSm[blicc_ld$sp_i[si]:blicc_ld$sp_e[si]] <-
+                 log(c(LMP[i50], (0.5*(LMP[i90]-LMP[i10])/ssd)^-2))
+             },
+             { #ssnormal
+               blicc_ld$polSm[blicc_ld$sp_i[si]:blicc_ld$sp_e[si]] <-
+                 log(c(LMP[i50], ((LMP[i50]-LMP[i10])/ssd)^-2))
+             },
+             { #dsnormal
+               blicc_ld$polSm[blicc_ld$sp_i[si]:blicc_ld$sp_e[si]] <-
+                 log(c(LMP[i50], ((LMP[i50]-LMP[i10])/ssd)^-2, ((LMP[i90]-LMP[i50])/ssd)^-2))
+             }
+      )
+    }
+  }
+  blicc_ld$polSs[] <- 1.5  # default
+  return(blicc_ld)
+}
+
+
+#' Sets a selectivity function's prior hyper-parameters to particular values
+#'
+#' Each parameter set is for a single selectivity function indexed by
+#' `sel_indx`. Although the hyper-parameters can be set directly in the data
+#' object, this function does the indexing making it a little easier. The
+#' location parameter is set as a length measure. The slope parameters are set
+#' as log values.
+#'
+#' The location parameter (`loc`) is either the 50% selectivity for the logistic
+#' or the mode of the particular normal selectivity function. The `lslope`
+#' parameter is a single log value of the slope for the relevant function. This
+#' is either the log of the logistic slope parameter, or the log of the
+#' reciprocal of the variance for the normal functions. For the double-sided
+#' normal, two parameters must be provided and for all other functions only one
+#' parameter. If `lslope` is not provided, a default slope of -4.5 is applied if
+#' the slope parameters have not already set. If values are already present
+#' these are conserved.
+#'
+#' @export
+#' @inheritParams blicc_mpd
+#' @param sel_indx Single integer indexing a selectivity function
+#' @param loc Single location parameter for the selectivity function
+#' @param lslope Vector of prior selectivity log slope parameters manually set for
+#'   the model. Only one gear at a time can be specified to use this. Parameters
+#'   must be in the correct order: in function order, with each function having
+#'   a location parameter followed by one or two steepness parameters.
+#' @return The data object `blicc_ld` but with the new selectivity priors set
+#'
+blip_set_sel <- function(blicc_ld,
+                         sel_indx,
+                         loc,
+                         lslope = NULL) {
+  if (! (is.vector(sel_indx) & is.numeric(sel_indx)) |
+      length(sel_indx) != 1 |
+      round(sel_indx) < 1 |
+      round(sel_indx) > blicc_ld$NS)
+    stop(paste0("Error: sel_indx must be an integer with value, when rounded, between 1 and ",
+         as.character(blicc_ld$NS), ". \n"))
+  sel_indx <- round(sel_indx)
+
+  if (! (is.vector(loc) & is.numeric(loc)) |
+      length(loc) != 1 |
+      loc <= 0)
+    stop("Error: `loc` must be a single positive numeric value for logistic 50% selectivity or normal mode. \n")
+
+  if (blicc_ld$fSel[sel_indx] == 4) np <- 2 else np <- 1
+
+  if (! is.null(lslope)) {
+    if (! (is.vector(lslope) & is.numeric(lslope)) |
+        length(lslope) != np)
+      stop(paste0("Error: `lslope` for this selectivity function must be a numeric vector of length ",
+                  as.character(np), " being the log of the slope parameter. \n"))
+  }
+
+  blicc_ld$polSm[blicc_ld$sp_i[sel_indx]] <- log(loc)
+  if (is.null(lslope))
+    blicc_ld$polSm[(blicc_ld$sp_i[sel_indx]+1):blicc_ld$sp_e[sel_indx]] <- -4.5 #default
+  else
+    blicc_ld$polSm[(blicc_ld$sp_i[sel_indx]+1):blicc_ld$sp_e[sel_indx]] <- lslope
+  return(blicc_ld)
+}
+
+
+
+#' Sets gear selectivity mixture weights
+#'
+#' A single gear's mixture weights can be set or estimated if not provided. The
+#' weights are given as positive values greater than zero. All weights are
+#' relative to some base function which is set at 1.0, with other functions
+#' having weights 0-1.
+#'
+#' If `mix_wt` is not provided it is estimated using a simple weighted least
+#' squares procedure. If this is used, the selectivity parameters need to have
+#' been previously set using [blip_set_sel].
+#'
+#' @export
+#' @inheritParams blicc_mpd
+#' @param gear Single integer or exact name indexing a gear
+#' @param mix_wt Vector of prior mixture weights are required for each
+#'   selectivity function after the first (which has a default weight of 1.0).
+#'   If it is not provided it is loosely estimated from the data using weighted
+#'   least squares.
+#' @return The data object `blicc_ld` but with the new selectivity priors set
+#'
+blip_mix_wt <- function(blicc_ld,
+                        gear,
+                        mix_wt = NULL) {
+
+  gear <- parse_gear(gear, blicc_ld)
+
+  if (length(gear) != 1)
+    stop("Error: `gear` must reference a single gear. \n")
+
+  si <- 2L*gear-1L
+  if (blicc_ld$GSmix1[si]==0)
+    stop("Error: Gear ", as.character(gear), " has no mixtures. \n")
+
+  mix_sel <-  blicc_ld$GSmix1[si]:blicc_ld$GSmix1[si+1L]
+
+  if (! is.null(mix_wt)) {
+    if (! (is.vector(mix_wt) & is.numeric(mix_wt)) |
+          length(mix_wt) != length(mix_sel) |
+          any(mix_wt <= 0))
+      stop("Error: `mix_wt` must be positive numeric values of length ", as.character(nmix), ". \n")
+    blicc_ld$polSm[blicc_ld$NP + mix_sel] <- log(mix_wt)
+  } else {
+    sel_indx <- c(blicc_ld$GSbase[gear], blicc_ld$GSmix2[mix_sel])
+
+    if (any(is.na(blicc_ld$polSm[blicc_ld$sp_i[sel_indx]])))
+      stop("Error: Selectivity priors must be set using `blip_set_sel` before mixture weights can be estimated. \n")
+
+    ns <- length(sel_indx)
+    wts <- 1/(blicc_ld$fq[[gear]]+1) # approximate least-squares weights
+    xnam <- paste0("x", sel_indx)
+    model_df <- data.frame(y=pfq)
+    model_df[, xnam] <- 0
+
+    Sm <- exp(blicc_ld$polSm)
+    for (i in 1:length(sel_indx)) {  # for each selectivity function in the mixture
+      si <- sel_indx[i]
+      switch(blicc_ld$fSel[sel_indx[i]],
+             { #logistic- based very approx on integral of standard logistic F(x)=log(1+exp(x))
+               model_df[[i+1L]] <- Rsel_logistic(Sm[blicc_ld$sp_i[si]:blicc_ld$sp_e[si]],  blicc_ld$LMP)
+             },
+             { #normal
+               model_df[[i+1L]] <- Rsel_normal(Sm[blicc_ld$sp_i[si]:blicc_ld$sp_e[si]],  blicc_ld$LMP)
+             },
+             { #ssnormal
+               model_df[[i+1L]] <- Rsel_ssnormal(Sm[blicc_ld$sp_i[si]:blicc_ld$sp_e[si]],  blicc_ld$LMP)
+             },
+             { #dsnormal
+               model_df[[i+1L]] <- Rsel_dsnormal(Sm[blicc_ld$sp_i[si]:blicc_ld$sp_e[si]],  blicc_ld$LMP)
+             }
+      )
+
+    }
+
+    fmla <- stats::as.formula(paste("y ~ 0 + ", paste(xnam, collapse= "+")))
+    ls <- stats::lm(fmla,  data=model_df, weights=wts)
+    if (any(ls$coef < 0, na.rm = TRUE) | any(is.na(ls$coef))) {
+      stop(paste0("Selectivity function for gear ",
+                  blicc_ld$gear_name[gear],
+                  " mixture weight estimation failed. Set the weight manually using `mix_wt`. \n"))
+    }
+
+    mix_wt <- ls$coef
+    max_i <- which.max(mix_wt)
+    mix_indx <- blicc_ld$GSmix1[si]:blicc_ld$GSmix1[si+1L]
+    if (max_i != 1L) { # switch main selectivity to GSbase
+      blicc_ld$GSbase[gi] <- sel_indx[max_i]
+      blicc_ld$GSmix2[mix_indx] <- sel_indx[-max_i]
+    }
+    blicc_ld$polSm[blicc_ld$NP+mix_indx] <- log(mix_wt[-max_i]/mix_wt[max_i])
+  }
+
+  return(blicc_ld)
+}
+
+
+
+
+
+#' Old: Sets data object from [blicc_dat()] to have a new selectivity priors
+#'
+#' Backup version of blip_selectivity.
 #' The priors for each function are defined loosely based on the available data
 #' ("empirical Bayes"). It is recommended that priors are weakly informative, so
 #' they are set primarily to aid fitting and discourage values outside a
@@ -287,10 +559,9 @@ blip_LH_param <-
 #'   a location parameter followed by one or two steepness parameters.
 #' @param mix_wt Vector of mixture weights (0.0-1.0) are required for each
 #'   selectivity function after the first (which has a default weight of 1.0).
-#' @return The data object blicc_ld but with the new selectivity priors
+##' @return The data object blicc_ld but with the new selectivity priors
 #' @noRd
-#'
-blip_selectivity <- function(blicc_ld,
+blip_selectivity_old <- function(blicc_ld,
                              gear = NULL,
                              sel_par = NULL,
                              mix_wt = NULL) {
@@ -472,8 +743,9 @@ blip_selectivity <- function(blicc_ld,
 
       for (i in 1:ns) {  # for each selectivity function in the mixture
         switch(sel_fun[i],
-               { #logistic
-                 spar <- cbind(base_loc, -0.1*log(1+exp(0.2*(hi-base_loc)))/(lo-base_loc))
+               { #logistic- based very approx on integral of standard logistic F(x)=log(1+exp(x))
+                 spar <- cbind(base_loc,
+                               abs(0.5*(log(exp(0.1)-1)/(lo-base_loc) + log(exp(0.9)-1)/(hi-base_loc))))
                  sel_mat <- apply(spar, 1, Rsel_logistic, LMP=LMP)
                },
                { #normal

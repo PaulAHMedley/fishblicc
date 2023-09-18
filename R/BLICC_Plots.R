@@ -13,13 +13,16 @@
 #'
 #' @export
 #' @inheritParams blicc_mpd
+#' @param gear Specifies the gear to plot as an integer index or full name
 #' @return ggplot geom object plotting observed and the prior's expected
 #'   frequency, separated by gear.
 #' @examples
 #' plot_prior(eg_rp)
 #'
-plot_prior <- function(blicc_ld) {
+plot_prior <- function(blicc_ld, gear = "All") {
   Gear=LMP=fq=NULL
+
+  gear <- parse_gear(gear, blicc_ld)
 
   df <- tibble::tibble()
   sel <- Rselectivities(exp(blicc_ld$polSm), blicc_ld)
@@ -31,7 +34,9 @@ plot_prior <- function(blicc_ld) {
   }
   pop <- with(blicc_ld, Rpop_len(gl_nodes, gl_weights, LLB, Zk,
                                  exp(polGam), exp(polGam)/poLinfm))
-  for (gi in 1:blicc_ld$NG) {
+
+
+  for (gi in gear) {
     efq <- sel[[gi]]*pop
     efq <- efq * sum(blicc_ld$fq[[gi]]) / sum(efq)
     df <- with(blicc_ld, rbind(df, tibble(Gear=gname[gi], LMP = LMP,
@@ -56,10 +61,10 @@ plot_prior <- function(blicc_ld) {
 #' bounds.
 #'
 #' @export
+#' @inheritParams plot_prior
 #' @param blicc_rp  A list of posterior draws, reference points with associated
 #'   direction, the data object and expected lengths from [blicc_ref_pts]
 #'   function.
-#' @param gear Specifies the gear to plot as an integer index or full name
 #' @return ggplot geom object plotting observed and expected frequency
 #' @examples
 #' plot_expected_frequency(eg_rp)

@@ -195,17 +195,17 @@ Although the double-sided normal selectivity function is suggested in the fishbl
 
 # Less Technical Model Description  
 
-The mathematical description above is not always easy for everyone to understand. Below, the same model is described more broadly using English.  
+The mathematical description above is not always easy for everyone to understand. Below, the same model is described less precisely using English.  
 
-The model is simple compared to the real world, but, we hope, captures the most important aspects that decide the lengths of fish that a fishery will capture. In the model, we imagine lots of fish, all a very similar length to start with, but too small to be caught.  They then proceed to grow and die. Some die from natural causes and as they become larger and become available to the fishing gear, they die by being caught. Eventually all fish die as they grow towards and reach their maximum size. The ones that are caught make up the length frequency data sample.  
+The model is simple compared to the real world, but, we hope, captures the most important aspects that decide the lengths of fish that a fishery will capture. In the model, we imagine lots of fish, all a very similar length to start with, but too small to be caught.  They then proceed to grow and die. Some die from natural causes and as they become larger and become available to the fishing gear, some die by being caught. Eventually all fish die as they grow towards and reach their maximum size. The ones that are caught are randomly sampled so that the length frequency data sample is representative of the length frequency of the total catch.  
 
-The model mathematically describes several processes that affect the length frequency you would get from sampling this fishery.  
+The model mathematically describes several processes that affect the length frequency that you would get from sampling this fishery.  
 
-Firstly, growth slows as each fish reaches its maximum size. If it lives long enough, it is fully grown and stops growing.  
+Firstly, growth slows as each fish approaches its maximum size. If it lives long enough, it is fully grown and stops growing altogether.  
 
-Secondly, each fish has its own maximum size and so all fish will become bigger but grow at different rates to different sizes. The spread of these different sizes are described by a probability distribution, with most being around an average maximum size but others fish may be relatively small or large even when fully grown. This growth variability is important because a medium sized fish may still be growing or could be fully grown, and this affects the length frequency. 
+Secondly, each fish has its own maximum size and so all fish will become bigger but grow at different rates to different sizes. The spread of these different sizes are described by a probability distribution, with most being around an average maximum size but others fish may be relatively small or large even when fully grown. This growth variability is important because a medium sized fish may still be growing or alternatively could be already fully grown, and this affects the length frequency. 
 
-Finally, fish die at a fixed rate within each length interval. The intervals are the length bins that the fish counts are gathered into. Mortality, including fishing mortality, can vary from interval to interval.  
+Finally, fish die at a fixed rate within each length interval. The intervals are the length bins that the fish counts are gathered into. But mortality, including fishing mortality, can vary from interval to interval. The ability to allow mortality to vary from interval to interval makes the model very flexible.   
 
 Thinking about each length interval, fish must grow across the interval over time according to the growth model. As fish approach their maximum size, they spend more and more time in each length interval. Whether a fish is able successfully to grow across an interval depends upon two effects:  
 - the mortality rate: the higher this rate is the less likely that fish will survive as it crosses the interval  

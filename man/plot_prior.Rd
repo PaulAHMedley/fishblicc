@@ -4,11 +4,13 @@
 \alias{plot_prior}
 \title{Plot the observed and expected frequency data based on the prior parameters}
 \usage{
-plot_prior(blicc_ld)
+plot_prior(blicc_ld, gear = "All")
 }
 \arguments{
 \item{blicc_ld}{A standard data list suitable for the model (see function
 \link{blicc_dat})}
+
+\item{gear}{Specifies the gear to plot as an integer index or full name}
 }
 \value{
 ggplot geom object plotting observed and the prior's expected
