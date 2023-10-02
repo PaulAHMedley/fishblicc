@@ -28,6 +28,11 @@ new functions so that the parameters and parameter references for the
 selectivity functions are valid. New references are replaced in the data
 object, which is then returned.
 }
+\details{
+Particular selectivity functions can be changed using the \code{seli} parameter,
+which indexes which functions will be changed. In this case, only those
+functions will need to have the prior parameters updated.
+}
 \examples{
 new_ld <- blicc_selfun(eg_ld, sel_fun="logistic", model_name = "Logistic Selectivity")
 

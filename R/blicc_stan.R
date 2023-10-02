@@ -473,6 +473,10 @@ blicc_dat <-
 #' selectivity functions are valid. New references are replaced in the data
 #' object, which is then returned.
 #'
+#' Particular selectivity functions can be changed using the `seli` parameter,
+#' which indexes which functions will be changed. In this case, only those
+#' functions will need to have the prior parameters updated.
+#'
 #' @export
 #' @inheritParams blicc_mpd
 #' @inheritParams blicc_dat
@@ -496,7 +500,7 @@ blicc_selfun <-
       blicc_ld$fSel <- sel_fun
       blicc_ld$NS <- length(sel_fun)
     } else {
-      ErrorMsg <- paste0("Error: the specified selectivity functions must be a new set within the current set of ",
+      ErrorMsg <- paste0("Error: the specified selectivity functions must be a new but within the current set of ",
                          as.character(blicc_ld$NS), " functions or replace all functions (Seli=NULL).")
       if ( ! (is.vector(seli) & is.numeric(seli)) )  stop(ErrorMsg)
       seli <- unique(round(seli))
@@ -504,7 +508,6 @@ blicc_selfun <-
       if ( any((seli > blicc_ld$NS) | (seli <= 0)) ) stop(ErrorMsg)
 
       blicc_ld$sel_fun[seli] <- sel_fun
-      blicc_ld$NS <- length(sel_fun)
     }
     # Update parameters
     npar <- Rsel_functions()$npar[blicc_ld$fSel]
@@ -524,12 +527,12 @@ blicc_selfun <-
     if ( ! is.null(model_name) )
       blicc_ld$model_name <- model_name
 
-    # if ( blicc_model_OK(blicc_ld) == "OK" )
-    #   blicc_ld <- blip_selectivity(blicc_ld)
-    # else {
+    if ( blicc_model_OK(blicc_ld) == "OK" )
+       blicc_ld <- blip_selectivity(blicc_ld, sel_indx = seli)
+    else {
       blicc_ld$polSm <- rep(NA_real_, sum(npar)) # lognormal mu parameters
       blicc_ld$polSs <-  blicc_ld$polSm
-    # }
+    }
     return(blicc_ld)
   }
 

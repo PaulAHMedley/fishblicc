@@ -55,15 +55,23 @@ The method can be used to evaluate stock status based on the spawning potential 
 The model used here does not convert length to age, but instead accounts for mortality as fish grow through length intervals. The estimation method works by assuming that the von Bertalanffy growth model describes the mean length at age and variation in individual fish growth is governed by their individual maximum length which is drawn from a gamma probability density function (with constant CV). The model is flexible enough to include all data, so, for example, observed lengths above $L_\infty$ are not rejected. The model allows for the application of piece-wise mortality across length bins, so changing mortality-at-length, such as that due to gear selectivity or decreasing natural mortality with length, can be accommodated.  
 
 The model fits the following parameters:
+
   - Linf the asymptotic mean length  
-  - Galpha the growth model inverse error parameter ( $CV = Galpha^{-0.5}$ )  
+  
+  - Galpha the growth model inverse error parameter ( $CV = Galpha^{-0.5}$ ) 
+  
   - Mk the natural mortality in time units of K (growth rate)  
+  
   - Fk the fishing mortality in time units of K (growth rate), one for each fishing gear contributing to fishing mortality  
+  
   - Sm All selectivity function parameters in a single vector, including length location parameters and slope parameters for each parametric selectivity function.  
+  
   - phi the over-dispersion parameter of the counts in the length bins for the negative binomial.  
   
 The following additional fixed parameters are required to calculate the SPR:
+
   - $L_m$ (and $L_s$) for the maturity at 50% (and steepness) for a logistic maturity curve.  
+  
   - $b$ parameter for the length weight relationship $W=aL^b$ .  
 
 The length interval catch curve is used to estimate the spawning potential ratio. To do this, estimates of natural mortality, length-weight and maturity are required. These generally cannot all be estimated independently from length frequency data, so informative priors from other sources are required. Being data-limited, there are minimum information requirements where  defaults can be used if information is not available. 
@@ -113,8 +121,11 @@ rp_res <- blicc_ref_pts(slim, dl)
 ```
 
 This produces the following objects:  
+
  - "dl" is the data file containing the length frequency and information for priors used in the fit.  
+ 
  - "slim" is a stanfit object and there are useful tools in the package rstan which will allow you to examine the fit.  
+ 
  - "rp_res" is a list containing the data object used to create it, and two draws objects, `rp_df` for parameters and reference points and `lx_df` for expected length frequencies, that can be used by the packages `posterior` and `bayesplot` to examine results, and a vector `vdir` giving the 'direction' of search for reference points only relevant if there is more than one gear (see documentation).  
 
 The priors used by the model can be inspected and produced as a table.  
@@ -140,7 +151,7 @@ plot_expected_frequency(rp_res, gear=1:3) #Plot the results to check the model f
 plot_residuals(rp_res) 
 ```
 
-The set bagnet shows clear dome-shape, whereas the  gill net continues to catch some larger fish, so this pattern is less clear. The Trawl survey is a logistic selectivity.  
+The set bagnets show clear dome-shape, whereas the gill net continues to catch some larger fish, so this pattern is less clear.  
 
 ```{r fig.cap = "Figure: Fitted selectivities "}
 plot_selectivity(rp_res)

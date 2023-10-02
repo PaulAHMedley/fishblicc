@@ -34,8 +34,11 @@ It is not uncommon for fisheries to depend upon single samples of length frequen
 The fishblicc model estimates the mortality across length intervals and therefore estimates the relative abundance of each length interval in the population and subsequently in catches. The model is designed to be flexible, so it works with a single sample from a single gear, but also, combined with relative catch quantities, can be used with multiple gears fishing the same population.    
 
 The model has the following assumptions:  
+
 1. The population has been in an approximate steady-state for a generation or more. The model does not account for changes over time directly.  
+
 2. Mean growth follows the von Bertalanffy growth curve, and the asymptotic size of individual fish is Gamma distributed, which governs growth variability.  
+
 3. Mortality is fixed within length intervals, but may vary between intervals and intervals can be any width. Because mortality need only be fixed inside intervals, different selectivities among any number of fishing gears and other changes in mortality such as size related natural mortality can be accounted for. A general parametric selectivity function is suggested (double-sided normal) that has been used to account for a wide range of selectivity that might be encountered.  
 
 One of the motivations for developing this model was to make it simple enough to fit to length frequency data using a Bayesian approach that accounts for uncertainties.  
@@ -208,7 +211,9 @@ Secondly, each fish has its own maximum size and so all fish will become bigger 
 Finally, fish die at a fixed rate within each length interval. The intervals are the length bins that the fish counts are gathered into. But mortality, including fishing mortality, can vary from interval to interval. The ability to allow mortality to vary from interval to interval makes the model very flexible.   
 
 Thinking about each length interval, fish must grow across the interval over time according to the growth model. As fish approach their maximum size, they spend more and more time in each length interval. Whether a fish is able successfully to grow across an interval depends upon two effects:  
+
 - the mortality rate: the higher this rate is the less likely that fish will survive as it crosses the interval  
+
 - the amount of time it takes for the fish to grow across the interval: the longer the time, the more likely it will die during that period. If a fish's maximum size is within the interval, the growth slows to zero and the fish will never be able to grow out of the interval.  
 
 So the model accounts for the chance a fish will reach a length interval, be caught and therefore be present in the length frequency sample. This chance of a fish being in the length frequency sample for each interval is controlled by parameters in the model. These parameters are adjusted to find the best fit between the model and the observed length frequency data.  

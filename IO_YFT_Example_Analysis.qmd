@@ -3,46 +3,90 @@ title: "Indian Ocean Yellowfin fishblicc Analysis"
 author: "Paul Medley"
 date:   "August 2023"
 format: pdf
+toc: true
 keep_md: true
-editor: visual
+editor: source
+number-sections: true
+font:
+  fontsize: 11
+execute:
+  echo: false
 ---
 
 ```{r setup}
+#| include: false
 library("here")
 library("ggplot2")
 library("dplyr")
 library("tidyr")
-# library("fishblicc")
+#library("fishblicc")
 library("devtools")
 library("rstantools")
 library("flextable")
+
+sensitivities <- tibble()
+add_sensitivity <- function(res, notes) {
+  with(res$rp_df,
+       rbind(
+         sensitivities,
+         tibble(
+           model_name = res$ld$model_name,
+           Linf = Linf,
+           Galpha = Galpha,
+           Mk = Mk,
+           SPR = SPR,
+           lp = lp__,
+           Notes = notes
+         )
+       ))
+}
+
 load_all()
 ```
 
 # Introduction
 
-This is an example analysis of Indian Ocean yellowfin tuna. This stock undergoes regular Stock Synthesis stock assessments which make use of all available data and undergoes rigorous review through the IOTC science committee. Part of the available data reported by countries that are members of IOTC include length frequency and catch data from a variety of gears. These data are suitable for a multi-selectivity catch curve. This is a useful case study to see how the method compares with the full assessment and consider the problems that arise when dealing with limited data. There is no intention here to provide a competing stock assessment since important informative data that are available for analysis are actively excluded here.  
+This is an example analysis of Indian Ocean yellowfin tuna (*Thunnus albacares*). This stock undergoes regular Stock Synthesis (SS3) stock assessments which make use of all available data and undergoes rigorous review through the IOTC science committee. Part of the available data reported by countries that are members of IOTC include length frequency and catch data from a variety of gears, which are suitable for a multi-selectivity catch curve. This is a case study to see how the method compares with the full assessment and consider the problems that arise when dealing with limited data. There is no intention here to provide a competing stock assessment since important informative data that are available for analysis are actively excluded here.  
 
 Catch curves are a simple idea - they use a snapshot of the age structure to infer the stock status and fishing mortality. This is made more complicated when dealing with lengths as a growth model is required to link length to age. But in principle the length-based catch curve applies the same idea. Is the proportion of larger mature fish in the landings consistent with the stock being sustainably harvested or not?
 
 The main problem with length-based catch curve models has been that the model flexibility is limited. Specifically, they cannot deal with potentially alternative selectivity functions that might be considered plausible or alternative mortality models. This analysis below illustrates the `fishblicc` software which applies a more flexible model that estimates a fixed mortality within each length interval, so it is able to account for different selectivity curves and the resulting different mortality schedules that will change length composition in the underlying population.
 
-
+The Indian Ocean yellowfin tuna fishery is probably more complex than most fisheries in terms of the gears used, but it is not unusual for a fishery and particularly a small scale fishery, to have several gears operating. Having each gear separately modelled can produce much better results than trying to combine the data into single frequency samples or simply ignoring gears with lower catches. It will also allow gear-specific management advice when limiting fishing mortality and trying to improve overall fishing selectivity.
 
 # Data
 
-## Catch Data
+## Length Frequency Data
 
-The data used are public length frequency data from \[www.iotc.org\] and is the same as that used in the 2019 SS3 stock assessment. The data is combined over the last 6 years (2013-2019).
+The data used are public length frequency data from \[www.iotc.org\] and is the same as that used in the 2019 SS3 yellowfin tuna stock assessment. The data is combined over 6 years (2013-2019).
+
+The recognised gears reflect the available length frequency data:
+
+- BB: Bait boats (pole and line)
+
+- GI: gill net
+
+- HD: handline
+
+- LL: longline
+
+- OT: "other" but probably mostly troll fisheries
+
+- PS-FS: Purse seine free school
+
+- PS-LS: Purse seine log school, but most sets on fish aggregation devices (FADs)
+
+These gears cover the vast majority of the known catch of yellowfin in the Indian Ocean (@fig-catch_data).
 
 ```{r}
+#| output: false
 load(here("data", "iotc_yft_2013_19.rda"))
 ```
 
 
 ```{r }
-#| label: fig_catch_data
-#| fig-cap: "Total catch weight for 2013-2019 by gear."  
+#| label: fig-catch_data
+#| fig-cap: "Total catch weight for 2013-2019 by gear type."  
 ggplot(yft_catch_2013_19, aes(x=gear, y=catch)) +
   geom_col(fill="green", alpha=0.5) +
   theme_classic()
@@ -54,7 +98,10 @@ lfd <- yft_lenfreq_2013_19 |>
   group_by(gear) |>
   mutate(Proportion=fq/sum(fq)) |>
   ungroup()
+```
 
+
+```{r }
 #| label: fig_length_frequency_data
 #| fig-cap: "Length frequency data as proportions for each gear."  
 lfd |>
@@ -63,39 +110,22 @@ lfd |>
   facet_wrap(vars(gear), ncol=4) +
   theme_classic()
 ```
-
-
-
-
-## Life History Parameters
-
-In data poor situations by definition, information available on the stock is usually very limited and often information from other stocks and fisheries, along with local expert opinion is required to compile the likely life history parameters that are necessary to interpret length frequency data. In general, length frequency data will not contain information to support estimates of natural mortality separate from fishing mortality, or information on growth. In a Bayesian context, informative priors on key life history parameters will be required as input to the model.
-
-```{r FitPrep}
-# ( from fishbase)
-L50 <- 103 
-L95 <- 120
-Linf <- c(181.0454545, 5)
-Galpha <- 100
-a <- 0.00002459 
-b <- 2.9667
-Mk <- 1.714011976
-```
-
+  
 ## Catch Numbers
 
-For multiple gears, the relative catch in numbers for each gear is required to estimate the relative fishing mortality each gear applies. For data limited cases, these relative catch data are potentially difficult to estimate. In many cases, the relative sample size of length frequency data taken for each gear may be the best indicator of the relative catches. If estimates of catches are available, these should be used.
+For multiple gears, the relative catch in numbers for each gear is required to estimate the relative fishing mortality each gear applies. For data limited assessments, these relative catch data are potentially difficult to estimate. In many cases, the relative sample size of length frequency data taken for each gear may be the best indicator of the relative catches. If estimates of catches are available, these should be used. If necessary, proxies might also be used such as relative fleet size or activity with CPUE data. As only relative catch sizes are needed, not absolute estimates, it should be possible to provide 
 
-For IO yellowfin tuna, direct estimates of catch weight are available, and these have been converted to numbers using the mean weights from the length frequency samples. The length-weight conversion is estimated slightly differently between longline and other gears. This alternative length-weight relationship was applied to longline and handline, which catch similar size fish.
+For IO yellowfin tuna, direct estimates of catch weight are available, and these have been converted to numbers using the mean weights from the length frequency samples (@fig-catch_numbers). The length-weight conversion is estimated slightly differently between longline and other gears. This alternative length-weight relationship was applied to longline and handline, which catch similar size fish.
 
 ```{r }
+
 # Generate mean weights
 a <- 0.00002459
 b <- 2.9667
 
 LMP <- seq(12, 202, by=4)
-wt_sg <- a * LMP^b
-wt_ll <- 1.13*0.0000094007 * LMP^3.126843987
+wt_sg <- a * LMP^b                       # all gears except
+wt_ll <- 1.13*0.0000094007 * LMP^3.126843987 # longline/handline
 
 gr <- pull(yft_catch_2013_19, gear)
 mwt <- double(length(gr))
@@ -103,26 +133,25 @@ i <- 1
 for (g in gr) {
   c1 <- enquo(g)
   fq <- pull(yft_lenfreq_2013_19, {{c1}})
-  mwt[i] <- if_else(g=="LL", 
+  mwt[i] <- if_else(g %in% c("LL", "HD"), 
                     sum(fq * wt_ll)/sum(fq), 
                     sum(fq * wt_sg)/sum(fq)) 
-  i <- i+1
+  i <- i+1L
 }
 
 # catch in t, mwt in kilos, cn in thousands of fish
 yft_catch_2013_19$catch_n <- yft_catch_2013_19$catch/mwt
-
 ```
 
 
 
 ```{r }
-#| label: catch_numbers
+#| label: fig-catch_numbers
 #| fig-cap: "Estimated catch numbers 2013-2019 for each gear."
 ggplot(yft_catch_2013_19, aes(x=gear, y=catch_n)) +
   geom_col(fill="lightblue") +
   theme_classic() +
-  labs(y = "Catch (numbers)", x = "Gear type")
+  labs(y = "Catch ('000s fish)", x = "Gear type")
 ```
 
 
@@ -136,32 +165,44 @@ lfd <- lfd |>
 ```
 
 
+
 ```{r }
 #| label: fig-cum_wt_prop_lfd
-#| fig-cap: "Length frequency proportions for each gear weighted by estimated total catch numbers"
+#| fig-cap: "Length frequency in relative numbers of fish for each gear based on the estimated total catch numbers."
 ggplot(lfd, aes(x=Len, y=Proportion, fill=gear)) +
+  labs(y="Relative catch numbers", x="Lenth (cm)", fill="Gear") +
   geom_col() +
   theme_classic()
 ```
 
-It would be possible to fit a catch curve to the combined length frequencies as long as they are weighted by the relative catch numbers (@fig-cum_wt_prop_lfd). While it would be possible to fit a catch curve to these combined frequency data, it would be necessary to have a multi-modal function to model the selectivity. Perhaps more importantly, combining the data in this way would limit the advice that can be provided on a gear-by-gear basis. It would make it difficult, for example, to predict the effect of reducing the availability of FADs. Gear specific models would therefore be more desirable because then gear-specific advice can be provided from the model for management decision-making.
+It would be possible to fit a catch curve to the combined length frequencies as long as they are weighted by the relative catch numbers (@fig-cum_wt_prop_lfd). While it would be possible to fit a single catch curve to these combined frequency data, it would be necessary to have a multi-modal function to model the selectivity. Perhaps more importantly, combining the data in this way would limit the advice that can be provided on a gear-by-gear basis. It would make it difficult, for example, to predict the effect of limiting the number of FADs or gillnets. 
 
-# Multiple Gear Model
+## Priors
 
-The model structure is flexible, so the first task is to explore possible structures that adequately explain the observations and cover possible underlying model assumptions. For the latter, the main aim is to determine whether the final estimate of SPR is sensitive to those assumptions. If it is not, then we do not need to worry too much about them and those alternatives can be excluded from the final  fit.  
+In data poor situations, information available on the stock biology is usually also limited and so information from other stocks and fisheries, along with local expert opinion, is required to compile the likely life history parameters that are necessary to interpret length frequency data. In general, length frequency data will not contain information to support estimates of natural mortality separate from fishing mortality, or information on growth. Therefore, in a Bayesian context, informative priors on key life history parameters will be required as input to the model.  
 
-The alternative model configurations are fitted using the Stan optimiser. This estimates the maximum posterior density. While this does not provide as much information on how well the model fits the data as the MCMC fit, it is considerably faster.  
+The information source for life history parameters used here is Fishbase (Froese and Pauly 2023). The life history of yellowfin tuna as a species (*Thunnus albacares*) is quite well researched, so there is reasonable confidence in values used for length-at-maturity, $L_\infty$ and length-weight parameters (@tbl-LH_priors). The prior on $M_K$ can also be proposed with reasonable confidence because of the values used in the main stock assessment. The default growth variability prior (10% CV) is also used, but should not make a significant difference to the results. 
 
-## Single Selectivity Model
+It should be noted that the official stock assessments do not use the von Bertalanffy growth model, but uses a variant, "Richard's model" (Maunder et al 2018), which allows two-stage growth that has been estimated to more closely match the true growth form. This may be a cause of some differences between the full stock assessment and this 'length data only' approach.   
 
-```{r FitMultigear_Stan}
+```{r }
+# Prepare data and priors
+# ( from fishbase)
+L50 <- 103 
+L95 <- 120
+Linf <- c(181.0454545, 5)
+Galpha <- 100
+a <- 0.00002459 
+b <- 2.9667
+Mk <- 1.714011976
+
 lfd <- yft_lenfreq_2013_19 |>
   select(-Len) |>
   mutate(across(BB:`PS-LS`, ~ round(.x/sqrt(sum(.x))))) |>
   as.list()
 
-ld <- blicc_dat(
-  model_name = "Test Mix",
+ld1 <- blicc_dat(
+  model_name = "All domed single selectivity",
   LLB = yft_lenfreq_2013_19$Len,
   fq = lfd,
   Linf = Linf,
@@ -174,21 +215,53 @@ ld <- blicc_dat(
   L50=L50,
   L95=L95
 )
-
 ```
+
+
+
+```{r}
+#| label: tbl-LH_priors
+#| tbl-cap: "Prior and fixed parameters values for non-gear related functions. Linf and Galpha are used in the growth model, Mk is the natural mortality and NB_phi is the scale parameter for the observation error. The fixed parameters are the length-weight exponent (b), and the logistic length-based maturity curve (L50, Ls)."
+blicc_priors(ld1) |>
+  filter( ! (Parameter %in% c("Fk", "Mode", "Left SD", "Right SD"))) |>
+  select(Parameter:`Function Type`, Mu:SD) |>
+  flextable() |>
+  colformat_double(digits=3) |>
+  fontsize(size = 9) |>
+  autofit()
+```
+
+
+
+# Catch Curve Model
+
+The model structure is flexible, so the first task is to explore possible structures that adequately explain the observations and cover possible underlying model assumptions. For the latter, the main aim is to determine whether the final estimate of SPR is sensitive to those assumptions. If it is not, then we do not need to worry too much about them and those alternatives can be excluded from the final  fit.  
+
+Search for a model configuration that can reasonably explain the observations.
+
+Use sensitivity model configurations to look for plausible alternative explanations for the observations and, importantly, identify which of these the final results (SPR) is most sensitive to.
+
+The model applied here is for illustration only and the configurations are not exhaustively explored. For example, we would probably want to consider alternative data subsets such as by year or season, which would allow considering other possible effects such as recruitment or seasonal changes to selectivity.
+
+The alternative model configurations are fitted using the Stan optimiser. This estimates the maximum posterior density. While this does not provide as much information on how well the model fits the data as the MCMC fit, it is considerably faster.  
+
+## Single Selectivity Model
+
+
 
 
 ```{r FitMultigear_Stan}
 #| label: fig-prior_lfd
 #| fig-cap: "Estimated length frequency data using prior parameters."
-plot_prior(ld) +
+plot_prior(ld1) +
   theme_classic()
 ```
 
 
 ```{r }
-fit <- blicc_mpd(ld)
-res <- blicc_ref_pts(fit, ld)
+#| output: false
+fit <- blicc_mpd(ld1)
+res <- blicc_ref_pts(fit, ld1)
 ```
 
 
@@ -199,58 +272,82 @@ plot_expected_frequency(res, gear=1:7) +
   theme_classic()
 ```
 
-The model does not fit the data well. With a single mode selectivity function, the selectivity model stretches between the modes to explain the higher or lower values. This increases the model's relative fishing mortality on these lengths between the modes which does not represent the data well. One of the problems with selectivity functions based on the normal distribution is that selectivity function rapidly declines, so outliers can be highly influential in the fit. While more dispersed functions may be more robust to this effect, they do not usually improve the fit much and can not be justified on any theoretical grounds.  
+The model does not fit the data well (@fig-obsexp_1_lfd). With a single mode selectivity function, the selectivity model stretches between the modes to explain the higher or lower values. This increases the model's relative fishing mortality on these lengths between the modes which does not represent the data well. One of the problems with selectivity functions based on the normal distribution is that selectivity function rapidly declines, so outliers can be highly influential in the fit. While more dispersed functions such as the gamma or lognormal may be more robust to this effect, they do not usually improve the fit much and can not be well justified on any theoretical grounds.  
 
-A more flexible selectivity function is required to explain multi-mode length frequencies. An obvious way to attempt this is to combine selectivity into mixtures of underlying latent functions. This is proposed below as an explanation for the observations from the different gears' length frequency.      
+A more flexible selectivity function is required to explain multi-mode length frequencies. An obvious way to attempt this is to combine selectivity into mixtures of underlying latent functions. This is proposed below as an explanation for the observations from the different gears' length frequency.  
+
+
+```{r}
+sensitivities <- add_sensitivity(res, "Rejected")
+```
+
 
 ## Shared-selectivity Mixture Model
 
+For the shared selectivity model, the hypothesis is that the gear selectivities are made up of a mixture of normal-like selectivity functions. For example, both pole and line and purse seine take juvenile yellowfin associated with skipjack. The availability and capture of these juveniles might follow the same length-based selectivity function. A normal or double-sided normal selectivity function might be reasonably proposed based on the central limit theorem - fish are caught due to multiple factors linked to length that, when combined, peak at a particular length and decline on either side.  
 
-For the shared selectivity model, the hypothesis is that the gear selectivities are made up of a mixture of normal-like selectivity functions. For example, both pole and line and purse seine take juvenile yellowfin associated with skipjack. The availability and capture of these juveniles might follow the same length-based selectivity function. A normal or double-sided normal selectivity function might be reasonably proposed based on the central limit theorem - fish are caught due to multiple factors linked to length that, when combined, peak at a particular length and decline on either side.
+1. Simultaneous estimation of shared selectivity functions  
 
-1. Simultaneous estimation of shared selectivity functions
-2. Correction for mortality
+2. Correction for mortality  
+
+The functions below were developed initially through hypothetical shared selectivity and subsequently to explain outliers that otherwise might be influential in the fit. Based on the observations (@fig-obsexp_1_lfd), pole and line (BB) and purse seine FAD sets (PS-LS) share a peak around 50cm. We might assume both these gears encounter juveniles that are mixing with skipjack and therefore equally vulnerable to these gears. Handline (HD) and purse seine free-school (PS-FS) catches also seem to have minor peaks around 50cm and so likewise may have a similar selectivity shared component which can be included. This still leaves purse seine FAD sets with a minor but significant mode around 100cm which is not shared by any other gear. Another selectivity component is added around this point to explain these observations.
+
+Using selectivity mixtures in this way does not discriminate between genuine selectivity mixture functions (fish are caught in different ways by the same gear) and mis-recording the gear. For example, in the case of differences between purse seine free school and FAD sets, it is not always clear what a set is if it is conducted near a FAD or (natural) floating log. In case the mixture may be partly an artefact of mis-recording or genuinely mixed set-types.  
+
+The actual selectivity functions should be as parsimonious as possible. Three functions (logistic, normal and single-sided normal[^1]) take 2 parameters only, where as the double-sided normal takes three parameters. Discovering which functions are sufficient to explain the observations is a matter of trial and error.
+
+[^1]: single-sided normal resembles the logistic but has a normal shape to the slope of the left of the selectivity. Its primary use is to test whether a selectivity might be dome-shaped as it is directly comparable with a double-sided normal: i.e. identical if the right-side slope parameter is fixed at zero.
+
 
 ```{r}
-#tmp <- blip_selectivity(ld2)
+#| warning: false
 
-ld2 <- blicc_selfun(ld, sel_fun = c(2, 4, 2, 4, 1, 4, 4))
+# Seven selectivity functions are setup including logistic (1),
+# normal (2) and double-sided normal (4).
+ld2 <- blicc_selfun(ld1,
+                    sel_fun = c(2, 4, 2, 4, 1, 4, 4),
+                    model_name = "Selectivity Mixture Model")
 
+# The selectivity functions are then allocated among gears
+ld2 <- blicc_gear_sel(ld2,
+                      gear_sel = list(
+                        BB = c(1, 2),
+                        GI = c(4),
+                        HD = c(5, 2),
+                        LL = c(5),
+                        OT = c(6),
+                        `PS-FS` = c(7, 2),
+                        `PS-LS` = c(1, 2, 3)
+                      ))
 
-ld2 <- blicc_gear_sel(ld2, gear_sel=list(BB = c(1, 2),
-                                         GI = c(4),
-                                         HD = c(5, 2),
-                                         LL = c(5),
-                                         OT = c(6),
-                                         `PS-FS` = c(7, 2),
-                                         `PS-LS` = c(1, 2, 3)))
-
+# The priors are estimated for the non-shared selectivity functions
 ld2 <- blip_selectivity(ld2)
 
+# The prior hyper-parameters are then set manually for the other selectivity
+# functions according to their hypothetical purpose
 ld2 <- ld2 |>
-  blip_set_sel(1, loc=46) |>
-  blip_set_sel(2, loc=50) |>
-  blip_set_sel(3, loc=100) |>
-  blip_set_sel(7, loc=132, lslope=c(-4, -5))
-
+  blip_set_sel(1, loc = 46) |>
+  blip_set_sel(2, loc = 50) |>
+  blip_set_sel(3, loc = 100) |>
+  blip_set_sel(7, loc = 132, lslope = c(-4,-5))
+# Where multiple functions are used for a single gear, mixture weight
 ld2 <- blip_mix_wt(ld2, "BB", mix_wt = 0.2)
 ld2 <- blip_mix_wt(ld2, "HD", mix_wt = 0.12)
 ld2 <- blip_mix_wt(ld2, "PS-FS", mix_wt = 0.05)
 ld2 <- blip_mix_wt(ld2, "PS-LS", mix_wt = c(0.2, 0.1))
-
 ```
 
 
 ```{r}
 #| label: fig-prior_2_lfd
-#| fig-cap: "Estimated length frequency data using prior parameters for the mixture model."
+#| fig-cap: "Prior check: Estimated length frequency data using prior parameters for the mixture model."
 plot_prior(ld2) +
   theme_classic()
 ```
 
 
 ```{r}
-#| include: FALSE
+#| output: false
 fit <- blicc_mpd(ld2)
 res <- blicc_ref_pts(fit, ld2)
 ```
@@ -263,98 +360,183 @@ plot_expected_frequency(res) +
   theme_classic()
 ```
 
-## Estimated $L_\infty$
-
-The prior on the asymptotic $L_\infty$ is informative. However, the parameter is estimated and it is possible that there is some support for it in the data.  The model can be re-fitted while allowing greater freedom to the asymptotic length estimate by increasing the standard deviation for the normal prior.
-
-
-
-
-## Length-Inverse Natural Mortality
-
-Lorenzen (20XX) suggests that the default model for natural mortality in fish should be related to the inverse weight or length of the fish. This is the default used for most tuna stock assessments (Maunder XXXX) and is easily incorporated into this model by setting a reference length.  
+This model where a number of selectivity functions are included to fit the observations, and in particular the shared patterns between gears. This allows the model to explain the length frequencies without overfitting. As this provides a basic reasonable fit to the data, it retained is retained as the base model, which can be compared to other model configurations.  
 
 
 ```{r}
-#| include: FALSE
-ld2 <- blip_Mk(ld2, lMk = c(ld$polMkm, ld$polMks),
-                    ref_length = 140,
-                    model_name = "Length-Inverse M")
-fit <- blicc_mpd(ld2)
-res <- blicc_ref_pts(fit, ld2)
+#| tbl-cap: "Results for the new base mixture model."
+blicc_results(res) |>
+  flextable() |>
+  colformat_double(digits=3) |>
+  fontsize(size = 8) |>
+  autofit()
 ```
 
-The model fit slightly improves, but the SPR estimate is not sensitive to this alternative model of natural mortality.  
+It is a good idea to check the standardised residuals. A problem with using the normal parametric selectivity function is outliers in the distributions tail can be very influential. These points can be potentially identified by large positive residuals. The residuals can be removed simply by adding additional selectivity functions at the cost of more parameters. Adding these selectivity functions will make little difference to the final mortality estimates because the weight on the function will be very low, so whether they are required or not can currently only be determined by trail and error.   
 
-## Dome-shaped Longline Selectivity
+```{r}
+#| label: fig-residuals
+#| fig-cap: "Standard residual plot by length bin separated for each gear."
+plot_residuals(res) +
+  facet_wrap(vars(Sgroup), scales="free_y") +
+  theme_classic()
+```
 
 
 
 ```{r}
-#| include: FALSE
-ld3 <- blicc_selfun(ld, sel_fun = c(2, 4, 2, 4, 4, 4, 4))
-ld3 <- blicc_gear_sel(ld3, gear_sel=list(BB = c(1, 2),
-                                         GI = c(4),
-                                         HD = c(5, 2),
-                                         LL = c(5),
-                                         OT = c(6),
-                                         `PS-FS` = c(7, 2),
-                                         `PS-LS` = c(1, 2, 3)))
-ld3$poLinfs <- 2
-ld3$polSm[ld3$sp_i[2]+2] <- -4.5   # BB
-ld3$polSm[ld3$sp_i[2]] <- log(50)  # BB
-ld3$polSm[ld3$NP+ld3$GSmix1[1]] <- -1.5  # BB
+#| include: false
+sensitivities <- add_sensitivity(res, "Base model")
+```
 
-ld3$polSm[ld3$sp_i[4]+2] <- -6  # GI
+## Estimated $L_\infty$
 
-# HD
-ld3$GSbase[3] <- 5
-ld3$GSmix2[ld3$GSmix1[3*2-1]] <- 1
-ld3$polSm[ld3$NP+ld3$GSmix1[3*2-1]] <- -2  # HD
+The prior on the asymptotic $L_\infty$ is informative. However, the parameter is estimated and it is possible that there is some support for it in the data.  The model can be re-fitted while allowing greater freedom to the asymptotic length estimate by increasing the standard deviation for the normal prior.  
 
-ld3$GSbase[6] <- 7
-ld3$GSmix2[ld3$GSmix1[6*2-1]] <- 2
-ld3$polSm[ld3$sp_i[5]+1] <- -2.5 # HD / LL logistic slope
-ld3$polSm[ld3$sp_i[7]] <- log(132)   # PS-FS slope
-ld3$polSm[ld3$sp_i[7]+1] <- -4   # PS-FS slope
-ld3$polSm[ld3$sp_i[7]+2] <- -5   # PS-FS slope
-ld3$polSm[ld3$NP+ld3$GSmix1[6*2-1]] <- -3        # PS-FS mix weight
 
-# PS-LS
-ld3$GSbase[7] <- 1
-ld3$GSmix2[ld3$GSmix1[7*2-1]] <- 2
-ld3$polSm[ld3$sp_i[3]] <- log(100)
-ld3$polSm[ld3$NP+ld3$GSmix1[7*2-1]] <- -1.5
-ld3$polSm[ld3$NP+ld3$GSmix1[7*2-1]+1] <- -2
+
+```{r }
+#| output: false
+ld3 <- blip_Linf(ld2, Linf = c(181.0454545, 15), 
+                 model_name="Allow Linf estimation")
 fit <- blicc_mpd(ld3)
 res <- blicc_ref_pts(fit, ld3)
 ```
 
 
-## Summary
 
-
-# MCMC Fit
-
-```{r eval=FALSE}
-#I eval: FALSE
-
-fit <- blicc_fit(ld2, ntarget = 2000, nwarmup = 2000, control=list(max_treedepth=14))
-res <- blicc_ref_pts(fit, ld2)
-save(fit, res, file=here("tmp.rda"))
+```{r}
+#| tbl-cap: "Results for the model allowing Linf to be fitted."
+blicc_results(res) |>
+  flextable() |>
+  colformat_double(digits=3) |>
+  fontsize(size = 8) |>
+  autofit()
 ```
 
+The model fits the data better, but the estimated $L_\infty$ is too low to be realistic. The SPR estimate is highly sensitive to this effect. The absence of larger fish in the length frequencies is either because higher mortality prevents them being in the population or they do not grow that big. The data does not support either hypothesis, so the prior on $L_\infty$ must be used choose between them. In this case, quite a lot is known about yellowfin, including how big they can get so the prior can be informative. If this was not known, both hypotheses could be combined as alternatives, or the more informative prior might be chosen as its results are less optimistic and would likely require more risk-averse management action.
 
-## Results
+```{r}
+#| include: false
+sensitivities <- add_sensitivity(res, "Rejected")
+```
 
+## Length-Inverse Natural Mortality
+
+Lorenzen (2022) suggests that the default model for natural mortality in fish should be related to the inverse weight or length of the fish. This is the default used for most tuna stock assessments (Maunder et al. 2023) and is easily incorporated into this model by setting a reference length. This is the simple length-inverse model where natural mortality is inversely proportional to length:
+
+$$ M_{L} = {M_{1} \over L} $$
+
+Setting the reference length will set the natural mortality equal to the current prior natural mortality only at this length. The natural mortality will increase below this length and decrease above it according to the reciprocal relationship. In this formulation, no additional parameters are required to be fitted.  
+
+```{r}
+#| output: false
+ld3 <- blip_Mk(ld2, lMk = c(ld1$polMkm, ld1$polMks),
+                    ref_length = 140,
+                    model_name = "Length-inverse M")
+fit <- blicc_mpd(ld3)
+res <- blicc_ref_pts(fit, ld3)
+```
 
 
 
 ```{r}
-load(file=here("tmp.rda"))
-pairs(fit, pars=c("nNB_phi", "nLinf", "nGalpha"), condition="divergent__")
+#| tbl-cap: "Results for the model with length-inverse M to be fitted."
+blicc_results(res) |>
+  flextable() |>
+  colformat_double(digits=3) |>
+  fontsize(size = 8) |>
+  autofit()
 ```
 
+The model fit slightly improves, but the SPR estimate is not sensitive to this alternative model of natural mortality. However, this model is retained because it fits a little better, it is the standard in tuna stock assessments, and is being used increasingly widely as a more accurate representation of the natural mortality process.  
+
+```{r}
+#| include: false
+sensitivities <- add_sensitivity(res, "New base")
+```
+
+## Dome-shaped Longline Selectivity
+
+The current model assumes logistic selectivity function for longline and handline which catch the largest fish. This is the standard selectivity for most length-based methods. An alternative option is that the selectivity is dome-shaped (double-sided normal) which can be tested.
+
+
+```{r}
+#| output: false
+ld4 <- blicc_selfun(ld3, sel_fun = 4, seli = 5, 
+                    model_name = "Longline dome-shaped")
+
+fit <- blicc_mpd(ld4)
+res <- blicc_ref_pts(fit, ld4)
+```
+
+
+```{r}
+#| tbl-cap: "Results for the model with length-inverse M to be fitted."
+blicc_results(res) |>
+  flextable() |>
+  colformat_double(digits=3) |>
+  fontsize(size = 8) |>
+  autofit()
+```
+
+The simple reason is that the longline selectivity mode is very close to the maximum size, so the downward slope of the selectivity function is only relevant to a very small proportion of fish and has little influence on the size composition of the catch. As a result, the additional parameter does not explain the observations much better and is redundant in this case.  Therefore this model is rejected.
+
+```{r}
+#| include: false
+sensitivities <- add_sensitivity(res, "Rejected")
+```
+
+
+## Summary
+
+In conclusion the final retained base model is the selectivity mixture model, with an informative $L_\infty$ prior and length-inverse M. Applying a separate single mode selectivity function to each gear resulted in a poor fit with a very low log-probability at the mpd mode (@tbl-sensitivities).
+
+
+```{r}
+#| echo: false
+#| label: tbl-sensitivities
+#| tbl-cap: "Summary of the alternative tested sensititivites, with the final base model fitted using MCMC. `lp` are the log-probabilities at the maximum posterior density points, which are almost directly comparible in terms of 'goodness-of-fit'. The final retained model is the 'Length-inverse M'."
+sensitivities |>
+  flextable() |>
+  colformat_double(digits=3) |>
+  fontsize(size = 9) |>
+  align(j=7, align="center") |>
+  autofit()
+```
+
+
+# MCMC Fit
+
+```{r }
+#| eval: false
+# Fitting takes a long time, so this is done once and the results are stored.
+fit <- blicc_fit(ld3, ntarget = 2000, nwarmup = 2000, 
+                 control=list(max_treedepth=14))
+res <- blicc_ref_pts(fit, ld3)
+# Save fit for future use
+save(fit, res, file=here("tmp.rda"))
+```
+
+Note about divergences...
+
+```{r}
+#| include: false
+# load data
+load(file=here("tmp.rda"))
+```
+
+
+```{r}
+#| warnings: false
+# Diagnostics are provided in this document, but in a real assessment 
+# the fit should be checked.
+pairs(fit, pars=c("nNB_phi", "nLinf", "nGalpha"))
+```
+
+# Final Results
+
+The MCMC gives estimates of uncertainty in the form of probability density functions for the values of interest. This includes the observations (length frequencies). Comparing the MCMC expected frequency with the observations implies a reasonable fit, with the majority
 
 ```{r}
 #| label: fig-obsexp_MCMC_lfd
@@ -365,20 +547,34 @@ plot_expected_frequency(res) +
 
 
 ```{r}
+#| label: fig-residuals_MCMC
+#| fig-cap: "Residuals."
+plot_residuals(res) +
+  facet_wrap(vars(Sgroup), scales="free_y") +
+  theme_classic()
+```
+
+
+
+```{r}
 #| label: tbl-MCMC_results
 #| tbl-cap: "MCMC estimates for the fitted parameters. See text for details."
 blicc_results(res) |>
-  flextable()
+  flextable() |>
+  colformat_double(digits=3) |>
+  autofit()
 ```
 
 
 ```{r}
 #| label: fig-selectivity_MCMC
-#| fig-cap: "Estimated selectivities for each gear from the mixture model MCMC fit."
+#| fig-cap: "Estimated selectivities for each gear from the mixture model MCMC fit. The lines represent the MCMC average estimate and the ribbon the 80% credible interval. There is almost exact overlap between longline and handline producing the red ribbon."
 plot_selectivity(res) +
+  scale_fill_viridis_d(alpha=0.2, option="rocket") +
   theme_classic()
 ```
 
+The final spawning potential ratio (SPR) probability density suggests there is a high probability that the stock is overfished and it is highly likely the stock is below its target level (@fig-SPR).
 
 ```{r}
 #| label: fig-SPR
@@ -390,6 +586,28 @@ plot_SPR_density(res) +
 
 # Conclusions
 
-This is a non-exhaustive illustrative assessment to fitting a non-standard length-based catch curve to length frequencies from multiple gears with complex inter-related selectivity. The model can be used to provide an estimate of stock status in these circumstances and identify important sensitivities to allow careful review. In data limited situations, the review process is important as almost invariably some subjective decisions have to be made where information is lacking.  
+This is a non-exhaustive illustrative assessment to fitting a non-standard length-based catch curve to length frequencies from multiple gears with complex inter-related selectivity. It is possible to construct selectivity mixtures that try to capture plausible hypotheses for the actual selectivities that gears may be applying. The model can be used to provide an estimate of stock status in these circumstances and identify important sensitivities to allow careful review. In data limited situations, the review process is important as almost invariably some subjective decisions have to be made where information is lacking.  
 
-For yellowfin tuna in the example, the results suggest that the stock could well be overfished, although this cannot be fully determined from the length frequency alone.  The estimate of SB/SB0 for the full SS3 model in 2020 was 24-38% (80% CI), compared to the SPR estimate of around 15-37%. There is considerable overlap in this case, although the length-based catch curve is more pessimistic which is not unreasonable in a data limited approach. As demonstrated above, other model choices would produce different estimates, so the SPR plausible range might be much wider when put through a review process.  
+Multiple modes in length frequency data from a single gear is not necessarily unusual and can be observed in many fisheries. They seem particularly common in small scale fisheries. They can be due to a number of factors not all of which would be well modelled in this way:
+
+- specific latent selectivity functions, as assumed here, where fish are caught in different ways due to their behaviour or shape. If these are static effects, they can be estimated as selectivity functions. 
+
+- sampling anomalies where modes represent samples. For example, if a significant number of fish are sampled from a small set of trips or frequencies have been weighted by catches so a small sample is over-represented, these can form modes which are artefacts of the sampling and not representative of the overall gear selectivity or length composition of the population. Although selectivity functions might be used to explain such data, it is not clear how the fitted model by be used to model the overall fleet and its impact on the stock.
+
+- temporary dynamics, such as high recruitment year classes observed in frequency data. In this case, methods such as ELEFAN might be used to track the modes and estimate growth and mortality. Attributing these to gear selectivity might still be possible if each catch in a sequence is modelled as a separate gear, but such an approach would need testing.
+
+In this case, the main patterns are observed consistently, but sample sizes for some gears are small and data are combined over a long time period. Some of the selectivity functions' main purpose may be to explain away some observations that are not important and may not be representative of the true length frequency compositions. Whether to include these in simulations testing management actions might need to be considered.
+
+For yellowfin tuna in the example, the results suggest that the stock could well be overfished, although this cannot be fully determined from the length frequency alone.  The estimate of SB/SB~0~ for the full SS3 model in 2020 was 24-38% (80% CI), compared to the SPR estimate from this assessment of around 16-34%. There is considerable overlap in this case, although the length-based catch curve is more pessimistic which is not unreasonable in a data limited approach. As demonstrated above, other model choices would produce different estimates, so the SPR plausible range might be much wider when put through a full review process, but the conclusion would likely be to propose reductions in fishing mortality as the stock is likely to be overfished.  
+
+# References
+
+Maunder, M.N., Hamel, O.S., Lee, H., Piner, K. R., Cope, J. M., Punt, A. E., Ianelli, J. N., Castillo-Jordan, C., Kapur, M.S. Methot, R. D. 2023. A review of estimation methods for natural mortality and their performance in the context of fishery stock assessment. Fisheries Research 257: 106489. https://doi.org/10.1016/j.fishres.2022.106489
+
+Kenchington, T.J. 2014. Natural mortality estimators for information-limited fisheries. Fish and Fisheries, 15, 533–562  
+
+Lorenzen, K. 2022. Size- and age-dependent natural mortality in fish populations: Biology, models, implications, and a generalized length-inverse mortality paradigm. https://doi.org/10.1016/j.fishres.2022.106454
+
+Froese, R. and D. Pauly. Editors. 2023. FishBase. World Wide Web electronic publication. www.fishbase.org, version (06/2023).
+
+Maunder, M.N., Deriso, R.B., Schaefer, K.M. et al. The growth cessation model: a growth model for species showing a near cessation in growth with application to bigeye tuna (*Thunnus obesus*). Mar Biol 165, 76 (2018). https://doi.org/10.1007/s00227-018-3336-9
