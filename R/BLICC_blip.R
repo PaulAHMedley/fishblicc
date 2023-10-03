@@ -124,7 +124,7 @@ blip_Mk <- function(blicc_ld,
 }
 
 
-#' Sets data object from [blicc_dat()] to have a new Fk prior
+#' Sets data object from [blicc_dat] to have a new Fk prior
 #'
 #' The Fk lognormal prior is updated with new mu and a single sigma parameter.
 #' If no value (`NA`) is provided for lFk, the defaults are assigned. These are
@@ -146,7 +146,7 @@ blip_Fk <- function(blicc_ld,
   if (any(is.na(lFk))) {
     lFk <- blicc_ld$polMkm + log(blicc_ld$prop_catch)
   }
-  if (is.na(lFks))
+  if (any(is.na(lFks)))
     lFks = 2.0
   if (! (is.numeric(lFk) & is.numeric(lFks)))
     stop("Error in blip_Fk: supplied values are not numeric.")
@@ -160,17 +160,20 @@ blip_Fk <- function(blicc_ld,
 }
 
 
-#'Sets data object from [blicc_dat()] to have a new selectivity functions
+#'Sets data object to have a new life-history vectors
 #'
-#'Checks the gear and selectivity are valid, then sets up the data object so
-#'that the parameters and parameter references for the selectivity functions are
-#'valid. New references are replaced in the data object, which is then returned.
+#'Sets the maturity at length and weight-at-length vectors in the data object
+#'(from [blicc_dat]) to have new values. The values are either provided as
+#'vectors or model parameters are provided to calculate the vectors.
+#'Calculations are done for the length bin mid-points. The models for the
+#'calculation are the standard length-weight (W=aL^b)  and logistic model for
+#'the maturity-at-length (Lm = 1/(1+exp(Ls*(L-L50)))).
 #'
 #'@export
 #'@inheritParams blip_Linf
 #'@inheritParams blicc_dat
 #'@param set_defaults Logical indicating whether to set defaults or not if
-#'  parameters are NA
+#'  parameters are NA. Leaves then alone if FALSE.
 #'@return The data object blicc_ld with the new life-history parameters
 #'@examples
 #'new_ld <- blip_LH_param(eg_ld, a=1.2e-5, b=2.95, model_name="Alternative LW")
@@ -185,7 +188,6 @@ blip_LH_param <-
            wt_L = NA,
            model_name = NA,
            set_defaults = FALSE) {
-
     Linf <- blicc_ld$poLinfm
     # Weight and maturity
     if (is.na(L50)) {
@@ -208,7 +210,7 @@ blip_LH_param <-
       }
       Ls <- -log(1 / 0.95 - 1) / (L95 - L50)
     }
-
+    
     if (any(is.na(wt_L))) {
       if (is.na(a) & set_defaults) {
         warning("No weight-at-length information provided - the weight units will be incorrect.")
@@ -219,8 +221,9 @@ blip_LH_param <-
       else if (b <= 2 | b > 4) {
         stop("Error: Length-weight exponent (b) must be greater than 2 and less than 4.")
       }
-      if (! (is.na(a) | is.na(b)))
-        wt_L <- with(blicc_ld, a * exp(b*log(LMP)))    # Estimated biomass per recruit
+      if (!(is.na(a) | is.na(b)))
+        wt_L <-
+          with(blicc_ld, a * exp(b * log(LMP)))    # Estimated biomass per recruit
       else
         warning("a or b not specified: weight-at-length not changed.")
     } else {
@@ -228,18 +231,21 @@ blip_LH_param <-
         stop("Error: Length of the weight-at-length vector must equal the number of length bins.")
       }
     }
-
+    
     if (any(is.na(ma_L))) {
-      if (! (is.na(Ls) | is.na(L50)))
-        ma_L <- with(blicc_ld, wt_L / (1 + exp(-Ls*(LMP - L50))))    #Mature biomass
+      if (!(is.na(Ls) | is.na(L50)))
+        ma_L <-
+          with(blicc_ld, wt_L / (1 + exp(-Ls * (LMP - L50))))    #Mature biomass
       else
         warning("L50 or L95 not specified: mature biomass -at-length not changed.")
     } else {
       if (length(ma_L) != blicc_ld$NB) {
-        stop("Error: Length of the mature biomass -at-length vector must equal the number of length bins.")
+        stop(
+          "Error: Length of the mature biomass -at-length vector must equal the number of length bins."
+        )
       }
     }
-
+    
     if (!is.na(model_name))
       blicc_ld$model_name <- model_name
     if (!is.na(a))
@@ -278,32 +284,14 @@ blip_LH_param <-
 #' otherwise.
 #'
 #' @export
-#' @inheritParams blicc_mpd
-#' @param sel_indx Vector indexing one or more selectivity functions. Optional.
+#' @inheritParams blicc_selfun
 #' @return The data object blicc_ld but with the new selectivity priors
 blip_selectivity <- function(blicc_ld,
                              sel_indx = NULL) {
-
   if (is.null(sel_indx))
-    sel_indx = 1:blicc_ld$NS
-  else {
-    if (! (is.vector(sel_indx) & is.numeric(sel_indx)) |
-        length(sel_indx) != 1 |
-        round(sel_indx) < 1 |
-        round(sel_indx) > blicc_ld$NS)
-      stop(paste0("Error: sel_indx must be an integer with value, when rounded, between 1 and ",
-                  as.character(blicc_ld$NS), ". \n"))
-    sel_indx <- round(sel_indx)
-  }
-
-  # No mixtures, one selectivity function per gear
-
-  if (is.null(blicc_ld$gl_nodes)) {
-    glq <-
-      statmod::gauss.quad(110L, kind = "laguerre", alpha = 0.0)
-    blicc_ld$gl_nodes <- glq$nodes
-    blicc_ld$gl_weights <- glq$weights
-  }
+    sel_indx = 1L:blicc_ld$NS
+  else 
+    sel_indx <- parse_sel_indx(sel_indx, blicc_ld)
 
   # ssd <- 1.281552
   ssd <- 2.0 # sd parameter for selectivity slopes 10%-90% range
@@ -317,51 +305,71 @@ blip_selectivity <- function(blicc_ld,
   pop <- Rpop_len(gl$nodes, gl$weights, LLB, Zk, Galpha, Gbeta)
 
   for (si in sel_indx) {
+    par_range <- with(blicc_ld, sp_i[si]:sp_e[si])
+    #    if (any(is.na(blicc_ld$polSm[par_range]))) {  # Check any previous estimate to preserve
     # find this selectivity function in a gear as a single function
     ggi <- which(blicc_ld$GSbase == si)
     gi <- NA
     if (length(ggi) > 0) {
-      ggi <- ggi[blicc_ld$GSmix1[2L*(ggi-1L) + 1L] == 0]
+      ggi <- ggi[blicc_ld$GSmix1[2L * (ggi - 1L) + 1L] == 0]
       gi <- ggi[1]
     }
-
+    
     if (is.na(gi))
-      warning(paste0("Selectivity function ", as.character(si),
-                     " is in a mixture, so the prior will need to be set directly. ",
-                     "See function `blip_set_sel`. \n"))
-    else {
-      pfq <- blicc_ld$fq[[gi]]/pop  # adjust data for mortality
-      pfq <- pfq/sum(pfq)           # normalise
-      cfq <- cumsum(pfq)            # cumulative sum
-      i10 <- max(1L, which(cfq<0.1), na.rm=TRUE)    # 10% quartile index
-      i25 <- min(which(cfq>0.25), blicc_ld$BN-1L, na.rm=TRUE)   # 25% quartile index
-      i50 <- min(which(cfq>0.5), blicc_ld$BN-1L, na.rm=TRUE)    # 50% quartile index
-      i90 <- min(which(cfq>0.9), blicc_ld$BN-1L, na.rm=TRUE)    # 90% quartile index
-
-      switch(blicc_ld$fSel[si],
-             { #logistic
-               blicc_ld$polSm[blicc_ld$sp_i[si]:blicc_ld$sp_e[si]] <-
-                 log(c(LMP[i25],
-                       abs(0.5*(log(exp(0.1)-1)/(LMP[i10]-LMP[i25]) +
-                                  log(exp(0.9)-1)/(LMP[i90]-LMP[i25]) ))))
-                 # slopes very loosely based on integral of the logistic
-             },
-             { #normal
-               blicc_ld$polSm[blicc_ld$sp_i[si]:blicc_ld$sp_e[si]] <-
-                 log(c(LMP[i50], (0.5*(LMP[i90]-LMP[i10])/ssd)^-2))
-             },
-             { #ssnormal
-               blicc_ld$polSm[blicc_ld$sp_i[si]:blicc_ld$sp_e[si]] <-
-                 log(c(LMP[i50], ((LMP[i50]-LMP[i10])/ssd)^-2))
-             },
-             { #dsnormal
-               blicc_ld$polSm[blicc_ld$sp_i[si]:blicc_ld$sp_e[si]] <-
-                 log(c(LMP[i50], ((LMP[i50]-LMP[i10])/ssd)^-2, ((LMP[i90]-LMP[i50])/ssd)^-2))
-             }
+      warning(
+        paste0(
+          "Selectivity function ",
+          as.character(si),
+          " is in a mixture, so the prior will need to be set directly. ",
+          "See function `blip_set_sel`. \n"
+        )
       )
+    else {
+      pfq <- blicc_ld$fq[[gi]] / pop  # adjust data for mortality
+      pfq <- pfq / sum(pfq)           # normalise
+      cfq <- cumsum(pfq)            # cumulative sum
+      i10 <-
+        max(1L, which(cfq < 0.1), na.rm = TRUE)    # 10% quartile index
+      i25 <-
+        min(which(cfq > 0.25), blicc_ld$BN - 1L, na.rm = TRUE)   # 25% quartile index
+      i50 <-
+        min(which(cfq > 0.5), blicc_ld$BN - 1L, na.rm = TRUE)    # 50% quartile index
+      i90 <-
+        min(which(cfq > 0.9), blicc_ld$BN - 1L, na.rm = TRUE)    # 90% quartile index
+      
+      switch(blicc_ld$fSel[si],
+             {
+               #logistic
+               blicc_ld$polSm[par_range] <-
+                 log(c(LMP[i25],
+                       abs(0.5 * (
+                         log(exp(0.1) - 1) / (LMP[i10] - LMP[i25]) +
+                           log(exp(0.9) - 1) / (LMP[i90] - LMP[i25])
+                       ))))
+               # slopes very loosely based on integral of the logistic
+             },
+             {
+               #normal
+               blicc_ld$polSm[par_range] <-
+                 log(c(LMP[i50], (0.5 * (LMP[i90] - LMP[i10]) / ssd) ^
+                         -2))
+             },
+             {
+               #ssnormal
+               blicc_ld$polSm[par_range] <-
+                 log(c(LMP[i50], ((LMP[i50] - LMP[i10]) / ssd) ^ -2))
+             },
+             {
+               #dsnormal
+               blicc_ld$polSm[par_range] <-
+                 log(c(LMP[i50], 
+                       ((LMP[i50] - LMP[i10]) / ssd) ^ -2, 
+                       ((LMP[i90] - LMP[i50]) / ssd) ^ -2))
+             })
+      blicc_ld$polSs[par_range] <- 1.5  # default
     }
   }
-  blicc_ld$polSs[] <- 1.5  # default
+  #  }
   return(blicc_ld)
 }
 
@@ -398,14 +406,9 @@ blip_set_sel <- function(blicc_ld,
                          sel_indx,
                          loc,
                          lslope = NULL) {
-  if (! (is.vector(sel_indx) & is.numeric(sel_indx)) |
-      length(sel_indx) != 1 |
-      round(sel_indx) < 1 |
-      round(sel_indx) > blicc_ld$NS)
-    stop(paste0("Error: sel_indx must be an integer with value, when rounded, between 1 and ",
-         as.character(blicc_ld$NS), ". \n"))
-  sel_indx <- round(sel_indx)
-
+  
+  sel_indx <- parse_sel_indx(sel_indx, blicc_ld, TRUE)
+  
   if (! (is.vector(loc) & is.numeric(loc)) |
       length(loc) != 1 |
       loc <= 0)
@@ -425,6 +428,8 @@ blip_set_sel <- function(blicc_ld,
     blicc_ld$polSm[(blicc_ld$sp_i[sel_indx]+1):blicc_ld$sp_e[sel_indx]] <- -4.5 #default
   else
     blicc_ld$polSm[(blicc_ld$sp_i[sel_indx]+1):blicc_ld$sp_e[sel_indx]] <- lslope
+  if (any(is.na(blicc_ld$polSs[blicc_ld$sp_i[sel_indx]:blicc_ld$sp_e[sel_indx]])))
+    blicc_ld$polSs[blicc_ld$sp_i[sel_indx]:blicc_ld$sp_e[sel_indx]] <- 1.5  #default
   return(blicc_ld)
 }
 

@@ -2,7 +2,7 @@
 % Please edit documentation in R/BLICC_blip.R
 \name{blip_Fk}
 \alias{blip_Fk}
-\title{Sets data object from \code{\link[=blicc_dat]{blicc_dat()}} to have a new Fk prior}
+\title{Sets data object from \link{blicc_dat} to have a new Fk prior}
 \usage{
 blip_Fk(blicc_ld, lFk = NA, lFks = NA, model_name = NA)
 }

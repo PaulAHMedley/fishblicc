@@ -36,10 +36,9 @@ Rsel_functions <- function() {
 #' Parse the selectivity function, converting to an integer if necessary
 #'
 #' The selectivity function parameter is converted to an integer index of the
-#' function, or `NA` is returned with an error message.
+#' function.
 #'
-#' @inheritParams blicc_mpd
-#' @param sel_fun  A number or string representing a valid available function.
+#' @inheritParams blicc_selfun
 #' @return Integer gear index or NA if no gear can be specified
 #' @noRd
 #'
@@ -51,10 +50,6 @@ parse_selectivity <- function(sel_fun, blicc_ld) {
                    func_list,
                    " or all) or an integer between 1 and ", as.character(Nfunc))
   if (is.character(sel_fun)){
-
-    if (sel_fun[1]=="all")
-      return(1L:blicc_ld$NG)
-
     if (! all(sel_fun %in% func$short_name))
       stop(errmsg)
     sel_fun <- match(sel_fun, func$short_name)
@@ -67,6 +62,34 @@ parse_selectivity <- function(sel_fun, blicc_ld) {
   }
   return(sel_fun)
 }
+
+
+#' Parse the selectivity index, converting to an integer if necessary
+#'
+#' The selectivity index parameter is checked and converted to an integer index
+#' if necessary.
+#'
+#' @inheritParams selfun
+#' @param SingleValue True or False, enforces a single value if required.
+#' @return Integer index of the selectvity function(s)
+#' @noRd
+#' 
+parse_sel_indx  <- function(sel_indx, blicc_ld, SingleValue = FALSE) {
+  if (SingleValue & (length(sel_indx) != 1))
+    stop(paste0("Error: sel_indx must be an integer with value, when rounded, between 1 and ",
+                     as.character(blicc_ld$NS), ". \n"))
+  
+  if (! (is.vector(sel_indx) & is.numeric(sel_indx)) |
+      any(round(sel_indx) < 1) |
+      any(round(sel_indx) > blicc_ld$NS))
+    stop(paste0("Error: sel_indx must be integers which, when rounded, are between 1 and ",
+                as.character(blicc_ld$NS), ". \n"))
+  
+  sel_indx <- unique(round(sel_indx))
+  
+  return(sel_indx)
+}
+
 
 
 #' Parse the gear parameter, converting to an integer

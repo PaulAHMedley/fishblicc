@@ -4,7 +4,7 @@
 \alias{blicc_selfun}
 \title{Sets data object from \link{blicc_dat} to have new selectivity functions}
 \usage{
-blicc_selfun(blicc_ld, sel_fun, seli = NULL, model_name = NULL)
+blicc_selfun(blicc_ld, sel_fun, sel_indx = NULL, model_name = NULL)
 }
 \arguments{
 \item{blicc_ld}{A standard data list suitable for the model (see function
@@ -14,8 +14,8 @@ blicc_selfun(blicc_ld, sel_fun, seli = NULL, model_name = NULL)
 (1-4), with 1="logistic", 2="normal", 3="ss_normal", 4="ds_normal". Length
 must be the same as fq if \code{gear_sel} is not provided. Required.}
 
-\item{seli}{An integer vector index of the selectivity functions to be
-changed.}
+\item{sel_indx}{An integer vector index of the selectivity functions to be
+changed. If not provided, all functions will be replaced.}
 
 \item{model_name}{A name for the model (species or fishery). Optional.}
 }
@@ -29,7 +29,7 @@ selectivity functions are valid. New references are replaced in the data
 object, which is then returned.
 }
 \details{
-Particular selectivity functions can be changed using the \code{seli} parameter,
+Particular selectivity functions can be changed using the \code{sel_indx} parameter,
 which indexes which functions will be changed. In this case, only those
 functions will need to have the prior parameters updated.
 }

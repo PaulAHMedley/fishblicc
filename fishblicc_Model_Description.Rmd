@@ -9,6 +9,7 @@ output:
     toc_depth: 2.0
     keep_md: true
     df_print: paged
+    self_contained: true
 ---
 
 ```{r setup, include=FALSE}
@@ -61,9 +62,9 @@ $$
  G(L_\infty \ | \ \alpha, \beta) =  \Gamma(\alpha)^{-1} \   {\beta^\alpha {L_\infty}^{\alpha-1} {\large e}^{-\beta L_\infty}}
 $$
 
-This model is for the individual growth variation, not the standard error of the mean asymptotic growth, so it is most related to the distribution of length-at-age. The Gamma distribution has a fixed coefficient of variation (CV) = $1/\sqrt \alpha$, and the CV for length at age is usually found to be between 5%-30%, so $\alpha=[9, 400]$ and $\beta = \alpha / \hat{L_\infty}$ where $\hat{L_\infty}$ is the mean asymptotic length for the species (and usually what is estimated in growth models). The growth rate parameter $K$ is assumed to be fixed for all individual fish.    
+This model is for the individual growth variation, not the standard error of the mean asymptotic growth, so it is most related to the distribution of length-at-age. The Gamma distribution has a fixed coefficient of variation (CV) = $1/\sqrt \alpha$, and the CV for length at age is usually found to be between 5%-30%, so $\alpha=[9, 400]$ and $\beta = \alpha / \hat{L_\infty}$ where $\hat{L_\infty}$ is the mean asymptotic length for the species (and usually what is estimated in growth models). The growth rate parameter $K$ is assumed to be fixed for all individual fish.  
 
-With this model, the growth variability increases as the fish ages and for a 10% CV (alpha=100), the length distribution among fish the same age will be similar to the normal distribution.
+With this model, the growth variability increases as the fish ages and for a 10% CV (alpha=100), the length distribution among fish the same age will be similar to the normal distribution.  
 
 ```{r GrowthModel1, fig.cap="Illustration of variable length-at-age with Gamma distribution asymptotic length."}
 Linf <- rgamma(400, shape = 100, rate = 100/60)
@@ -163,7 +164,7 @@ $$
 
 This accounts for the probability that the fish's $L_\infty$ is less than $L_n$, when it will never reach that length interval. All terms from the start point $L_0$ are included in the integral for each length interval so that the effect on mortality on the length composition is accounted for. Slower growing fish are less likely to reach $L_n$ because they take longer to grow to this size and are therefore subject to higher mortality.  
 
-The integral does not have an analytical solution, so numerical integration will need to be applied. The integral is calculated by a change of variable so the integral is from 0 to infinity, and using Gauss-Laguerre quadrature (see Appendix).    
+The integral does not have an analytical solution, so numerical integration will need to be applied. The integral is calculated by a change of variable so the integral is from 0 to infinity, and using Gauss-Laguerre quadrature (see Appendix).  
 
 Assuming constant recruitment, the numbers of fish within each interval can be estimated by integrating over the time interval:  
 
@@ -174,7 +175,7 @@ $$
 
 where $C_n$ is catch as a proportion of mortality and is proportional to the expected number of fish in a length frequency sample in length interval $n$. This is the standard catch equation. 
 
-In order to estimate the length frequency data sample, the catch estimate $C_n$ is used to calculate the expected numbers of fish in each length interval. For a total length frequency sample size of $N$ and a total sum of all catches in the model of $\sum C_i$ , the expected numbers of fish in the $n^{th}$ interval is given by:     
+In order to estimate the length frequency data sample, the catch estimate $C_n$ is used to calculate the expected numbers of fish in each length interval. For a total length frequency sample size of $N$ and a total sum of all catches in the model of $\sum C_i$ , the expected numbers of fish in the $n^{th}$ interval is given by:   
 
 $$
   \mu_n = {N \over {\sum  C_i}} \ C_n 

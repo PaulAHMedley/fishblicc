@@ -2,7 +2,7 @@
 % Please edit documentation in R/BLICC_blip.R
 \name{blip_LH_param}
 \alias{blip_LH_param}
-\title{Sets data object from \code{\link[=blicc_dat]{blicc_dat()}} to have a new selectivity functions}
+\title{Sets data object to have a new life-history vectors}
 \usage{
 blip_LH_param(
   blicc_ld,
@@ -41,15 +41,18 @@ Optional.}
 object. Optional.}
 
 \item{set_defaults}{Logical indicating whether to set defaults or not if
-parameters are NA}
+parameters are NA. Leaves then alone if FALSE.}
 }
 \value{
 The data object blicc_ld with the new life-history parameters
 }
 \description{
-Checks the gear and selectivity are valid, then sets up the data object so
-that the parameters and parameter references for the selectivity functions are
-valid. New references are replaced in the data object, which is then returned.
+Sets the maturity at length and weight-at-length vectors in the data object
+(from \link{blicc_dat}) to have new values. The values are either provided as
+vectors or model parameters are provided to calculate the vectors.
+Calculations are done for the length bin mid-points. The models for the
+calculation are the standard length-weight (W=aL^b)  and logistic model for
+the maturity-at-length (Lm = 1/(1+exp(Ls*(L-L50)))).
 }
 \examples{
 new_ld <- blip_LH_param(eg_ld, a=1.2e-5, b=2.95, model_name="Alternative LW")

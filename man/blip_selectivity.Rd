@@ -10,7 +10,8 @@ blip_selectivity(blicc_ld, sel_indx = NULL)
 \item{blicc_ld}{A standard data list suitable for the model (see function
 \link{blicc_dat})}
 
-\item{sel_indx}{Vector indexing one or more selectivity functions. Optional.}
+\item{sel_indx}{An integer vector index of the selectivity functions to be
+changed. If not provided, all functions will be replaced.}
 }
 \value{
 The data object blicc_ld but with the new selectivity priors
