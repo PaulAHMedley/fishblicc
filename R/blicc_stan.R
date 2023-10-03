@@ -521,6 +521,7 @@ blicc_selfun <-
            sel_fun,
            sel_indx = NULL,
            model_name = NULL) {
+
     sel_fun <- parse_selectivity(sel_fun, blicc_ld)
     mixwt <- NULL
     mixwts <- NULL
@@ -575,7 +576,6 @@ blicc_selfun <-
         }
       }
     }
-    
     # Replace function list
     blicc_ld$fSel <- nfSel
     blicc_ld$NS <- NS

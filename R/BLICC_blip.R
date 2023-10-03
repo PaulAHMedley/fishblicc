@@ -408,7 +408,7 @@ blip_set_sel <- function(blicc_ld,
                          lslope = NULL) {
   
   sel_indx <- parse_sel_indx(sel_indx, blicc_ld, TRUE)
-  
+
   if (! (is.vector(loc) & is.numeric(loc)) |
       length(loc) != 1 |
       loc <= 0)
