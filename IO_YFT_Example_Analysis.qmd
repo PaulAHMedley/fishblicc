@@ -83,7 +83,8 @@ The recognised gears reflect the available length frequency data:
 
 - PS-LS: Purse seine log school, but mostly sets on fish aggregation devices (FADs)
 
-These gears cover the vast majority of the known catch of yellowfin in the Indian Ocean (@fig-catch_data; @fig-length_frequency_data).
+These gears cover the vast majority of the known catch of yellowfin in the Indian Ocean (@fig-catch_data; @fig-length_frequency_data).  
+
 
 ```{r}
 #| output: false
@@ -98,9 +99,11 @@ ggplot(yft_catch_2013_19, aes(x=gear, y=catch)) +
   geom_col(fill="green", alpha=0.5) +
   labs(y = "Catch (t)", x = "Gear") +
   theme_classic()
+
 ```
 
 ```{r }
+#| output: false
 lfd <- yft_lenfreq_2013_19 |>
   pivot_longer(cols=BB:`PS-LS`, names_to="gear", values_to="fq") |>
   group_by(gear) |>
@@ -116,7 +119,7 @@ lfd |>
   ggplot(aes(x=Len, y=Proportion)) +
   geom_col(fill="lightblue") +
   facet_wrap(vars(gear), ncol=4) +
-  labs(x = "Length (cm)", y = "Proportion")
+  labs(x = "Length (cm)", y = "Proportion") +
   theme_classic()
 ```
   
