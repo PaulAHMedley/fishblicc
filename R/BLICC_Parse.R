@@ -51,10 +51,6 @@ parse_selectivity <- function(sel_fun, blicc_ld) {
                    func_list,
                    " or all) or an integer between 1 and ", as.character(Nfunc))
   if (is.character(sel_fun)){
-
-    if (sel_fun[1]=="all")
-      return(1L:blicc_ld$NG)
-
     if (! all(sel_fun %in% func$short_name))
       stop(errmsg)
     sel_fun <- match(sel_fun, func$short_name)

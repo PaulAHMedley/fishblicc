@@ -278,32 +278,14 @@ blip_LH_param <-
 #' otherwise.
 #'
 #' @export
-#' @inheritParams blicc_mpd
-#' @param sel_indx Vector indexing one or more selectivity functions. Optional.
+#' @inheritParams blicc_selfun
 #' @return The data object blicc_ld but with the new selectivity priors
 blip_selectivity <- function(blicc_ld,
                              sel_indx = NULL) {
-
   if (is.null(sel_indx))
-    sel_indx = 1:blicc_ld$NS
-  else {
-    if (! (is.vector(sel_indx) & is.numeric(sel_indx)) |
-        length(sel_indx) != 1 |
-        round(sel_indx) < 1 |
-        round(sel_indx) > blicc_ld$NS)
-      stop(paste0("Error: sel_indx must be an integer with value, when rounded, between 1 and ",
-                  as.character(blicc_ld$NS), ". \n"))
-    sel_indx <- round(sel_indx)
-  }
-
-  # No mixtures, one selectivity function per gear
-
-  if (is.null(blicc_ld$gl_nodes)) {
-    glq <-
-      statmod::gauss.quad(110L, kind = "laguerre", alpha = 0.0)
-    blicc_ld$gl_nodes <- glq$nodes
-    blicc_ld$gl_weights <- glq$weights
-  }
+    sel_indx = 1L:blicc_ld$NS
+  else 
+    sel_indx <- parse_selectivity(sel_indx, blicc_ld)
 
   # ssd <- 1.281552
   ssd <- 2.0 # sd parameter for selectivity slopes 10%-90% range
@@ -317,51 +299,71 @@ blip_selectivity <- function(blicc_ld,
   pop <- Rpop_len(gl$nodes, gl$weights, LLB, Zk, Galpha, Gbeta)
 
   for (si in sel_indx) {
+    par_range <- with(blicc_ld, sp_i[si]:sp_e[si])
+    #    if (any(is.na(blicc_ld$polSm[par_range]))) {  # Check any previous estimate to preserve
     # find this selectivity function in a gear as a single function
     ggi <- which(blicc_ld$GSbase == si)
     gi <- NA
     if (length(ggi) > 0) {
-      ggi <- ggi[blicc_ld$GSmix1[2L*(ggi-1L) + 1L] == 0]
+      ggi <- ggi[blicc_ld$GSmix1[2L * (ggi - 1L) + 1L] == 0]
       gi <- ggi[1]
     }
-
+    
     if (is.na(gi))
-      warning(paste0("Selectivity function ", as.character(si),
-                     " is in a mixture, so the prior will need to be set directly. ",
-                     "See function `blip_set_sel`. \n"))
-    else {
-      pfq <- blicc_ld$fq[[gi]]/pop  # adjust data for mortality
-      pfq <- pfq/sum(pfq)           # normalise
-      cfq <- cumsum(pfq)            # cumulative sum
-      i10 <- max(1L, which(cfq<0.1), na.rm=TRUE)    # 10% quartile index
-      i25 <- min(which(cfq>0.25), blicc_ld$BN-1L, na.rm=TRUE)   # 25% quartile index
-      i50 <- min(which(cfq>0.5), blicc_ld$BN-1L, na.rm=TRUE)    # 50% quartile index
-      i90 <- min(which(cfq>0.9), blicc_ld$BN-1L, na.rm=TRUE)    # 90% quartile index
-
-      switch(blicc_ld$fSel[si],
-             { #logistic
-               blicc_ld$polSm[blicc_ld$sp_i[si]:blicc_ld$sp_e[si]] <-
-                 log(c(LMP[i25],
-                       abs(0.5*(log(exp(0.1)-1)/(LMP[i10]-LMP[i25]) +
-                                  log(exp(0.9)-1)/(LMP[i90]-LMP[i25]) ))))
-                 # slopes very loosely based on integral of the logistic
-             },
-             { #normal
-               blicc_ld$polSm[blicc_ld$sp_i[si]:blicc_ld$sp_e[si]] <-
-                 log(c(LMP[i50], (0.5*(LMP[i90]-LMP[i10])/ssd)^-2))
-             },
-             { #ssnormal
-               blicc_ld$polSm[blicc_ld$sp_i[si]:blicc_ld$sp_e[si]] <-
-                 log(c(LMP[i50], ((LMP[i50]-LMP[i10])/ssd)^-2))
-             },
-             { #dsnormal
-               blicc_ld$polSm[blicc_ld$sp_i[si]:blicc_ld$sp_e[si]] <-
-                 log(c(LMP[i50], ((LMP[i50]-LMP[i10])/ssd)^-2, ((LMP[i90]-LMP[i50])/ssd)^-2))
-             }
+      warning(
+        paste0(
+          "Selectivity function ",
+          as.character(si),
+          " is in a mixture, so the prior will need to be set directly. ",
+          "See function `blip_set_sel`. \n"
+        )
       )
+    else {
+      pfq <- blicc_ld$fq[[gi]] / pop  # adjust data for mortality
+      pfq <- pfq / sum(pfq)           # normalise
+      cfq <- cumsum(pfq)            # cumulative sum
+      i10 <-
+        max(1L, which(cfq < 0.1), na.rm = TRUE)    # 10% quartile index
+      i25 <-
+        min(which(cfq > 0.25), blicc_ld$BN - 1L, na.rm = TRUE)   # 25% quartile index
+      i50 <-
+        min(which(cfq > 0.5), blicc_ld$BN - 1L, na.rm = TRUE)    # 50% quartile index
+      i90 <-
+        min(which(cfq > 0.9), blicc_ld$BN - 1L, na.rm = TRUE)    # 90% quartile index
+      
+      switch(blicc_ld$fSel[si],
+             {
+               #logistic
+               blicc_ld$polSm[par_range] <-
+                 log(c(LMP[i25],
+                       abs(0.5 * (
+                         log(exp(0.1) - 1) / (LMP[i10] - LMP[i25]) +
+                           log(exp(0.9) - 1) / (LMP[i90] - LMP[i25])
+                       ))))
+               # slopes very loosely based on integral of the logistic
+             },
+             {
+               #normal
+               blicc_ld$polSm[par_range] <-
+                 log(c(LMP[i50], (0.5 * (LMP[i90] - LMP[i10]) / ssd) ^
+                         -2))
+             },
+             {
+               #ssnormal
+               blicc_ld$polSm[par_range] <-
+                 log(c(LMP[i50], ((LMP[i50] - LMP[i10]) / ssd) ^ -2))
+             },
+             {
+               #dsnormal
+               blicc_ld$polSm[par_range] <-
+                 log(c(LMP[i50], 
+                       ((LMP[i50] - LMP[i10]) / ssd) ^ -2, 
+                       ((LMP[i90] - LMP[i50]) / ssd) ^ -2))
+             })
+      blicc_ld$polSs[par_range] <- 1.5  # default
     }
   }
-  blicc_ld$polSs[] <- 1.5  # default
+  #  }
   return(blicc_ld)
 }
 
@@ -398,12 +400,15 @@ blip_set_sel <- function(blicc_ld,
                          sel_indx,
                          loc,
                          lslope = NULL) {
+  
+  
   if (! (is.vector(sel_indx) & is.numeric(sel_indx)) |
       length(sel_indx) != 1 |
       round(sel_indx) < 1 |
       round(sel_indx) > blicc_ld$NS)
     stop(paste0("Error: sel_indx must be an integer with value, when rounded, between 1 and ",
          as.character(blicc_ld$NS), ". \n"))
+  
   sel_indx <- round(sel_indx)
 
   if (! (is.vector(loc) & is.numeric(loc)) |
@@ -425,6 +430,8 @@ blip_set_sel <- function(blicc_ld,
     blicc_ld$polSm[(blicc_ld$sp_i[sel_indx]+1):blicc_ld$sp_e[sel_indx]] <- -4.5 #default
   else
     blicc_ld$polSm[(blicc_ld$sp_i[sel_indx]+1):blicc_ld$sp_e[sel_indx]] <- lslope
+  if (any(is.na(blicc_ld$polSs[blicc_ld$sp_i[sel_indx]:blicc_ld$sp_e[sel_indx]])))
+    blicc_ld$polSs[blicc_ld$sp_i[sel_indx]:blicc_ld$sp_e[sel_indx]] <- 1.5  #default
   return(blicc_ld)
 }
 

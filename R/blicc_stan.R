@@ -384,7 +384,7 @@ blicc_dat <-
       model_name = model_name,
       # Number of gears: separate length frequencies
       NG = Ngear,
-      NS = Ngear,
+      NS = 0,
       # Number of F's: gears associated with non-zero catches
       NF = length(catch_prop),
       # Number of length bins
@@ -431,33 +431,57 @@ blicc_dat <-
     dl$polCs <- 0.01
 
     dl <- blip_selectivity(dl)
+    
     # Gauss-Laguerre quadrature grid size
     if (is.na(NK)) {
-      df <- with(dl,
-                 tidyr::expand_grid(
-                   Linf = c(poLinfm-3.1*poLinfs, poLinfm, poLinfm+3.1*poLinfs),
-                   Galpha = exp(c(polGam-3.1*polGas, polGam, polGam+3.1*polGas)),
-                   Mk = exp(c(polMkm-3.1*polMks, polMkm, polMkm+3.1*polMks)),
-                   `.draw` = 0
-                 ))
-      df$Gbeta <- df$Galpha/df$Linf
-      df <- rbind(cbind(df, tibble::tibble(Fk=list(exp(dl$polFkm-3.1*dl$polFks)))),
-                  cbind(df, tibble::tibble(Fk=list(exp(dl$polFkm)))),
-                  cbind(df, tibble::tibble(Fk=list(exp(dl$polFkm+3.1*dl$polFks)))))
-
-      df <- rbind(cbind(df, tibble::tibble(Sm=list(exp(dl$polSm-3.1*dl$polSs)))),
-                  cbind(df, tibble::tibble(Sm=list(exp(dl$polSm)))),
-                  cbind(df, tibble::tibble(Sm=list(exp(dl$polSm+3.1*dl$polSs)))))
-      # Gauss-Laguerre rule
-      dl$NK <- LG_Nodes(dl, df)
+      if (any(is.na(dl$polSm)))
+        dl$NK <- 110  # safe value
+      else {
+        df <- with(dl,
+                   tidyr::expand_grid(
+                     Linf = c(poLinfm - 3.1 * poLinfs, poLinfm, poLinfm + 3.1 * poLinfs),
+                     Galpha = exp(c(
+                       polGam - 3.1 * polGas, polGam, polGam + 3.1 * polGas
+                     )),
+                     Mk = exp(c(
+                       polMkm - 3.1 * polMks, polMkm, polMkm + 3.1 * polMks
+                     )),
+                     `.draw` = 0
+                   ))
+        df$Gbeta <- df$Galpha / df$Linf
+        df <-
+          rbind(
+            cbind(df, tibble::tibble(Fk = list(
+              exp(dl$polFkm - 3.1 * dl$polFks)
+            ))),
+            cbind(df, tibble::tibble(Fk = list(exp(
+              dl$polFkm
+            )))),
+            cbind(df, tibble::tibble(Fk = list(
+              exp(dl$polFkm + 3.1 * dl$polFks)
+            )))
+          )
+        
+        df <-
+          rbind(
+            cbind(df, tibble::tibble(Sm = list(
+              exp(dl$polSm - 3.1 * dl$polSs)
+            ))),
+            cbind(df, tibble::tibble(Sm = list(exp(
+              dl$polSm
+            )))),
+            cbind(df, tibble::tibble(Sm = list(
+              exp(dl$polSm + 3.1 * dl$polSs)
+            )))
+          )
+        # Gauss-Laguerre rule
+        dl$NK <- LG_Nodes(dl, df)
+      }
     } else {
       dl$NK <- NK
       if (NK < 50)
-        warning(
-          "Having fewer than 50 nodes for the Gauss Laguerre quadarture rule is not advised. \n"
-        )
+        warning("Having fewer than 50 nodes for the Gauss Laguerre quadarture rule is not advised. \n")
     }
-
     glq <-
       statmod::gauss.quad(dl$NK, kind = "laguerre", alpha = 0.0)
     dl$gl_nodes <- glq$nodes
@@ -473,15 +497,15 @@ blicc_dat <-
 #' selectivity functions are valid. New references are replaced in the data
 #' object, which is then returned.
 #'
-#' Particular selectivity functions can be changed using the `seli` parameter,
+#' Particular selectivity functions can be changed using the `sel_indx` parameter,
 #' which indexes which functions will be changed. In this case, only those
 #' functions will need to have the prior parameters updated.
 #'
 #' @export
 #' @inheritParams blicc_mpd
 #' @inheritParams blicc_dat
-#' @param seli  An integer vector index of the selectivity functions to be
-#'   changed.
+#' @param sel_indx  An integer vector index of the selectivity functions to be
+#'   changed. If not provided, all functions will be replaced.
 #' @return The data object `blicc_ld` with the new selectivities
 #' @examples
 #' new_ld <- blicc_selfun(eg_ld, sel_fun="logistic", model_name = "Logistic Selectivity")
@@ -489,50 +513,60 @@ blicc_dat <-
 blicc_selfun <-
   function(blicc_ld,
            sel_fun,
-           seli = NULL,
+           sel_indx = NULL,
            model_name = NULL) {
-
-
+    
     sel_fun <- parse_selectivity(sel_fun, blicc_ld)
-
-    if (is.null(seli)) {
-      # Replace function list
-      blicc_ld$fSel <- sel_fun
-      blicc_ld$NS <- length(sel_fun)
-    } else {
+    
+    if (is.null(sel_indx)) 
+      nfSel <- sel_fun 
+    else {
+      if (blicc_ld$NS==0) stop("Error: No previous functions to reference, so replace all functions (sel_indx=NULL).")
       ErrorMsg <- paste0("Error: the specified selectivity functions must be a new but within the current set of ",
-                         as.character(blicc_ld$NS), " functions or replace all functions (Seli=NULL).")
-      if ( ! (is.vector(seli) & is.numeric(seli)) )  stop(ErrorMsg)
-      seli <- unique(round(seli))
-      if (length(seli) != length(sel_fun)) stop("Error: seli must have the same length as sel_fun.")
-      if ( any((seli > blicc_ld$NS) | (seli <= 0)) ) stop(ErrorMsg)
-
-      blicc_ld$sel_fun[seli] <- sel_fun
+                         as.character(blicc_ld$NS), " functions or replace all functions (sel_indx=NULL).")
+      if ( ! (is.vector(sel_indx) & is.numeric(sel_indx)) )  stop(ErrorMsg)
+      sel_indx <- unique(round(sel_indx))
+      if (length(sel_indx) != length(sel_fun)) stop("Error: sel_indx must have the same length as sel_fun.")
+      if ( any((sel_indx > blicc_ld$NS) | (sel_indx <= 0)) ) stop(ErrorMsg)
+      
+      nfSel <- blicc_ld$fSel
+      nfSel[sel_indx] <- sel_fun
     }
-    # Update parameters
-    npar <- Rsel_functions()$npar[blicc_ld$fSel]
-
-    blicc_ld$NP <- sum(npar)
-    spar <- integer(blicc_ld$NS)
-    spare <- spar
+    
+    # copy parameters
+    NS <- length(nfSel)
+    npar <- Rsel_functions()$npar[nfSel]
+    NP <- sum(npar)
+    nSm <- rep(NA_real_, NP) # lognormal mu parameters
+    nSs <- nSm
+    spari <- integer(NS)
+    spare <- spari
     np <- 1L
-    for (i in 1:blicc_ld$NS) {
-      spar[i] <- np
+    for (i in 1:NS) {
+      spari[i] <- np
       np <- np + npar[i]
       spare[i] <- np-1L
+      if (i <= blicc_ld$NS) {
+        if (nfSel[i] == blicc_ld$fSel[i]) { # copy parameters
+          nSm[spari[i]:spare[i]] <- with(blicc_ld, polSm[sp_i[i]:sp_e[i]])
+          nSs[spari[i]:spare[i]] <- with(blicc_ld, polSs[sp_i[i]:sp_e[i]])
+        }
+      }
     }
-    blicc_ld$sp_i <- spar    #start
-    blicc_ld$sp_e <- spare   #end
 
+    # Replace function list
+    blicc_ld$fSel <- nfSel
+    blicc_ld$NS <- NS
+    blicc_ld$sp_i <- spari    #start
+    blicc_ld$sp_e <- spare    #end
+    blicc_ld$NP <- NP
+    blicc_ld$polSm <- nSm
+    blicc_ld$polSs <- nSs
     if ( ! is.null(model_name) )
       blicc_ld$model_name <- model_name
 
-    if ( blicc_model_OK(blicc_ld) == "OK" )
-       blicc_ld <- blip_selectivity(blicc_ld, sel_indx = seli)
-    else {
-      blicc_ld$polSm <- rep(NA_real_, sum(npar)) # lognormal mu parameters
-      blicc_ld$polSs <-  blicc_ld$polSm
-    }
+    if ( blicc_model_OK(blicc_ld) == "OK" ) 
+      blicc_ld <- blip_selectivity(blicc_ld, sel_indx = sel_indx)
     return(blicc_ld)
   }
 
