@@ -1,16 +1,21 @@
 ---
 title: "A Length-dependent Mortality Model for a Data-Limited Bayesian Stock Assessment"
 author: "Paul A H Medley"
-date: "25 August 2022"
-output: 
-  html_document:
+date: "25-August-2022"
+format: 
+  html:
     toc: true
-    code_folding: hide
-    toc_depth: 2.0
-    keep_md: true
-    df_print: paged
-    self_contained: true
+    code-fold: true
+    toc-depth: 2.0
+    keep-md: true
+    df-print: paged
+    embed-resources: true
+number-sections: true
+execution:
+  warning: false
 ---
+
+
 
 
 
@@ -50,43 +55,48 @@ $$
  G(L_\infty \ | \ \alpha, \beta) =  \Gamma(\alpha)^{-1} \   {\beta^\alpha {L_\infty}^{\alpha-1} {\large e}^{-\beta L_\infty}}
 $$
 
-This model is for the individual growth variation, not the standard error of the mean asymptotic growth, so it is most related to the distribution of length-at-age. The Gamma distribution has a fixed coefficient of variation (CV) = $1/\sqrt \alpha$, and the CV for length at age is usually found to be between 5%-30%, so $\alpha=[9, 400]$ and $\beta = \alpha / \hat{L_\infty}$ where $\hat{L_\infty}$ is the mean asymptotic length for the species (and usually what is estimated in growth models). The growth rate parameter $K$ is assumed to be fixed for all individual fish.    
+This model is for the individual growth variation, not the standard error of the mean asymptotic growth, so it is most related to the distribution of length-at-age. The Gamma distribution has a fixed coefficient of variation (CV) = $1/\sqrt \alpha$, and the CV for length at age is usually found to be between 5%-30%, so $\alpha=[9, 400]$ and $\beta = \alpha / \hat{L_\infty}$ where $\hat{L_\infty}$ is the mean asymptotic length for the species (and usually what is estimated in growth models). The growth rate parameter $K$ is assumed to be fixed for all individual fish.  
 
-With this model, the growth variability increases as the fish ages and for a 10% CV (alpha=100), the length distribution among fish the same age will be similar to the normal distribution.
+With this model, the growth variability increases as the fish ages and for a 10% CV (alpha=100), the length distribution among fish the same age will be similar to the normal distribution.  
 
 
-```r
+::: {.cell}
+
+```{.r .cell-code}
 Linf <- rgamma(400, shape = 100, rate = 100/60)
 
-growth <- as_tibble(sapply(1:40, FUN=function(t) {Linf*(1-exp(-0.2*t))}), column_name=paste0("V", as.character(1:40))) %>%
-  mutate(fish=row_number(), gp="0") %>%
-  pivot_longer(cols=V1:V40, names_to="str_age", values_to="L") %>%
-  mutate(age=as.integer(substr(str_age, 2, length(str_age)))) %>%
+growth <- sapply(1:40, FUN=function(t) {Linf*(1-exp(-0.2*t))}) 
+colnames(growth) <- paste0("V", as.character(1:40)) 
+
+growth <- growth |>
+  as_tibble() |>
+  mutate(fish=row_number(), gp="0") |>
+  pivot_longer(cols=V1:V40, names_to="str_age", values_to="L") |>
+  mutate(age=as.integer(substr(str_age, 2, length(str_age)))) |>
   select(-str_age)
-```
 
-```
-## Warning: The `x` argument of `as_tibble.matrix()` must have unique column names if
-## `.name_repair` is omitted as of tibble 2.0.0.
-## ℹ Using compatibility `.name_repair`.
-## This warning is displayed once every 8 hours.
-## Call `lifecycle::last_lifecycle_warnings()` to see where this warning was
-## generated.
-```
-
-```r
 FL <- rbind(tibble(fish=1:length(Linf), Length = Linf*(1-exp(-0.2*5)), age=5, gp="5"),
             tibble(fish=1:length(Linf), Length=Linf, age=40, gp="40"))
+```
+:::
 
+::: {.cell}
+
+```{.r .cell-code}
 p1 <- ggplot(growth, aes(x=age, y=L, group=fish, fill=gp)) +
   geom_line(alpha=0.05, show.legend=F) +
   geom_point(data=FL, aes(x=age, y=Length, colour=gp, fill=gp), alpha=0.1, show.legend=F) +
   labs(x = "Age (years)", y="Length (cm)") +
   annotate("text", x = c(8, 36), y = c(25, 80), label= c("5 years old", "40 years old"))
+
 ggMarginal(p1, data=FL, x="age", y="Length", type="histogram", margins="y", groupColour=T, groupFill=T) 
 ```
 
-![Illustration of variable length-at-age with Gamma distribution asymptotic length.](fishblicc_Model_Description_files/figure-html/GrowthModel1-1.png)
+::: {.cell-output-display}
+![Illustration of variable length-at-age with Gamma distribution asymptotic length.](fishblicc_Model_Description_files/figure-html/fig-len_at_age-1.png){#fig-len_at_age width=672}
+:::
+:::
+
 
 ## Piece-wise Mortality using Transition Times  
 
@@ -112,7 +122,9 @@ As the length increases, the time difference between sequential length intervals
 
 
 
-```r
+::: {.cell}
+
+```{.r .cell-code}
 Linf <- 62
 TRange <- (1:10)*0.5
 df1 <- tibble(
@@ -131,7 +143,11 @@ ggplot(df2, aes(x=Time, y=Length, group=id)) +
   geom_line(data=df1, aes(x=Time, y=Length))
 ```
 
-![Illustration of equal length intervals having increasing time for growing through the interval.](fishblicc_Model_Description_files/figure-html/Growth-1.png)
+::: {.cell-output-display}
+![Illustration of equal length intervals having increasing time for growing through the interval.](fishblicc_Model_Description_files/figure-html/fig-length_interval-1.png){#fig-length_interval width=672}
+:::
+:::
+
 
 For ease of reference, the subscript $k$ is dropped for the mortality parameter, but note that time is effectively measured in units of the von Bertalanffy growth rate parameter $k$.  
 
@@ -169,7 +185,7 @@ $$
 
 This accounts for the probability that the fish's $L_\infty$ is less than $L_n$, when it will never reach that length interval. All terms from the start point $L_0$ are included in the integral for each length interval so that the effect on mortality on the length composition is accounted for. Slower growing fish are less likely to reach $L_n$ because they take longer to grow to this size and are therefore subject to higher mortality.  
 
-The integral does not have an analytical solution, so numerical integration will need to be applied. The integral is calculated by a change of variable so the integral is from 0 to infinity, and using Gauss-Laguerre quadrature (see Appendix).    
+The integral does not have an analytical solution, so numerical integration will need to be applied. The integral is calculated by a change of variable so the integral is from 0 to infinity, and using Gauss-Laguerre quadrature (see Appendix).  
 
 Assuming constant recruitment, the numbers of fish within each interval can be estimated by integrating over the time interval:  
 
@@ -180,7 +196,7 @@ $$
 
 where $C_n$ is catch as a proportion of mortality and is proportional to the expected number of fish in a length frequency sample in length interval $n$. This is the standard catch equation. 
 
-In order to estimate the length frequency data sample, the catch estimate $C_n$ is used to calculate the expected numbers of fish in each length interval. For a total length frequency sample size of $N$ and a total sum of all catches in the model of $\sum C_i$ , the expected numbers of fish in the $n^{th}$ interval is given by:     
+In order to estimate the length frequency data sample, the catch estimate $C_n$ is used to calculate the expected numbers of fish in each length interval. For a total length frequency sample size of $N$ and a total sum of all catches in the model of $\sum C_i$ , the expected numbers of fish in the $n^{th}$ interval is given by:   
 
 $$
   \mu_n = {N \over {\sum  C_i}} \ C_n 
@@ -200,7 +216,7 @@ $$
 
 where $L_i$ is the midpoint length in each bin $i$, $S_{mx}$ is the modal length where selectivity is maximum and $S_s$ are two parameters controlling the selectivity steepness on the left and right side of the mode. If the right hand side parameter $S_s$ is set to zero, the selectivity becomes "flat-topped", and is similar to the logistic model.  
 
-Although the double-sided normal selectivity function is suggested in the fishblicc package, any function based on length could be used. However, some function may be more problematic to fit because their parameters may be aliased with the mortality parameters.  
+Although the logistic and double-sided normal selectivity function are suggested in the fishblicc package, any function based on length could be used. However, some function may be more problematic to fit because their parameters may be aliased with the mortality parameters. Based on experience of real data, it is suggested to use a minimal mixture of simple logistic or normal selectivity functions to explain length frequency observations. This allows the model to explain multi-mode length frequencies and more complex selectivities which may apply in some fisheries.  
 
 # Less Technical Model Description  
 
@@ -208,13 +224,13 @@ The mathematical description above is not always easy for everyone to understand
 
 The model is simple compared to the real world, but, we hope, captures the most important aspects that decide the lengths of fish that a fishery will capture. In the model, we imagine lots of fish, all a very similar length to start with, but too small to be caught.  They then proceed to grow and die. Some die from natural causes and as they become larger and become available to the fishing gear, some die by being caught. Eventually all fish die as they grow towards and reach their maximum size. The ones that are caught are randomly sampled so that the length frequency data sample is representative of the length frequency of the total catch.  
 
-The model mathematically describes several processes that affect the length frequency that you would get from sampling this fishery.  
+The model describes mathematically several processes that affect the length frequency that you would get from sampling this fishery:  
 
-Firstly, growth slows as each fish approaches its maximum size. If it lives long enough, it is fully grown and stops growing altogether.  
+- Firstly, growth slows as each fish approaches its maximum size. If it lives long enough, it is fully grown and stops growing altogether.  
 
-Secondly, each fish has its own maximum size and so all fish will become bigger but grow at different rates to different sizes. The spread of these different sizes are described by a probability distribution, with most being around an average maximum size but others fish may be relatively small or large even when fully grown. This growth variability is important because a medium sized fish may still be growing or alternatively could be already fully grown, and this affects the length frequency. 
+- Secondly, each fish has its own maximum size and so all fish will become bigger but grow at different rates to different sizes. The spread of these different sizes are described by a probability distribution, with most being around an average maximum size but others fish may be relatively small or large even when fully grown. This growth variability is important because a medium sized fish may still be growing or alternatively could be already fully grown, and this affects the length frequency. 
 
-Finally, fish die at a fixed rate within each length interval. The intervals are the length bins that the fish counts are gathered into. But mortality, including fishing mortality, can vary from interval to interval. The ability to allow mortality to vary from interval to interval makes the model very flexible.   
+- Finally, fish die at a fixed rate within each length interval. The intervals are the length bins that the fish counts are gathered into. But mortality, including fishing mortality, can vary from interval to interval. The ability to allow mortality to vary from interval to interval makes the model very flexible.   
 
 Thinking about each length interval, fish must grow across the interval over time according to the growth model. As fish approach their maximum size, they spend more and more time in each length interval. Whether a fish is able successfully to grow across an interval depends upon two effects:  
 
@@ -222,9 +238,9 @@ Thinking about each length interval, fish must grow across the interval over tim
 
 - the amount of time it takes for the fish to grow across the interval: the longer the time, the more likely it will die during that period. If a fish's maximum size is within the interval, the growth slows to zero and the fish will never be able to grow out of the interval.  
 
-So the model accounts for the chance a fish will reach a length interval, be caught and therefore be present in the length frequency sample. This chance of a fish being in the length frequency sample for each interval is controlled by parameters in the model. These parameters are adjusted to find the best fit between the model and the observed length frequency data.  
+So the model accounts for the chance a fish will reach a length interval and then be caught, and therefore be present in the length frequency sample. This chance of a fish being in the length frequency sample for each interval is controlled by parameters in the model. These parameters are adjusted to find the best fit between the model and the observed length frequency data.  
 
-Because this model simplifies what is really happening, it may not describe the frequency data very well. Choices have to be made on how mortality will vary from interval to interval, and these may not agree with the true mortality. For example, there may be additional fishing mortality from a fishery which has not been accounted for. The growth model may not be correct, or growth may vary not just between fish, but over time.  
+Because this model simplifies what is really happening, it may not describe the frequency data very well. Choices have to be made on how mortality will vary from interval to interval, and these may not agree with the true mortality. For example, there may be additional fishing mortality from a fishery which has not been accounted for. Alternatively, the growth model may not be correct, or growth may vary not just between fish, but over time.  
 
 A critical problem with the model is the assumption that the fish are all taken from the same aged fish (cohort) over time. In reality, data usually come from a "snap-shot" of the fishery and so from multiple cohorts. Interpreting these data requires the assumption that these cohorts are the same size. In fact, when fitting the model we allow for errors, so the model will still work as long as the cohorts are not too different in size and do not have a trend of increasing or decreasing recruitment.  
 
@@ -233,7 +249,9 @@ A critical problem with the model is the assumption that the fish are all taken 
 Some example selectivity functions and levels of exploitation effects on length compositions are presented below. This is based on an implementation of the model in R.  
 
 
-```r
+::: {.cell}
+
+```{.r .cell-code}
 Li_range <- seq(4, 28, by=1)
 nv <- 110
 par <- list(alpha=100, Linf=20, Mk=1.5, Fk=1.5, Smax=10, Ss1=0.25, Ss2=0.0, Len=Li_range)
@@ -289,10 +307,11 @@ sgl <- statmod::gauss.quad(nv, "laguerre", alpha=0)  # Only needs to be calculat
 par$nodes <- sgl$nodes
 par$weights <- sgl$weights
 ```
+:::
 
+::: {.cell}
 
-
-```r
+```{.r .cell-code}
 res <- tibble()
 par$Ss2 <- 0    # Not Domed
 par$Mk <- 0.5   # Low mortality compared to growth
@@ -307,42 +326,59 @@ for (Fk in c(0.01, 1.0, 1.5, 3.0)) {
   res <- rbind(res, tibble(Fk=par$Fk, Li=Li_range, pp=pop, sl=par$Fki, ca=cat))
 }
 
-res <- res %>%
+res <- res |>
   mutate(Fk = factor(Fk))
+```
+:::
 
+::: {.cell}
+
+```{.r .cell-code}
 ggplot(res, aes(x=Li, y=sl, colour=Fk)) +
   geom_line() +
   labs(y="Selectivity", x="Length")
 ```
 
-![Mortality effects: Selectivity](fishblicc_Model_Description_files/figure-html/MortalityEffect1-1.png)
+::: {.cell-output-display}
+![Mortality effects: Selectivity](fishblicc_Model_Description_files/figure-html/fig-mort_effects_selectivity-1.png){#fig-mort_effects_selectivity width=672}
+:::
+:::
 
+::: {.cell}
 
-
-```r
+```{.r .cell-code}
 ggplot(res, aes(x=Li, y=pp, colour=Fk)) +
   geom_line() +
   labs(y="Population", x="Length")
 ```
 
-![Mortality effects: Population size at length](fishblicc_Model_Description_files/figure-html/MortalityEffect2-1.png)
+::: {.cell-output-display}
+![Mortality effects: Population size at length](fishblicc_Model_Description_files/figure-html/fig-mort_effects_popsize-1.png){#fig-mort_effects_popsize width=672}
+:::
+:::
 
+::: {.cell}
 
-
-```r
+```{.r .cell-code}
 ggplot(res, aes(x=Li, y=ca, fill=Fk)) +
   geom_col(position="dodge") +
   labs(y="Catch", x="Length")
 ```
 
-![Mortality effects: Catch at length](fishblicc_Model_Description_files/figure-html/MortalityEffect3-1.png)
+::: {.cell-output-display}
+![Mortality effects: Catch at length](fishblicc_Model_Description_files/figure-html/fig-mort_effects_catch_at_length-1.png){#fig-mort_effects_catch_at_length width=672}
+:::
+:::
+
 
 As shown above, firstly, the general effect of mortality is to change the abundance of large, animals in the population and in the catch.  Generally, when natural mortality is less than the growth rate, ($M_k < 1.0$), it is possible to have a mode around the asymptotic mean length ($L_\infty$). For most fish populations this is unlikely where $M_k$ is usually expected to be around 1.5 (Kenchington 2014).  
 
 Dome-shaped selectivity allows fish to escape mortality as they grow. This not only affects the population length composition, and also the abundance in the catches. While the abundance of larger fish may increase in the population, the selectivity may still prevent them appearing in the catch.  
 
 
-```r
+::: {.cell}
+
+```{.r .cell-code}
 par$Mk <- 1.5   # Normal mortality compared to growth
 res <- tibble()
 for (Ss2 in c(0.0, 0.01, 0.05, 1.0)) {
@@ -356,7 +392,7 @@ for (Ss2 in c(0.0, 0.01, 0.05, 1.0)) {
   res <- rbind(res, tibble(Domed=par$Ss2, Li=Li_range, pp=pop, sl=par$Fki, ca=cat))
 }
 
-res <- res %>%
+res <- res |>
   mutate(Domed = factor(Domed))
 
 ggplot(res, aes(x=Li, y=sl, colour=Domed)) +
@@ -364,32 +400,44 @@ ggplot(res, aes(x=Li, y=sl, colour=Domed)) +
   labs(y="Selectivity", x="Length")
 ```
 
-![Dome selectivity effects: Selectivity](fishblicc_Model_Description_files/figure-html/DomeEffect1-1.png)
+::: {.cell-output-display}
+![Dome selectivity effects: Selectivity](fishblicc_Model_Description_files/figure-html/fig-dome_effects_sel-1.png){#fig-dome_effects_sel width=672}
+:::
+:::
 
+::: {.cell}
 
-
-```r
+```{.r .cell-code}
 ggplot(res, aes(x=Li, y=pp, colour=Domed)) +
   geom_line() +
   labs(y="Population", x="Length")
 ```
 
-![Dome selectivity effects: Population size at length](fishblicc_Model_Description_files/figure-html/DomeEffect2-1.png)
+::: {.cell-output-display}
+![Dome selectivity effects: Population size at length](fishblicc_Model_Description_files/figure-html/fig-dome_effects_popsize-1.png){#fig-dome_effects_popsize width=672}
+:::
+:::
 
+::: {.cell}
 
-
-```r
+```{.r .cell-code}
 ggplot(res, aes(x=Li, y=ca, fill=Domed)) +
   geom_col(position="dodge") +
   labs(y="Catch", x="Length")
 ```
 
-![Dome selectivity effects: Catch at length](fishblicc_Model_Description_files/figure-html/DomeEffect3-1.png)
+::: {.cell-output-display}
+![Dome selectivity effects: Catch at length](fishblicc_Model_Description_files/figure-html/fig-dome_effects_catch-1.png){#fig-dome_effects_catch width=672}
+:::
+:::
+
 
 Finally, the left side steepness of the selectivity can affect length composition and the presence of small fish. Methods that cannot estimate selectivity may need to exclude these data. However, estimating selectivity may be important particularly if, for example, improving selectivity may be an management objective so monitoring changes becomes important.  
 
 
-```r
+::: {.cell}
+
+```{.r .cell-code}
 res <- tibble()
 par$Ss2 <- 0.01
 for (Ss1 in c(0.05, 0.25, 1.0)) {
@@ -403,34 +451,44 @@ for (Ss1 in c(0.05, 0.25, 1.0)) {
   res <- rbind(res, tibble(Steep=par$Ss1, Li=Li_range, pp=pop, sl=par$Fki, ca=cat))
 }
 
-res <- res %>%
+res <- res |>
   mutate(Steep = factor(Steep))
 ggplot(res, aes(x=Li, y=sl, colour=Steep)) +
   geom_line() +
   labs(y="Selectivity", x="Length")
 ```
 
-![Selectivity left-steepness effects: Selectivity](fishblicc_Model_Description_files/figure-html/SteepnessEffect1-1.png)
+::: {.cell-output-display}
+![Selectivity left-steepness effects: Selectivity](fishblicc_Model_Description_files/figure-html/fig-lsteep_effects_select-1.png){#fig-lsteep_effects_select width=672}
+:::
+:::
 
+::: {.cell}
 
-
-```r
+```{.r .cell-code}
 ggplot(res, aes(x=Li, y=pp, colour=Steep)) +
   geom_line() +
   labs(y="Population", x="Length")
 ```
 
-![Selectivity left-steepness effects: Population size at length](fishblicc_Model_Description_files/figure-html/SteepnessEffect2-1.png)
+::: {.cell-output-display}
+![Selectivity left-steepness effects: Population size at length](fishblicc_Model_Description_files/figure-html/fig-lsteep_effects_popsize-1.png){#fig-lsteep_effects_popsize width=672}
+:::
+:::
 
+::: {.cell}
 
-
-```r
+```{.r .cell-code}
 ggplot(res, aes(x=Li, y=ca, fill=Steep)) +
   geom_col(position="dodge") +
   labs(y="Catch", x="Length")
 ```
 
-![Selectivity left-steepness effects: Catch at length](fishblicc_Model_Description_files/figure-html/SteepnessEffect3-1.png)
+::: {.cell-output-display}
+![Selectivity left-steepness effects: Catch at length](fishblicc_Model_Description_files/figure-html/fig-lsteep_effects_catch-1.png){#fig-lsteep_effects_catch width=672}
+:::
+:::
+
 
 
 # Appendix: Practical Implementation of the Length Integral  
@@ -473,4 +531,5 @@ The function is calculated at each Gauss-Laguerre node for $x$, and the weighted
 # References
 
 Kenchington, T.J. 2014. Natural mortality estimators for information-limited fisheries. Fish and Fisheries, 15, 533–562  
+
 Lorenzen, K. 2022. Size- and age-dependent natural mortality in fish populations: Biology, models, implications, and a generalized length-inverse mortality paradigm. Fisheries Research 255: 106454 https://doi.org/10.1016/j.fishres.2022.106454
