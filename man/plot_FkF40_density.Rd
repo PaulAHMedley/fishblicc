@@ -2,7 +2,7 @@
 % Please edit documentation in R/BLICC_Plots.R
 \name{plot_FkF40_density}
 \alias{plot_FkF40_density}
-\title{Plot fishing mortality relative to the SPR 40\% reference point (Fk/F40)}
+\title{Plot fishing mortality relative to the SPR 40\% reference point (\code{Fk/F40})}
 \usage{
 plot_FkF40_density(blicc_rp)
 }

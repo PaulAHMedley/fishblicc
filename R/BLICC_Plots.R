@@ -8,17 +8,17 @@
 #'
 #' The graph shows the observed frequency and the prior's expected frequency for
 #' all gears. This allows a check that current prior parameter settings are
-#' consistent with observations. The prior means are also used as the start point for
-#' the [blicc_mpd] fits.
+#' consistent with observations. The prior means are also used as the start
+#' point for the [blicc_mpd] fits.
 #'
 #' @export
 #' @inheritParams blicc_mpd
-#' @param gear Specifies the gear to plot as an integer index or full name
+#' @param gear Specifies the gear(s) to plot as an integer index or full name
 #' @return ggplot geom object plotting observed and the prior's expected
 #'   frequency, separated by gear.
 #' @examples
-#' plot_prior(eg_rp)
-#'
+#' plot_prior(eg_ld)
+#' 
 plot_prior <- function(blicc_ld, gear = "All") {
   Gear=LMP=fq=NULL
 
@@ -39,8 +39,9 @@ plot_prior <- function(blicc_ld, gear = "All") {
   for (gi in gear) {
     efq <- sel[[gi]]*pop
     efq <- efq * sum(blicc_ld$fq[[gi]]) / sum(efq)
-    df <- with(blicc_ld, rbind(df, tibble(Gear=gname[gi], LMP = LMP,
-                                          fq=fq[[gi]], efq=efq)))
+    df <- with(blicc_ld, rbind(df, 
+                               tibble::tibble(Gear=gname[gi], LMP = LMP,
+                                  fq=fq[[gi]], efq=efq)))
   }
 
   gp <- ggplot2::ggplot(data=df, ggplot2::aes(x = LMP)) +
@@ -171,12 +172,15 @@ plot_expected_frequency <-
 #' residuals are plotted as 99% quartiles using error bars, together with the
 #' outliers as points outside this range.
 #'
+#' If you want to alter the graph, the group names are `Sgroup` for the
+#' selectivities and `Lgroup` for the lengths.
+#'
 #' @export
 #' @inheritParams plot_expected_frequency
 #' @return ggplot geom object plotting standardised residuals
 #' @examples
 #' plot_residuals(eg_rp)
-#'
+#' 
 plot_residuals <- function(blicc_rp, gear = "All") {
   .draw = NB_phi = Sgroup = Lgroup = efq = ofq = LMP = std_res = NULL
   std_res_m = std_res_005 = std_res_995 = NULL
@@ -252,15 +256,17 @@ plot_residuals <- function(blicc_rp, gear = "All") {
 }
 
 
-#' Plot selectivity and 80% credible interval, if available, by
-#' length.
+#' Plot selectivity and 80% credible interval, if available, by length.
+#'
+#' The 80%CI is only available for the MCMC fit. All gears specified are plotted
+#' on a single graph.
 #'
 #' @export
 #' @inheritParams plot_expected_frequency
 #' @return ggplot geom object for plotting
 #' @examples
 #' plot_selectivity(eg_rp)
-#'
+#' 
 plot_selectivity <- function(blicc_rp, gear = NULL) {
   Lgroup = sel = LMP = sel_10 = sel_90 = sel_m = Sgroup = NULL
 
@@ -296,16 +302,18 @@ plot_selectivity <- function(blicc_rp, gear = NULL) {
 }
 
 
-#' Plot the estimated spawning potential ratio probability density, if available.
+#' Plot the estimated spawning potential ratio probability density, if
+#' available.
 #'
-#' This plot requires the MCMC to have been run.
+#' The SPR estimate is converted to a probability density plot with 20% and 40%
+#' reference point. This plot requires the MCMC to have been run.
 #'
 #' @export
 #' @inheritParams plot_expected_frequency
 #' @return ggplot geom object for plotting
 #' @examples
 #' plot_SPR_density(eg_rp)
-#'
+#' 
 plot_SPR_density <- function(blicc_rp) {
   SPR = NULL
   rp_df <- blicc_rp$rp_df
@@ -326,7 +334,7 @@ plot_SPR_density <- function(blicc_rp) {
 
 
 
-#' Plot fishing mortality relative to the SPR 40% reference point (Fk/F40)
+#' Plot fishing mortality relative to the SPR 40% reference point (`Fk/F40`)
 #'
 #' This plot requires the MCMC to have been run.
 #'
@@ -428,11 +436,14 @@ plot_FkF40_density <- function(blicc_rp) {
 #' The facet plot covers the current estimated fishing mortality, together with
 #' fishing mortalities required to obtain SPR 20%, SPR 30% and SPR 40%. The
 #' graphs show the expected values and 80% credible intervals compared to
-#' current observations, and can be used to assess whether length frequencies
+#' current observations. They can be used to assess whether length frequencies
 #' should be able to detect changes in fishing mortality to these different
 #' levels. Note that if reference points do not exist, they are not plotted, so
 #' some graphs may be blank except for the data. The graphs show the number of
 #' MCMC draws for which the reference points exist in each case.
+#'
+#' If the apparent changes in length frequencies between the plots is small,
+#' relying on length frequency data alone may not be advisable.
 #'
 #' @export
 #' @inheritParams plot_expected_frequency
@@ -440,7 +451,7 @@ plot_FkF40_density <- function(blicc_rp) {
 #'   level
 #' @examples
 #' plot_efq_FRP(eg_rp)
-#'
+#' 
 plot_efq_FRP <- function(blicc_rp, gear = NULL) {
   # Not necessary but stops CMD check notes
   Linf = Galpha = Mk = Fk = Sm = NB_phi = Sgroup = NULL
@@ -567,8 +578,13 @@ plot_efq_FRP <- function(blicc_rp, gear = NULL) {
 #' compared to current observations, and can be used to assess whether length
 #' frequencies should be able to detect changes in selectivity to these
 #' different levels. Note that if reference points do not exist, they are not
-#' plotted, so some graphs may be blank except for data.  The graphs show the
+#' plotted, so some graphs may be blank except for data. The graphs show the
 #' number of MCMC draws for which the reference points exist in each case.
+#'
+#' If mixtures are used, all location parameters for the mixtures will be
+#' shifted equally. This may not make a lot of sense in practice and more
+#' relaistic scenarios may need to be constructed to test possible management
+#' actions.
 #'
 #' @export
 #' @inheritParams plot_expected_frequency
@@ -576,7 +592,7 @@ plot_efq_FRP <- function(blicc_rp, gear = NULL) {
 #'   selectivity
 #' @examples
 #' plot_efq_SRP(eg_rp)
-#'
+#' 
 plot_efq_SRP <- function(blicc_rp, gear = NULL) {
   Linf = Galpha = Mk = Fk = Sm = NB_phi = Sgroup = NULL
   .draw = Lgroup = Current = SPR20 = SPR40 = LMP = fq = Harvest_Level =
@@ -699,8 +715,8 @@ plot_efq_SRP <- function(blicc_rp, gear = NULL) {
 
 #' Spawning potential ratio surface contour plot
 #'
-#' The plot shows the SPR surface plotted against the fishing mortality (Fk) and
-#' the 50% or maximum selectivity, dependent on the selectivity function of the
+#' The plot shows the SPR surface plotted against the fishing mortality (`Fk`) and
+#' the 50% or maximum (location) selectivity, dependent on the selectivity functions of the
 #' reference gear. The current state of the stock is marked as a point and the
 #' SPR 40% reference point is marked as a line. All values are calculated as
 #' means and uncertainty is not represented to maintain simplicity. The
@@ -757,21 +773,27 @@ plot_SPR_contour <- function(blicc_rp, gear = NULL) {
   # Include checks for NA
   vF20 <- dplyr::pull(rp_df, F20)
   vF20 <- vF20[!is.na(vF20)]
-  F20 <- tapply(
-    X = unlist(vF20),
-    INDEX = rep(1:blicc_ld$NF, length(vF20)),
-    FUN = mean,
-    na.rm = TRUE
-  )
+  if (length(vF20) == 0)
+    F20 <- NA
+  else
+    F20 <- tapply(
+      X = unlist(vF20),
+      INDEX = rep(1:blicc_ld$NF, length(vF20)),
+      FUN = mean,
+      na.rm = TRUE
+    )
   vF30 <- dplyr::pull(rp_df, F30)
   vF30 <- vF30[!is.na(vF30)]
-  F30 <- tapply(
-    X = unlist(vF30),
-    INDEX = rep(1:blicc_ld$NF, length(vF30)),
-    FUN = mean,
-    na.rm = TRUE
-  )
-
+  if (length(vF30) == 0)
+    F30 <- NA
+  else
+    F30 <- tapply(
+      X = unlist(vF30),
+      INDEX = rep(1:blicc_ld$NF, length(vF30)),
+      FUN = mean,
+      na.rm = TRUE
+    )
+  
   SPR0 <-
     RSPR_0(Galpha, Gbeta, Mk, blicc_ld) # Unexploited SPR
 
@@ -918,7 +940,10 @@ plot_YPR_contour <- function(blicc_rp, gear = NULL) {
     ))
   vF20 <- dplyr::pull(rp_df, F20)
   vF20 <- vF20[!is.na(vF20)]
-  F20 <-
+  if (length(vF20) == 0)
+    F20 <- NA
+  else
+    F20 <-
     tapply(
       X = unlist(vF20),
       INDEX = rep(1:blicc_ld$NF, length(vF20)),
@@ -927,14 +952,17 @@ plot_YPR_contour <- function(blicc_rp, gear = NULL) {
     )
   vF30 <- dplyr::pull(rp_df, F30)
   vF30 <- vF30[!is.na(vF30)]
-  F30 <-
+  if (length(vF30) == 0)
+    F30 <- NA
+  else
+    F30 <-
     tapply(
       X = unlist(vF30),
       INDEX = rep(1:blicc_ld$NF, length(vF30)),
       FUN = mean,
       na.rm = TRUE
     )
-
+  
   MaxF <- 2 * max(Fk[gear_i], F20[gear_i], na.rm = T)
   Gear_Smx <- Sm[blicc_ld$sp_i]
 

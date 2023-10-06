@@ -3,14 +3,14 @@
 \docType{data}
 \name{eg_rp}
 \alias{eg_rp}
-\title{A list of results including reference points from the \code{blicc_ref_pts()} function}
+\title{A list of results including reference points from the \link{blicc_ref_pts} function}
 \format{
 A list of data frames and the data object of results from a BLICC model fit:
 \describe{
 \item{vdir}{A vector describing the "direction" across gears for RP estimates}
 \item{rp_df}{A draws tibble of parameter estimates and reference points}
-\item{lx_df}{A tibble of expected numbers of fish in each length bin}
-\item{ld}{The data object used to fit the model and calculate indicators and results }
+\item{lx_df}{A tibble of expected numbers of fish in each length bin for each gear}
+\item{ld}{The data object from \link{blicc_dat} used to fit the model and calculate indicators and results }
 }
 
 rp_df is a tibble of parameter estimates from a BLICC model fit:
@@ -27,13 +27,13 @@ rp_df is a tibble of parameter estimates from a BLICC model fit:
 \item{.chain}{MCMC chain identifier}
 \item{.iteration}{MCMC iteration identifier}
 \item{.draw}{MCMC draw identifier}
-\item{F20}{Fishing mortality estimated to achieve 20\% SPR}
-\item{F30}{Fishing mortality estimated to achieve 30\% SPR}
-\item{F40}{Fishing mortality estimated to achieve 40\% SPR}
-\item{F01}{Fishing mortality at 10\% of the yield curve slope at the origin (F0.1)}
-\item{S20}{Selectivity mode estimated to achieve 20\% SPR}
-\item{S40}{Selectivity mode estimated to achieve 40\% SPR}
-\item{SMY}{Selectivity mode estimated to achieve maximum yield per recruit}
+\item{F20}{List vector of fishing mortality estimated to achieve 20\% SPR}
+\item{F30}{List vector of fishing mortality estimated to achieve 30\% SPR}
+\item{F40}{List vector of fishing mortality estimated to achieve 40\% SPR}
+\item{F01}{List vector of fishing mortality at 10\% of the yield curve slope at the origin (F0.1)}
+\item{S20}{List vector of selectivity location estimated to achieve 20\% SPR}
+\item{S40}{List vector of selectivity location estimated to achieve 40\% SPR}
+\item{SMY}{List vector of selectivity location estimated to achieve maximum yield per recruit}
 }
 }
 \source{

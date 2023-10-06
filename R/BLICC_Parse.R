@@ -6,13 +6,15 @@
 
 #' Returns a list of supported selectivity functions with parameters
 #'
-#' The function documents the list of available selectivity
-#' functions. This is used in various routines as a
-#' constant.
+#' This function documents the list of available selectivity functions. This is
+#' used in various routines as a constant. The intent is to make it easier to
+#' expand the number of functions in future. Note however that the method now
+#' offers mixtures of selectivity functions which is very flexible, so this list
+#' may not expand much.
 #'
 #' @return  A list of function names, short names and parameter list.
 #' @noRd
-#'
+#' 
 Rsel_functions <- function() {
   sel <- list(long_name = c("Logistic",
                             "Normal",
@@ -36,12 +38,13 @@ Rsel_functions <- function() {
 #' Parse the selectivity function, converting to an integer if necessary
 #'
 #' The selectivity function parameter is converted to an integer index of the
-#' function.
+#' function. The selectivity function can be referenced by its name or an
+#' integer index.
 #'
 #' @inheritParams blicc_selfun
 #' @return Integer gear index or NA if no gear can be specified
 #' @noRd
-#'
+#' 
 parse_selectivity <- function(sel_fun, blicc_ld) {
   func <- Rsel_functions()
   Nfunc <- length(func$short_name)
@@ -66,12 +69,13 @@ parse_selectivity <- function(sel_fun, blicc_ld) {
 
 #' Parse the selectivity index, converting to an integer if necessary
 #'
-#' The selectivity index parameter is checked and converted to an integer index
-#' if necessary.
+#' The selectivity index parameter is checked to be within bounds and is
+#' converted to an integer index if necessary.
 #'
 #' @inheritParams selfun
 #' @param SingleValue True or False, enforces a single value if required.
-#' @return Integer index of the selectvity function(s)
+#' @return Integer index of the selectivity functions in the model (or stops
+#'   with error message)
 #' @noRd
 #' 
 parse_sel_indx  <- function(sel_indx, blicc_ld, SingleValue = FALSE) {
@@ -94,14 +98,15 @@ parse_sel_indx  <- function(sel_indx, blicc_ld, SingleValue = FALSE) {
 
 #' Parse the gear parameter, converting to an integer
 #'
-#' The gear parameter is converted to an integer index of the gear, or `NA`
-#' is returned with an error message.
+#' The gear parameter is converted to an integer index of the gear. Exact gear
+#' names are also accepted.
 #'
 #' @inheritParams blicc_mpd
-#' @param Gear  A number or string representing a valid gear in the model
-#' @return Integer gear index or NA if no gear can be specified
+#' @param Gear  A vector of 1 or more numbers or strings representing valid
+#'   gears in the model
+#' @return Integer gear index (or stops with error message)
 #' @noRd
-#'
+#' 
 parse_gear <- function(Gear, blicc_ld) {
   if (blicc_ld$NG == 1) {
     return(1)
@@ -147,15 +152,15 @@ parse_gear <- function(Gear, blicc_ld) {
 #'
 #' The gear parameter is assumed to be an integer vector already parsed. The
 #' function simply returns unique indices for every selectivity function that is
-#' referenced by Gear. This allows for mixtures.
+#' referenced by `gear`. This allows for mixtures.
 #'
 #' @inheritParams parse_gear
 #' @return Integer selectivity function index
 #' @noRd
 #'
-get_selectivities <- function(Gear, blicc_ld)  {
-  sindx <- blicc_ld$GSbase[Gear]
-  mi <- (Gear-1L)*2L + 1L
+get_selectivities <- function(gear, blicc_ld)  {
+  sindx <- blicc_ld$GSbase[gear]
+  mi <- (gear-1L)*2L + 1L
   mix <- mi[blicc_ld$GSmix1[mi]>0]
   for (mii in mix) {
     sindx <- with(blicc_ld, c(sindx, GSmix2[GSmix1[mii]:GSmix1[mii+1L]]))

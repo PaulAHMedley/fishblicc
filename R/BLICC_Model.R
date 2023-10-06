@@ -32,7 +32,7 @@ Rsel_logistic <- function(Sp, LMP) {
 
 #' Calculate a normal selectivity curve for a length vector
 #'
-#' A normal takes one slope (1/sigma^2) parameter for the both sides of the mode
+#' A normal takes one slope (1/sigma^2) parameter for both sides of the location
 #' parameter (mu). The resulting selectivity varies from 0 to 1.0, with 1.0
 #' being the mode. It is calculated for each position defined in the length
 #' vector.
@@ -45,7 +45,7 @@ Rsel_logistic <- function(Sp, LMP) {
 #' @examples
 #' Sel <- Rsel_normal(Sp = c(35, 0.2), LMP = seq(15.5, 55.5, by=1.0))
 #' plot(y=Sel, x=seq(15.5, 55.5, by=1.0))
-#'
+#' 
 Rsel_normal <- function(Sp, LMP) {
   SL <- double(length(LMP))
   diff <- (LMP - Sp[1L]) ^ 2
@@ -58,7 +58,7 @@ Rsel_normal <- function(Sp, LMP) {
 #' Calculate a single-sided normal selectivity curve for a length vector
 #'
 #' A single-sided normal takes one slope (1/sigma^2) parameter for the left side
-#' of the mode parameter (mu). For the right side the slope is assumed to be
+#' of the location parameter (mu). For the right side the slope is assumed to be
 #' zero. The resulting selectivity varies from 0 to 1.0, with 1.0 being the
 #' asymptote. It is calculated for each position defined in the length vector.
 #'
@@ -84,11 +84,11 @@ Rsel_ssnormal <- function(Sp, LMP) {
 #' Calculate a double-sided normal selectivity curve for a length vector
 #'
 #' A double-sided normal takes two separate slope (1/sigma^2) parameters around
-#' the mode parameter (mu) that change the slope independently on either side of
-#' the mode. The selectivity varies from 0 to 1.0, with 1.0 being at the mode.
-#' It is calculated for each position defined in the length vector. Setting the
-#' second slope parameter to zero creates a flat-top selectivity (see
-#' [Rsel_ssnormal]).
+#' the location parameter (mu) that change the slope independently on either
+#' side of the mode. The selectivity varies from 0 to 1.0, with 1.0 being at the
+#' mode. It is calculated for each position defined in the length vector.
+#' Setting the second slope parameter to zero creates a flat-top selectivity
+#' ([Rsel_ssnormal]).
 #'
 #' @export
 #' @inheritParams Rsel_logistic
@@ -98,7 +98,7 @@ Rsel_ssnormal <- function(Sp, LMP) {
 #' @examples
 #' Sel <- Rsel_dsnormal(Sp = c(35, 0.1, 0.2), LMP = seq(15.5, 55.5, by=1.0))
 #' plot(y=Sel, x=seq(15.5, 55.5, by=1.0))
-#'
+#' 
 Rsel_dsnormal <- function(Sp, LMP) {
   # Double sided normal
   SL <- double(length(LMP))
@@ -109,10 +109,10 @@ Rsel_dsnormal <- function(Sp, LMP) {
 }
 
 
-#' Calculate the population size and fishing mortality applied within length
-#' bins
+#' Calculate the population size and fishing mortality applied within the length
+#' bins for the BLICC model
 #'
-#' The model integrates over growth rate variability and sums mortality
+#' The model integrates over the growth rate variability and sums mortality
 #' piece-wise over intervening length intervals to derive the relative
 #' population number in each length bin taking into account variation in growth
 #' and varying mortality-at-length. This is analogous to an age based catch
@@ -138,7 +138,7 @@ Rsel_dsnormal <- function(Sp, LMP) {
 #' S <- Rpop_F(100, 100/50, Mk=1.5, Fk=exp(eg_ld$polFkm),
 #'             FSel=Sel, blicc_ld=eg_ld)
 #' plot(y=S$NL, x=eg_ld$LMP, type="l")
-#'
+#' 
 Rpop_F <- function(Galpha, Gbeta, Mk, Fk, FSel, blicc_ld) {
   Zki <- Mk * blicc_ld$M_L
   for (gi in 1:blicc_ld$NG) {
@@ -163,7 +163,8 @@ Rpop_F <- function(Galpha, Gbeta, Mk, Fk, FSel, blicc_ld) {
 #' and varying mortality-at-length. This is analogous to an age based catch
 #' curve model, but for length. The model uses the Gauss-Laguerre quadrature
 #' rule for integration, so nodes and weights for this must be provided. This
-#' function is the same as [Rpop_F], but does not return fishing mortality.
+#' function is the same as [Rpop_F], but does not return fishing mortality and
+#' is written in R.
 #'
 #' @export
 #' @inheritParams Rpop_F
@@ -179,7 +180,7 @@ Rpop_F <- function(Galpha, Gbeta, Mk, Fk, FSel, blicc_ld) {
 #' S <- Rpop_len(glq$nodes, glq$weights, Len=15:55,
 #'               Zki=c(rep(1.5, 10), rep(3, 31)), 100, 100/50)
 #' plot(y=S, x=15:55, type="l")
-#'
+#' 
 Rpop_len <- function(node, wt, Len, Zki, Galpha, Gbeta)  {
   zsum <- function(x, Lr, Z) {
     # used to apply sequenced sum of mortality
@@ -231,7 +232,7 @@ Rpop_len <- function(node, wt, Len, Zki, Galpha, Gbeta)  {
 #'
 #' @export
 #' @inheritParams blicc_mpd
-#' @param  Sm       Vector of parameters for all the selectivity functions
+#' @param  Sm  Vector of parameters for all the selectivity functions
 #'   including mixture weights at the end of the vector
 #' @return Selectivities as a vector for each length bin in a list for each
 #'   gear.

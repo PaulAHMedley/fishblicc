@@ -11,7 +11,7 @@ plot_efq_SRP(blicc_rp, gear = NULL)
 direction, the data object and expected lengths from \link{blicc_ref_pts}
 function.}
 
-\item{gear}{Specifies the gear to plot as an integer index or full name}
+\item{gear}{Specifies the gear(s) to plot as an integer index or full name}
 }
 \value{
 ggplot geom object plotting expected length frequencies by
@@ -24,8 +24,14 @@ maximum yield. The graphs show the expected values and 80\% credible intervals
 compared to current observations, and can be used to assess whether length
 frequencies should be able to detect changes in selectivity to these
 different levels. Note that if reference points do not exist, they are not
-plotted, so some graphs may be blank except for data.  The graphs show the
+plotted, so some graphs may be blank except for data. The graphs show the
 number of MCMC draws for which the reference points exist in each case.
+}
+\details{
+If mixtures are used, all location parameters for the mixtures will be
+shifted equally. This may not make a lot of sense in practice and more
+relaistic scenarios may need to be constructed to test possible management
+actions.
 }
 \examples{
 plot_efq_SRP(eg_rp)

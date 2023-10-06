@@ -2,17 +2,18 @@
 % Please edit documentation in R/BLICC_blip.R
 \name{blip_Fk}
 \alias{blip_Fk}
-\title{Sets data object from \link{blicc_dat} to have a new Fk prior}
+\title{Sets data object from \link{blicc_dat} to have a new \code{Fk} prior}
 \usage{
-blip_Fk(blicc_ld, lFk = NA, lFks = NA, model_name = NA)
+blip_Fk(blicc_ld, lFk = NA, lFks = NA, model_name = NULL)
 }
 \arguments{
 \item{blicc_ld}{A standard data list suitable for the model (see function
 \link{blicc_dat})}
 
-\item{lFk}{A vector of double containing the lognormal mean Fk for each gear}
+\item{lFk}{A vector of double containing the lognormal mean Fk for each
+gear}
 
-\item{lFks}{A double containing the lognormal sd Fk for all gears}
+\item{lFks}{A double containing the same lognormal sigma \code{Fk} for all gears}
 
 \item{model_name}{A string for a replacement model name in the data
 object. Optional.}
@@ -21,10 +22,18 @@ object. Optional.}
 The data object \code{blicc_ld} with the prior for \code{Fk} changed.
 }
 \description{
-The Fk lognormal prior is updated with new mu and a single sigma parameter.
-If no value (\code{NA}) is provided for lFk, the defaults are assigned. These are
-the current natural mortality mu for fishing mortality mu and 2.0 for the
-sigma parameter.
+The \code{Fk} lognormal prior is updated with new mu for each gear and a single
+sigma parameter. If no value (\code{NA}) is provided for lFk, the defaults are
+assigned. These are the current natural mortality for fishing mortality mu
+and 2.0 for the sigma parameter. The sigma parameter should be kept
+reasonably large to allow the model to estimate this parameter. In general,
+the default values should be sufficient.
+}
+\details{
+For the multigear model, if a gear has negligible catches so the relative
+catch vector indicates zero catch for that gear, no fishing mortality is
+estimated for it, and the gear's \code{Fk} prior is skipped as it is fixed at
+zero.
 }
 \examples{
 new_ld <- blip_Fk(eg_ld, lFk=log(1.9), lFks=1.5)

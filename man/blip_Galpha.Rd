@@ -2,7 +2,7 @@
 % Please edit documentation in R/BLICC_blip.R
 \name{blip_Galpha}
 \alias{blip_Galpha}
-\title{Sets data object from \code{\link[=blicc_dat]{blicc_dat()}} to have a new Galpha prior}
+\title{Sets data object from \link{blicc_dat} to have a new Galpha prior}
 \usage{
 blip_Galpha(blicc_ld, lGalpha)
 }
@@ -17,8 +17,10 @@ prior log-normal.}
 The data object blicc_ld but with the prior for Galpha changed.
 }
 \description{
-The Galpha prior is updated with new values.
-CV: could be 5\% (log(1/0.05^2)) to 30\% (log(1/0.3^2)).
-A 30\% CV makes length very uninformative on age however.
-Default CV=10\%
+The \code{Galpha} prior is updated with new values. CV: could be 5\%
+(\code{log(1/0.05^2)}) to 30\% (\code{log(1/0.3^2)}) recommended. A 30\% CV makes length very
+uninformative on age however.
+}
+\details{
+Default in \link{blicc_dat} is CV=10\%: \code{lGa1pha = c(log(1 / 0.1 ^ 2), 0.25)}.
 }

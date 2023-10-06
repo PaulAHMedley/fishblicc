@@ -7,7 +7,7 @@
 posterior_predict(blicc_rp, gear = NULL, draws = 0)
 }
 \arguments{
-\item{blicc_rp}{List of fishblicc result tables from \code{\link[=blicc_ref_pts]{blicc_ref_pts()}}}
+\item{blicc_rp}{List of fishblicc result tables from \link{blicc_ref_pts}}
 
 \item{gear}{Identifies the single gear (selectivity) providing predictions}
 

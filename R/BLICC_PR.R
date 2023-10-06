@@ -6,16 +6,17 @@
 
 #' Calculate the SPR for the fishing mortalities and selectivities
 #'
-#' The function calculates the spawning potential ratio (SPR) based on
-#' the provided parameter set. The SPR is calculated as a ratio between the
-#' spawning biomass per recruit for a particular fishing mortality divided
-#' by the spawning biomass per recruit with no fishing.
+#' The function calculates the spawning potential ratio (SPR) based on the
+#' provided parameter set. The SPR is calculated as a ratio between the spawning
+#' biomass per recruit for a particular fishing mortality divided by the
+#' spawning biomass per recruit with no fishing.
 #'
 #' @inheritParams blicc_get_expected
-#' @param Gbeta The Gamma distribution parameter for the growth model (Galpha/Linf)
+#' @param Gbeta The Gamma distribution parameter for the growth model
+#'   (`Galpha/Linf`)
 #' @return The spawning potential ratio
 #' @noRd
-#'
+#' 
 Calc_SPR <-
   function(Galpha,
            Gbeta,
@@ -41,11 +42,11 @@ Calc_SPR <-
 #' However, note that fishing mortality estimate may not be finite, dependent on
 #' the selectivity.
 #'
-#' @details `vdir` should be the same length as gear. It is a weight variable used to
-#' select gears based on values greater than zero. For weights gretare than
-#' zero, it implies proportional adjustment to F for each gear relative to the
-#' largest change (1). This is a simple linear change for estimating reference
-#' points. More complex scenarios will need full simulation.
+#' @details `vdir` should be the same length as gear. It is a weight variable
+#'   used to select gears based on values greater than zero. For weights greater
+#'   than zero, it implies proportional adjustment to F for each gear relative
+#'   to the largest change (1). This is a simple linear change for estimating
+#'   reference points. More complex scenarios will need full simulation.
 #'
 #' @inheritParams blicc_get_expected
 #' @param  tarSPR target SPR reference point: usually 0.2, 0.3 or 0.4
@@ -55,7 +56,7 @@ Calc_SPR <-
 #' @return Spawning potential ratio per-recruit fishing mortalities consistent
 #'   with parameters and reference point
 #' @noRd
-#'
+#' 
 FSPR_solve <-
   function(Linf,
            Galpha,
@@ -103,19 +104,20 @@ FSPR_solve <-
 #' achieve any particular reference point if the fishing mortality is too low.
 #' In these cases, `NA` is returned.
 #'
-#' @details `vdir` should be the same length as gear. It is a dummy
-#' variable used to select gears based on values greater than zero. Unlike for
-#' the fishing mortality, `vdir` is used to select gears where `vdir` > 0. The
-#' value of vdir does not matter. This allows for selectivity mixtures where
-#' changes to selectivity are complex and therefore would need proper simulation
-#' rather than simple linear adjustment available from this implementation.
+#' @details `vdir` should be the same length as gear. It is a dummy variable
+#'   used to select gears based on values greater than zero. Unlike for the
+#'   fishing mortality, `vdir` is used to select gears where `vdir` > 0. The
+#'   value of vdir does not matter. This allows for selectivity mixtures where
+#'   changes to selectivity are complex and therefore would need proper
+#'   simulation rather than simple linear adjustment available from this
+#'   implementation.
 #'
 #' @inheritParams FSPR_solve
 #' @return The selectivity parameter vector with modes (full selectivity)
-#'   adjusted to achieve the target SPR. NA indicates this target cannot be
+#'   adjusted to achieve the target SPR. `NA` indicates this target cannot be
 #'   achieved.
 #' @noRd
-#'
+#' 
 SSPR_solve <-
   function(Linf,
            Galpha,
@@ -233,12 +235,12 @@ F01_solve <-
 
 #' Solve for a selectivity mode which produces maximum yield
 #'
-#' The function finds the selectivity mode (Smx) that maximises the yield per
+#' The function finds the selectivity mode (`Smx`) that maximises the yield per
 #' recruit (YPR), keeping all other parameters at their current value.
 #'
 #' Calculates yield per recruit.
 #' This should generally work because there must be a maximum yield between
-#' the extreme lengths (0 and Linf).
+#' the extreme lengths (`0` and `Linf`).
 #'
 #' @inheritParams FSPR_solve
 #' @return maximum yield point for the selectivity mode
@@ -281,7 +283,7 @@ SMY_solve <-
 #'
 #' @inheritParams FSPR_solve
 #' @param Gbeta  Rate parameter for the Gamma distribution growth variability
-#'   (=Galpha/Linf)
+#'   (`=Galpha/Linf`)
 #' @param RSel   List of selectivities
 #' @return yield-per-recruit
 #' @noRd

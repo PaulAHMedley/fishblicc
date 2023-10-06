@@ -2,23 +2,22 @@
 % Please edit documentation in R/BLICC_blip.R
 \name{blip_Mk}
 \alias{blip_Mk}
-\title{Sets data object from \code{\link[=blicc_dat]{blicc_dat()}} to have a new Mk prior}
+\title{Sets data object from \link{blicc_dat} to have a new \code{Mk} prior}
 \usage{
 blip_Mk(
   blicc_ld,
-  lMk = as.numeric(c(NA, NA)),
-  ref_length = NA,
-  model_name = NA
+  lMk = c(NA_real_, NA_real_),
+  ref_length = NULL,
+  model_name = NULL
 )
 }
 \arguments{
 \item{blicc_ld}{A standard data list suitable for the model (see function
 \link{blicc_dat})}
 
-\item{lMk}{The (log) mean and sigma for the lognormal natural mortality prior}
+\item{lMk}{The mu and sigma for the lognormal natural mortality prior}
 
-\item{ref_length}{The reference length for the inverse length function if it
-is used. (default is NA i.e. constant natural mortality)}
+\item{ref_length}{Reference length in the length-inverse mortality is applied}
 
 \item{model_name}{A string for a replacement model name in the data
 object. Optional.}
@@ -28,13 +27,22 @@ The data object blicc_ld but with the prior and function for Mk
 changed.
 }
 \description{
-Checks the new values are valid, then provide the mean and sd for
-the log-normal prior to be used. Also, if the ref_length parameter
-is defined, apply the inverse length function for natural mortality.
-These are replaced in the data object, which is then returned.
-Note that the Mk must be provided as the log value.
+Checks the new values are valid, then provide the mean and sd for the
+log-normal prior to be used. Also, if the ref_length parameter is defined,
+apply the inverse length function for natural mortality. These are replaced
+in the data object, which is then returned. Note that the Mk must be provided
+as the log value. The default in \link{blicc_dat} depends on the length at 50\%
+maturity, but should be close to: \code{lMk = c(log(1.5), 0.1)} . Values are only
+changed if the supplied value is not \code{NA}.
+}
+\details{
+The \code{ref_length} parameter, if used, indicates the length where the given
+natural mortality applies. Therefore, the natural mortality within each
+length bin will be calculated as \code{Mk*ref_length/L} where \code{L} is the mid-point
+for the bin. Natural mortality will be constant within each bin. If
+\code{ref_length} is not given, a constant natural mortality is assumed.
 }
 \examples{
-new_ld <- blip_Mk(eg_ld, lMk=c(log(1.9), 0.2), ref_length=25)
+new_ld <- blip_Mk(eg_ld, lMk=c(log(1.9), NA), ref_length=25)
 
 }

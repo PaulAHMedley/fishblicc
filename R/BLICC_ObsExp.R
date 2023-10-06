@@ -1,9 +1,7 @@
-# ><> <>< ><> <>< ><> <>< ><> <>< ><> <>< ><> <>< ><> <><
-# OBSERVED-EXPECTED FUNCTIONS
-# ><> <>< ><> <>< ><> <>< ><> <>< ><> <>< ><> <>< ><> <><
+# BLICC Observed-Expected Functions -------------------------------------------
 
-
-# Expected Values ---------------------------------------------------------
+# ><> <>< ><> <>< ><> <>< ><> <>< ><> <>< ><> <>< ><> <><
+# ><> <>< ><> <>< ><> <>< ><> <>< ><> <>< ><> <>< ><> <><
 
 
 #' Generate posterior draws and standard reference points
@@ -18,7 +16,7 @@
 #' draws. Some reference points may not exist (indicated by `NA`).
 #'
 #' @details Reference points are found where possible for the parameter draw
-#'   from the MCMC. The reference points are found along line representing the
+#'   from the MCMC. The reference points are found along a line representing the
 #'   relative impact across gears. The default is to apply the same adjustments
 #'   proportionately to every gear that has a fishing mortality, but alternative
 #'   scenarios can be defined. For example, for two gears the default is
@@ -26,18 +24,22 @@
 #'   adjusted, then the direction would be `vdir=c(1, 0)`. It is possible to
 #'   provide a vector such as `vdir=c(1, 0.5)` to represent only a 50% reduction
 #'   in the second gear compared to the first, for example. This will only be
-#'   applied to the fishing mortality. The selectivty changes will continue to
-#'   use a the vector as a dummy variable, so for selectivity `vdir = c(1.0,
-#'   0.5)` is equivalent to `vdir = c(1, 1)`. It is likely that proper
-#'   simulation projections would be required for more these more complex cases
-#'   where gears are not be simply excluded from management action.
+#'   applied to the fishing mortality. The selectivity changes will continue to
+#'   use the vector as a dummy variable, so for selectivity:
+#'
+#'   `vdir = c(1.0, 0.5)` is equivalent to `vdir = c(1, 1)`.
+#'
+#'   It is likely that proper simulation projections would be required for more
+#'   complex cases where gears are not being simply excluded from management
+#'   action. Unless there is a specific need, the best option is to leave it as
+#'   the default `NULL` so the reference points are indicative and consistent.
 #'
 #'   Where reference points do not exist an `NA` is returned. It is quite
 #'   possible reference points do not exist in many cases due to the effects of
 #'   selectivity. Strictly speaking, reference points may not exist within
 #'   specific constraints on F and selectivity. Within more general bounds on F
 #'   and selectivity, all reference "points" exist as lines or points. In these
-#'   functions, reference points in relation to a control (Fk or Sm) are
+#'   functions, reference points in relation to a control (`Fk` or `Sm`) are
 #'   calculated based on the other being fixed at the current estimated value.
 #'   To see how the fishery might respond when they are adjusted together, the
 #'   yield or SPR surface must be plotted.
@@ -45,18 +47,18 @@
 #' @export
 #' @inheritParams blicc_mpd
 #' @inheritParams blicc_dat
-#' @param slimf An object from the [blicc_fit()] or [blicc_mpd()] functions.
+#' @param slimf An object from the [blicc_fit] or [blicc_mpd] functions.
 #' @param vdir  A search direction vector with maximum value 1 and minimum 0
-#'   applied to changes across gears.
-#' @return A list of posterior draws or mpd point estimates of important
-#'   parameters and per-recruit reference points, the search direction vector
-#'   and the blicc_ld data object used.
+#'   applied to changes across gears. Optional.
+#' @return A list of 1) the search direction vector 2) posterior draws or mpd
+#'   point estimates of important parameters and per-recruit reference points 3)
+#'   observed-expected length frequencies, 4) `blicc_ld` data object used.
 #' @examples
 #' \dontrun{
 #' res_rp <- blicc_ref_pts(eg_slim, eg_ld)
 #' summary(res_rp$rp_df)
 #' }
-#'
+#' 
 blicc_ref_pts <-
   function(slimf,
            blicc_ld,
@@ -234,9 +236,7 @@ blicc_ref_pts <-
         )
       )
 
-
     lx_df <- blicc_expect_len(rp_df, blicc_ld)
-
 
     return(list(
       vdir = vdir,
@@ -255,12 +255,12 @@ blicc_ref_pts <-
 #' drawn from an MCMC are used to calculate the expected values for selectivity,
 #' survival, relative population numbers, total mortality and expected length
 #' frequency for each length bin. The resulting table can be used in various
-#' functions to show results. Note that the resulting table of draws may be
+#' functions to show results. Note that the resulting data frame may be
 #' large depending on the number of draws.
 #'
 #' @inheritParams blicc_mpd
 #' @param rp_df   Posterior draws and reference points tibble from
-#'   [blicc_ref_pts()] function.
+#'   [blicc_ref_pts] function.
 #' @return A tibble containing fitted values with respect to length
 #' @noRd
 #'
@@ -288,8 +288,8 @@ blicc_expect_len <- function(rp_df, blicc_ld) {
 #' @details The model and provided parameter values are used to calculate the
 #'   expected values for selectivity, survival, relative population numbers,
 #'   total mortality and expected length frequency for each length bin. Input
-#'   parameters are point estimates (reals). The standard data list provides the
-#'   model dimensions and is produced by the function [blicc_dat()].
+#'   parameters are point estimates. A standard data list provides the
+#'   model dimensions as produced by the function [blicc_dat].
 #'
 #' @export
 #' @inheritParams blicc_mpd
@@ -335,8 +335,8 @@ blicc_get_expected <-
 #'
 #' For a set of parameter values, returns the expected catch in each length bin
 #' for each gear based on the BLICC model. This is the same as the
-#' [blicc_get_expected()] function, but only returns the expected length
-#' frequency. Used for predictive posterior some plots.
+#' [blicc_get_expected] function, but only returns the expected length
+#' frequency. Used for predictive posterior in some plots.
 #'
 #' @inheritParams blicc_get_expected
 #' @param gear_i A integer vector of gears to obtain the expected catch for
@@ -371,7 +371,7 @@ blicc_get_efq <-
 #' and bayesplot packages for evaluation.
 #'
 #' @export
-#' @param blicc_rp List of fishblicc result tables from [blicc_ref_pts()]
+#' @param blicc_rp List of fishblicc result tables from [blicc_ref_pts]
 #' @param gear Identifies the single gear (selectivity) providing predictions
 #' @param draws  The number of random draws up to the number of draws from the
 #'   MCMC (the default).

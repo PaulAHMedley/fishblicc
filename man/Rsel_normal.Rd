@@ -17,7 +17,7 @@ Rsel_normal(Sp, LMP)
 }\if{html}{\out{</div>}}
 }
 \description{
-A normal takes one slope (1/sigma^2) parameter for the both sides of the mode
+A normal takes one slope (1/sigma^2) parameter for both sides of the location
 parameter (mu). The resulting selectivity varies from 0 to 1.0, with 1.0
 being the mode. It is calculated for each position defined in the length
 vector.

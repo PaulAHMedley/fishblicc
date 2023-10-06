@@ -7,36 +7,41 @@
 \format{
 A list of 26 data vectors used in the BLICC model:
 \describe{
-\item{mname}{Model and/or fit and/or species name}
-\item{NG}{Number of gear (selectivity) models}
+\item{model_name}{Model and/or fit and/or species name}
+\item{NG}{Number of gears}
+\item{NS}{Number of selectivity functions}
 \item{NF}{Number of fishing mortality estimates}
 \item{NB}{Number of bins in the length frequency}
-\item{gname}{Fishing gear (selectivity model) names}
+\item{NP}{Number of selectivity function parameters}
+\item{NM}{Number of mixture selectvity models}
+\item{gname}{Fishing gear names}
 \item{LLB}{Vector of length bin lower boundaries}
 \item{LMP}{Length bin mid-points, used for selectivity and plotting}
-\item{fq}{List of length frequency vectors one for each gear}
-\item{Catch}{Vector of proportional catch by gear of length NF}
+\item{fq}{List of length frequency vectors, one for each gear}
+\item{prop_catch}{Vector of proportional catch by gear of length NF}
 \item{Fkg}{Integer vector of index for gears link to fishing mortality}
-\item{fSel}{Index of selectivity model to use for each gear}
-\item{NP}{Number of selectivity parameters}
-\item{Pmx}{Maximum number of selectivity parameters for a single model}
-\item{spar}{Integer matrix of index linking gear models to selectivity parameters}
+\item{fSel}{Index of selectivity function to use for each selectvity model}
+\item{GSbase}{Index of based selectivity model for each gear}
+\item{GSmix1}{Index of start and end mixtures in GSmix2: 0 implies no mixture}
+\item{GSmix2}{Index of all selectivity mixture models referenced by gear in GSmix1}
+\item{poLinfm}{Linf: Mean prior normal parameter}
+\item{poLinfs}{Linf: sd prior normal parameter}
+\item{polGam}{Galpha: Mean prior normal log parameter}
+\item{polGas}{Galpha: sd prior normal log parameter}
 \item{a}{Length-weight parameter in a L^b. Optional}
 \item{b}{Length-weight parameter in a L^b.}
 \item{L50}{Logistic parameter for 50\% maturity}
 \item{Ls}{Logistic steepness parameter for the maturity ogive}
 \item{wt_L}{Vector of average weight in each length bin}
 \item{ma_L}{Vector of mature biomass in each length bin}
-\item{poLinfm}{Linf: Mean prior normal parameter}
-\item{poLinfs}{Linf: sd prior normal parameter}
-\item{polGam}{Galpha: Mean prior normal log parameter}
-\item{polGas}{Galpha: sd prior normal log parameter}
 \item{polMkm}{Mk: Mean prior normal log parameter}
 \item{polMks}{Mk: sd prior normal log parameter}
 \item{polFkm}{Fk: Mean prior normal log parameter}
 \item{polFks}{Fk: sd prior normal log parameter}
-\item{polSm}{Sm: Mean priors normal log selectivity parameter}
-\item{polSs}{Sm: sd priors normal log selectivity parameter}
+\item{sp_i}{Integer index of the parameter start in polSm for each selectivity function}
+\item{sp_e}{Integer index of the parameter end in polSm for each selectivity function}
+\item{polSm}{Sm: Mean priors normal log selectivity parameter including mixture weights at the end}
+\item{polSs}{Sm: sd priors normal log selectivity parameter including mixture weights at the end}
 \item{polNB_phim}{NB_phi: Mean prior log normal parameter}
 \item{polNB_phis}{NB_phi: sd prior log normal parameter}
 \item{polCs}{Catch: sd prior log normal parameter on relative catch}
@@ -53,16 +58,17 @@ eg_ld
 }
 \description{
 A data list created using simulated length frequency data from the
-function \code{blicc_dat()}:
+function \link{blicc_dat}:
 }
 \details{
-eg_ld <- blicc_dat(
+eg_ld <- blicc_dat(model_name = "Simulated Test Data",
 LLB = 10:35,
 fq=c(0,1,2,5,26,70,72,66,36,34,25,24,20,
 10,12,5,3,5,6,4,2,0,2,0,1,0),
-sel_fun = "dsnormal",
+sel_fun = "logistic",
 gear_names="Trawl",
 Linf=c(32, 3),
+Mk=1.5,
 a=1.0e-4, b=2.95, L50=21)
 }
 \keyword{datasets}

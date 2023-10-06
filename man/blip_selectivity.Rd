@@ -30,9 +30,9 @@ function is centred on the frequency data and provides a robust estimate of
 reasonable priors. Alternatively, setting parameters manually can be done
 using the \link{blip_set_sel} function.
 
-If a selectivity is made up of a mixture of functions, hyper-parameters are
-not estimated and \link{blip_set_sel} must be used to set the hyperparameters
-manually. This is necessary because the user must propose the hypothesis for
-the mixtures and it is too easy for the selectivity model to be overfitted
-otherwise.
+If a selectivity is made up of a mixture of functions, prior parameters are
+not estimated and \link{blip_set_sel} must be used to set the parameters manually.
+This is necessary because the user must propose the hypothesis for the
+mixtures. It cannot be determined from the data what hypothesis you
+might have in mind.
 }

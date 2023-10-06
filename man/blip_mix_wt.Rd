@@ -10,7 +10,7 @@ blip_mix_wt(blicc_ld, gear, mix_wt = NULL)
 \item{blicc_ld}{A standard data list suitable for the model (see function
 \link{blicc_dat})}
 
-\item{gear}{Single integer or exact name indexing a gear}
+\item{gear}{Single integer or exact name indexing one gear}
 
 \item{mix_wt}{Vector of prior mixture weights are required for each
 selectivity function after the first (which has a default weight of 1.0).
@@ -21,10 +21,10 @@ least squares.}
 The data object \code{blicc_ld} but with the new selectivity priors set
 }
 \description{
-A single gear's mixture weights can be set or estimated if not provided. The
-weights are given as positive values greater than zero. All weights are
-relative to some base function which is set at 1.0, with other functions
-having weights 0-1.
+A single gear's prior mixture weights can be set or estimated if not
+provided. The weights are given as positive values greater than zero. All
+weights are relative to some base function which is set at 1.0, with other
+functions having weights 0-1.
 }
 \details{
 If \code{mix_wt} is not provided it is estimated using a simple weighted least

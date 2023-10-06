@@ -30,7 +30,7 @@ object, which is then returned.
 }
 \details{
 Particular selectivity functions can be changed using the \code{sel_indx} parameter,
-which indexes which functions will be changed. In this case, only those
+which indexes the relevant functions. In this case, only those
 functions will need to have the prior parameters updated.
 }
 \examples{

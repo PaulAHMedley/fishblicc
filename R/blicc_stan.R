@@ -6,36 +6,35 @@
 #' Finds Bayesian length interval catch curve maximum posterior density point
 #'
 #' The maximum posterior density point is found using on the likelihood for the
-#' length frequency data and the priors.  The model assumes constant
-#' recruitment, double-sided normal selectivity, a single natural mortality
-#' parameter, and Gamma-distributed von Bertalanffy growth to define expected
-#' numbers of fish in pre-defined length bins. The model also assumes a negative
-#' binomial likelihood function to fit to a single length frequency sample.
-#' Selectivity, mortality, asymptotic mean length and scale parameters are
-#' fitted to generate the spawning potential ratio as a measure of the stock
-#' status.
+#' length frequency data and the priors. The model assumes constant recruitment,
+#' double-sided normal selectivity, a single natural mortality parameter, and
+#' Gamma-distributed von Bertalanffy growth to define expected numbers of fish
+#' in pre-defined length bins. The model also assumes a negative binomial
+#' likelihood function to fit to a single length frequency sample. Selectivity,
+#' mortality, asymptotic mean length and scale parameters are fitted to generate
+#' the spawning potential ratio as a measure of the stock status.
 #'
 #' It is recommended to test the model and data object using this procedure
 #' before investing in the MCMC fit using [blicc_fit].
 #'
 #' @details Unlike [blicc_fit], the model finds a single maximum posterior point
-#' estimate. This is much faster than the MCMC, but does not provide full
-#' information on uncertainty. The model estimates mortality and survival
-#' through sequential length intervals. This is then used to derive abundance
-#' and catch in numbers within each length bin. The mortality is required to
-#' remain constant within each bin, but otherwise can vary arbitrarily. However,
-#' in this implementation mortality is constrained by a parametric model with
-#' constant natural mortality by length and a double-sided normal selectivity
-#' function for fishing mortality. See [blicc_dat] and [blicc_fit] documentation
-#' for a description of the model and data requirements.
+#'   estimate. This is much faster than the MCMC, but does not provide full
+#'   information on uncertainty. The model estimates mortality and survival
+#'   through sequential length intervals. This is then used to derive abundance
+#'   and catch in numbers within each length bin. The mortality is required to
+#'   remain constant within each bin, but otherwise can vary arbitrarily.
+#'   However, in this implementation mortality is constrained by a parametric
+#'   model with constant natural mortality by length and a double-sided normal
+#'   selectivity function for fishing mortality. See [blicc_dat] and [blicc_fit]
+#'   documentation for a description of the model and data requirements.
 #'
-#' The standard errors are estimated from 1000 random draws from a multivariate
-#' normal with mean at the MPD mode and covariance estimated from the inverted
-#' Hessian matrix. This is an approximation and SE estimates may differ from the
-#' full MCMC sampling.
+#'   The standard errors in this model are estimated from 1000 random draws from
+#'   a multivariate normal with mean at the MPD mode and covariance estimated
+#'   from the inverted Hessian matrix. This is an approximation and SE estimates
+#'   may differ from the full MCMC sampling.
 #'
-#' In addtion to the parameters, the fit reports the spawning potential ratio
-#' (SPR) and the log probability at the mode (`lp__`).
+#'   In addition to the parameters, the fit reports the spawning potential ratio
+#'   (SPR) and the log probability at the mode (`lp__`).
 #'
 #' @export
 #' @param  blicc_ld    A standard data list suitable for the model (see function
@@ -43,7 +42,7 @@
 #' @return A tibble of parameter estimates (mpd) with standard errors.
 #' @examples
 #' mpd_fit <- blicc_mpd(eg_ld)
-#'
+#' 
 blicc_mpd <- function(blicc_ld) {
   # Find the posterior mode
   fit <-
@@ -98,31 +97,34 @@ blicc_mpd <- function(blicc_ld) {
 #' Fit a Bayesian length interval catch curve to a length frequency data sample
 #'
 #' The model is fitted to length frequency data using a Markov chain Monte Carlo
-#' (MCMC) simulation. The model assumes constant recruitment, double-sided
-#' normal selectivity, a single natural mortality parameter, and
+#' (MCMC) simulation. The model assumes constant recruitment, a fixed
+#' selectivity sub-model, a single natural mortality parameter, and
 #' Gamma-distributed von Bertalanffy growth to define expected numbers of fish
-#' in pre-defined length bins. The model also assumes a negative binomial
-#' likelihood function to fit to a single length frequency sample. Selectivity,
-#' mortality, asymptotic mean length and scale parameters are fitted to generate
-#' the spawning potential ratio as a measure of the stock status.
+#' in pre-defined length bins. The model can fit to multigear data with a length
+#' frequency sample from each gear. The model also assumes a negative binomial
+#' likelihood function. Selectivity, mortality, asymptotic mean length and scale
+#' parameters are fitted to generate the spawning potential ratio as a measure
+#' of the stock status.
 #'
 #' @details The fitted model estimates mortality and survival through sequential
 #'   length intervals. This is then used to derive abundance and catch in
 #'   numbers within each length bin. The mortality is required to remain
 #'   constant within each bin, but otherwise can vary arbitrarily. However, in
-#'   this implementation mortality is constrained by a parametric model with
-#'   constant natural mortality by length and a double-sided normal selectivity
-#'   function for fishing mortality.
+#'   this implementation mortality is constrained by parametric models of
+#'   selectivity based on the logistic or normal functions with constant natural
+#'   mortality by length.
 #'
-#'   The model fits 4 parameters plus 3 or more parameters for each selectivity
+#'   The model fits 4 parameters plus 2-3 parameters for each selectivity
 #'   function being fitted. In general, there is insufficient support from a
 #'   single length frequency samples to estimate all these with any precision,
 #'   and therefore informative priors are used where necessary. The default
 #'   values for priors can follow recommendations based on meta-analyses or
 #'   life-history invariant (see [blicc_dat]). However the user is still
-#'   required to provide a prior on the mean maximum length (Linf) in each case.
+#'   required to provide a prior on the mean maximum length (Linf) in each case
+#'   and this parameter is usually an important pre-requisite for this type of
+#'   analysis.
 #'
-#'   It is recommended to fit a model using the [blicc_mpd()] function before
+#'   It is recommended to fit a model using the [blicc_mpd] function before
 #'   attempting the MCMC fit. This should show up any problems with the model or
 #'   data object.
 #'
@@ -144,18 +146,22 @@ blicc_mpd <- function(blicc_ld) {
 #'   2000). Other problems may require consultation with the `rstan::sampling()`
 #'   documentation. The most likely significant problem would be "divergent"
 #'   draws which are clearly identified in the stanfit object and in summary
-#'   diagnostics. These invalidate the MCMC because they cannot be guaranteed as
-#'   representative of the underlying posterior. This problem might be best
-#'   addressed in the first instance by increasing the adapt_delta parameter
-#'   above the default 0.8.
+#'   diagnostics. Significant numbers of these invalidate the MCMC because they
+#'   cannot be guaranteed as representative of the underlying posterior.
+#'   Divergences are an indication of poor model fit, and it is possible it
+#'   indicates this model is not appropriate for the data. The model already
+#'   implements non-centred parameterization. Otherwise, it is worth checking
+#'   the priors are aligned with the data ([plot_prior]) and then looking for
+#'   improvements by adjusting the selectivity model. This problem might also be
+#'   addressed by increasing the adapt_delta parameter above the default 0.8,
+#'   but this action should probably be a last resort. The parameter
+#'   "control=list(adapt_delta=0.9)" can be added to the parameter list on
+#'   calling the function.
 #'
-#'   By default, the start point for the MCMC is maximum posterior density (mpd)
-#'   estimate. These or other estimates can supplied using the `init_fit`
+#'   By default, the start point for the MCMC is the maximum posterior density
+#'   (mpd) estimate. These or other estimates can supplied using the `init_fit`
 #'   parameter. Start points far from the mpd point may take significantly
 #'   longer to converge.
-#'
-#'   For example, the parameter "control=list(adapt_delta=0.9)" can be added to
-#'   the parameter list on calling the function.
 #'
 #' @export
 #' @inheritParams blicc_mpd
@@ -169,7 +175,7 @@ blicc_mpd <- function(blicc_ld) {
 #' @return An object of class stanfit returned by `rstan::sampling()`
 #' @examples
 #' stf <- blicc_fit(eg_ld, ntarget=100, nwarmup=200, nchain=1) #Quick test
-#'
+#' 
 blicc_fit <- function(blicc_ld,
                       ntarget = 2000,
                       nwarmup = 1000,
@@ -234,33 +240,58 @@ blicc_fit <- function(blicc_ld,
 
 #' Generates a data list and initial parameter values for the BLICC model
 #'
-#' Vectors for the lower bound for each length bin and the number of fish in
-#' each length bin and combined with prior parameters into a data list as
-#' expected by the BLICC model.
+#' The function requires vectors for the lower bound for each length bin, a list
+#' of the number of fish in each length bin and prior parameters. This
+#' information is compiled into a data list which can be passed onto the BLICC
+#' model. The minimum requirement is the length bins and frequency data, the
+#' asymptotic mean length (`Linf`) and the set of one or more selectivity
+#' functions that will be used in the model. If there is more than one gear, you
+#' also have to provide the relative catches in numbers of fish taken by each
+#' gear. All other parameters are optional, although it is strongly recommended
+#' to use estimates of these parameters wherever they are available.
 #'
-#' @details This is a convenience function. The fitting and other functions
-#'   accept a linked list of values providing necessary information for the
-#'   BLICC model, including the length bin boundaries and length frequencies.
-#'   Some basic error checking is carried out and error message is given if the
-#'   inputs are incorrect.
+#' @details The fitting and other functions accept a linked list of values
+#'   providing necessary information for the BLICC model, including the length
+#'   bin boundaries and length frequencies. Some basic error checking is carried
+#'   out and an error message is given if the inputs are incorrect.
 #'
 #'   The data list produced as output contains data and parameters suitable for
-#'   the model fit and producing output. These values can be changed in the
-#'   list, but must have the same format. The majority of information is the
-#'   length bin, frequency data and prior parameters (normal for Linf and
-#'   log-normal for all other parameters). However, the list also contains NK,
-#'   the number of knots (nodes) used in the quadrature integration. The default
-#'   is 110, which is safe but extends running times. Lower values risk
-#'   inaccurate integration but result in faster fitting.
+#'   the BLICC model fit ([blicc_fit]; [blicc_mpd]) and other producing output
+#'   (e.g. [plot_prior]). The majority of information is the length bin,
+#'   frequency data and prior parameters (normal for `Linf` and log-normal for
+#'   all other parameters). A warning is issued for any critical default prior
+#'   parameters that are applied. No warning is issued for default prior
+#'   parameters (such as Fk, selectivity parameters and negative binomial
+#'   `NBphi`) that should not be very influential to the fit. Prior parameters
+#'   can be subsequently changed using the various `blip_` functions:
+#'   [blip_Linf], [blip_Galpha], [blip_Mk], [blip_Fk], [blip_LH_param] and
+#'   [blip_NBphi].
+#'
+#'   The list also contains NK, the number of knots (nodes) used in the
+#'   quadrature integration. The default is 110, which is safe but extends
+#'   running times. Lower values risk inaccurate integration but result in
+#'   faster fitting.
 #'
 #'   The length frequencies should include zeros for bins which contained no
-#'   fish. The length frequency should be bounded by a single zero bin as the
-#'   first and last bin in the frequency.
+#'   fish. It is recommended that the length frequency should be bounded by a
+#'   single zero bin as the first and last bin in the frequency.
+#'
+#'   The relative catches in numbers of fish are required if there is more than
+#'   one gear. Where catches are negligible (e.g. a scientific survey), these
+#'   can be set to zero so the fishing mortality is set to zero for this gear.
 #'
 #'   To allow maximum flexibility, prior hyper-parameters for the selectivity
 #'   functions (as log-values for means in the log-normal distribution) are
 #'   defined in a single vector. These are linked to each function using an
-#'   integer matrix with a row for each selectivity function (gear)
+#'   integer matrix with a row for each selectivity function (gear). This
+#'   internal structure is a little complicated but allows mixtures. If you have
+#'   one selectivity function for each gear (the default), the data
+#'   automatically sets up the correct links. If you are using mixtures, you
+#'   need to set up the selectivity functions first and link them to each gear
+#'   either using this function `blicc_dat` or using [blicc_selfun] and
+#'   [blicc_gear_sel] separately. For mixtures, you will need to manually set
+#'   the priors for each mixture function using [blip_set_sel] and
+#'   [blip_mix_wt].
 #'
 #' @export
 #' @param model_name A name for the model (species or fishery). Optional.
@@ -276,37 +307,40 @@ blicc_fit <- function(blicc_ld,
 #'   must be the same as fq if `gear_sel` is not provided. Required.
 #' @param gear_sel A list of integer vectors indexing which `sel_fun` are used
 #'   for which gear. It can include multiple selectivity functions for each
-#'   gear.  Optional.
+#'   gear.  If not provided, it is assumed each selectivity function is linked
+#'   to each gear in order. Optional.
 #' @param Catch A vector of relative catches, one for each gear. Required if the
 #'   number of gears is more than one.
 #' @param gear_names A vector of names for the gears for reference. Optional.
-#' @param Mk   Natural mortality divided by the growth rate K (usually around
+#' @param Mk  Natural mortality divided by the growth rate K (usually around
 #'   1.5). Optional.
 #' @param ref_length  The reference length for the inverse length function if it
 #'   is used. (default is NA i.e. constant natural mortality)
 #' @param wt_L  Weight (biomass) for each length bin. Optional.
 #' @param ma_L  Mature biomass for each length bin. Optional.
 #' @param a  The length-weight parameter: a*L^b. Not used in model fitting, but
-#'   for plots etc. Optional.
-#' @param b  The length-weight exponent (a*L^b, usually close to 3.0) Optional.
+#'   used to calculate `wt_L` if that is not provided. for plots etc. Optional.
+#' @param b  The length-weight exponent (a*L^b, usually close to 3.0). Not used
+#'   in model fitting, but used to calculate `wt_L` if that is not provided.
+#'   Optional.
 #' @param L50 The length at 50% maturity, often referred to as "first" maturity,
-#'   and primarily applies to females. Must be less than Linf, usually around
+#'   and primarily applies to females. Must be less than `Linf`, usually around
 #'   0.66 Linf, which is assumed if it is not provided. Optional.
 #' @param L95  The length at 95% maturity. Must be greater than L50 and less
 #'   than Linf. A small increment is added to L50 if it is not provided.
 #'   Optional.
-#' @param NK   Number of nodes for the Gauss Laguerre quadrature rule. 110 is a
+#' @param NK  Number of nodes for the Gauss Laguerre quadrature rule. 110 is a
 #'   safe value, but extends the run time of all calculations.  If not provided
 #'   it is estimated. Optional.
-#' @return     A list structured in a manner suitable for use in the Stan model
-#'   `BLICC.stan`.
+#' @return  A list structured in a manner suitable for use in the Stan model
+#'   [blicc_mpd] and [blicc_fit].
 #' @examples
 #' ld <- blicc_dat(LLB = 25:35,
 #'                 fq = list(c(0,1,2,26,72,66,36,24,12,4,0)),
 #'                 Linf = c(35, 2),
 #'                 sel_fun = 4,
 #'                 gear_names = "Gill net")
-#'
+#' 
 blicc_dat <-
   function(model_name = "fishblicc data model",
            LLB,
@@ -406,7 +440,7 @@ blicc_dat <-
       Fkg = as.array(Fgear),
       
       fSel = integer(0),
-      GSbase = integer(Ngear),
+      GSbase = as.array(integer(Ngear)),
       GSmix1 = integer(Ngear*2),
       GSmix2 = integer(0)
     )
@@ -504,7 +538,7 @@ blicc_dat <-
 #' object, which is then returned.
 #'
 #' Particular selectivity functions can be changed using the `sel_indx` parameter,
-#' which indexes which functions will be changed. In this case, only those
+#' which indexes the relevant functions. In this case, only those
 #' functions will need to have the prior parameters updated.
 #'
 #' @export
@@ -577,10 +611,10 @@ blicc_selfun <-
       }
     }
     # Replace function list
-    blicc_ld$fSel <- nfSel
+    blicc_ld$fSel <- as.array(nfSel)
     blicc_ld$NS <- NS
-    blicc_ld$sp_i <- spari    #start
-    blicc_ld$sp_e <- spare    #end
+    blicc_ld$sp_i <- as.array(spari)    #start
+    blicc_ld$sp_e <- as.array(spare)    #end
     blicc_ld$NP <- NP
     blicc_ld$polSm <- c(nSm, mixwt)
     blicc_ld$polSs <- c(nSs, mixwts)
@@ -604,11 +638,9 @@ blicc_selfun <-
 #' @export
 #' @inheritParams blicc_dat
 #' @inheritParams blicc_mpd
-#' @param gear      The names or integer vector of the gears being linked to the
+#' @param gear  The names or integer vector of the gears being linked to the
 #'   selectivity functions
 #' @return The data object blicc_ld with the new selectivity-gear links.
-#' @examples
-#' new_ld <- blicc_selfun(eg_ld, gear_sel="logistic", model_name = "Logistic Selectivity")
 #'
 blicc_gear_sel <-
   function(blicc_ld,
@@ -627,7 +659,7 @@ blicc_gear_sel <-
 
       # 1 selectivity function for each gear
       if (! is.null(gear)) warning("gear parameter is ignored. \n")
-      blicc_ld$GSbase <- 1L:blicc_ld$NS
+      blicc_ld$GSbase <- as.array(1L:blicc_ld$NS)
       gsmix1 <- integer(2L*blicc_ld$NG)
       gsmix2 <- integer(0)
     } else {

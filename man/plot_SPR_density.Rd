@@ -2,7 +2,8 @@
 % Please edit documentation in R/BLICC_Plots.R
 \name{plot_SPR_density}
 \alias{plot_SPR_density}
-\title{Plot the estimated spawning potential ratio probability density, if available.}
+\title{Plot the estimated spawning potential ratio probability density, if
+available.}
 \usage{
 plot_SPR_density(blicc_rp)
 }
@@ -15,7 +16,8 @@ function.}
 ggplot geom object for plotting
 }
 \description{
-This plot requires the MCMC to have been run.
+The SPR estimate is converted to a probability density plot with 20\% and 40\%
+reference point. This plot requires the MCMC to have been run.
 }
 \examples{
 plot_SPR_density(eg_rp)

@@ -1,4 +1,8 @@
-# fishblicc Table Functions ------------------------------------------------
+# BLICC Table Functions -----------------------------------------------------
+
+# ><> <>< ><> <>< ><> <>< ><> <>< ><> <>< ><> <>< ><> <><
+# ><> <>< ><> <>< ><> <>< ><> <>< ><> <>< ><> <>< ><> <><
+
 
 
 #' Returns a tibble containing a summary of the fishblicc priors being applied
@@ -72,16 +76,17 @@ blicc_priors <- function(blicc_ld) {
 #' Returns a tibble containing a summary of the results from a fishblicc fit
 #'
 #' This function provides a summary of results from the fitted model in a form
-#' suitable for displaying in a table, for example. Note that other packages,
-#' such as rstan, bayesplot and posterior can extract information from the
-#' stanfit object and the [blicc_ref_pts] draws object in more detailed form.
+#' suitable for displaying in a table. Note that other packages, such as rstan,
+#' bayesplot and posterior can extract information from the stanfit object and
+#' the [blicc_ref_pts] `rp_df` draws object in more detailed form.
 #'
 #' @export
-#' @param blicc_res Results from [blicc_fit] (stanfit object), [blicc_mpd] or [blicc_ref_pts]
+#' @param blicc_res Results from [blicc_fit] (stanfit object), [blicc_mpd] or
+#'   [blicc_ref_pts]
 #' @return A tibble summarising results of the model fit object.
 #' @examples
 #' blicc_results(eg_rp)
-#'
+#' 
 blicc_results <- function(blicc_res) {
   Fk=Linf=Parameter=Rhat=Sm=Value=lp__=median=mpd=n_eff=par=sd=se=slim=NULL
 

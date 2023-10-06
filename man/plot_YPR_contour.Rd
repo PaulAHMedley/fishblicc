@@ -11,7 +11,7 @@ plot_YPR_contour(blicc_rp, gear = NULL)
 direction, the data object and expected lengths from \link{blicc_ref_pts}
 function.}
 
-\item{gear}{Specifies the gear to plot as an integer index or full name}
+\item{gear}{Specifies the gear(s) to plot as an integer index or full name}
 }
 \value{
 ggplot geom object for plotting

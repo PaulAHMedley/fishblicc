@@ -2,8 +2,8 @@
 % Please edit documentation in R/BLICC_Model.R
 \name{Rpop_F}
 \alias{Rpop_F}
-\title{Calculate the population size and fishing mortality applied within length
-bins}
+\title{Calculate the population size and fishing mortality applied within the length
+bins for the BLICC model}
 \usage{
 Rpop_F(Galpha, Gbeta, Mk, Fk, FSel, blicc_ld)
 }
@@ -29,7 +29,7 @@ A list of the population size in each length bin and a list of
 fishing mortalities at length for each gear.
 }
 \description{
-The model integrates over growth rate variability and sums mortality
+The model integrates over the growth rate variability and sums mortality
 piece-wise over intervening length intervals to derive the relative
 population number in each length bin taking into account variation in growth
 and varying mortality-at-length. This is analogous to an age based catch

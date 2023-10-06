@@ -18,7 +18,7 @@ side 1/sigma^2) for the normal selectivity function.}
 }
 \description{
 A single-sided normal takes one slope (1/sigma^2) parameter for the left side
-of the mode parameter (mu). For the right side the slope is assumed to be
+of the location parameter (mu). For the right side the slope is assumed to be
 zero. The resulting selectivity varies from 0 to 1.0, with 1.0 being the
 asymptote. It is calculated for each position defined in the length vector.
 }

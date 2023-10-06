@@ -2,7 +2,7 @@
 % Please edit documentation in R/BLICC_blip.R
 \name{blip_Linf}
 \alias{blip_Linf}
-\title{Sets data object from \code{\link[=blicc_dat]{blicc_dat()}} to have a new \code{Linf} prior}
+\title{Sets data object from \link{blicc_dat} to have a new \code{Linf} prior}
 \usage{
 blip_Linf(blicc_ld, Linf, model_name = NA)
 }
@@ -10,8 +10,8 @@ blip_Linf(blicc_ld, Linf, model_name = NA)
 \item{blicc_ld}{A standard data list suitable for the model (see function
 \link{blicc_dat})}
 
-\item{Linf}{A numeric vector of double containing the mean and
-sd for the prior normal.}
+\item{Linf}{A numeric vector of double containing the mu and
+sigma for the prior normal.}
 
 \item{model_name}{A string for a replacement model name in the data
 object. Optional.}
@@ -20,7 +20,7 @@ object. Optional.}
 The data object blicc_ld but with the prior for \code{Linf} changed.
 }
 \description{
-Checks the new \code{Linf} is a vector of 2 values, the new mean and sd for
+Checks the new \code{Linf} is a vector of 2 values, the new mu and sigma for
 the normal prior to be used. These are replaced in the data object,
 which is then returned.
 }

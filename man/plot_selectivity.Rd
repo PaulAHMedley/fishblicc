@@ -2,8 +2,7 @@
 % Please edit documentation in R/BLICC_Plots.R
 \name{plot_selectivity}
 \alias{plot_selectivity}
-\title{Plot selectivity and 80\% credible interval, if available, by
-length.}
+\title{Plot selectivity and 80\% credible interval, if available, by length.}
 \usage{
 plot_selectivity(blicc_rp, gear = NULL)
 }
@@ -12,14 +11,14 @@ plot_selectivity(blicc_rp, gear = NULL)
 direction, the data object and expected lengths from \link{blicc_ref_pts}
 function.}
 
-\item{gear}{Specifies the gear to plot as an integer index or full name}
+\item{gear}{Specifies the gear(s) to plot as an integer index or full name}
 }
 \value{
 ggplot geom object for plotting
 }
 \description{
-Plot selectivity and 80\% credible interval, if available, by
-length.
+The 80\%CI is only available for the MCMC fit. All gears specified are plotted
+on a single graph.
 }
 \examples{
 plot_selectivity(eg_rp)

@@ -11,7 +11,7 @@ plot_residuals(blicc_rp, gear = "All")
 direction, the data object and expected lengths from \link{blicc_ref_pts}
 function.}
 
-\item{gear}{Specifies the gear to plot as an integer index or full name}
+\item{gear}{Specifies the gear(s) to plot as an integer index or full name}
 }
 \value{
 ggplot geom object plotting standardised residuals
@@ -22,6 +22,10 @@ gears combined, separated by colour. Due to the variance weighting, outliers
 can most be expected at the tails of the frequency. For the MCMC output, the
 residuals are plotted as 99\% quartiles using error bars, together with the
 outliers as points outside this range.
+}
+\details{
+If you want to alter the graph, the group names are \code{Sgroup} for the
+selectivities and \code{Lgroup} for the lengths.
 }
 \examples{
 plot_residuals(eg_rp)

@@ -15,10 +15,10 @@ Data are simulated.
 eg_slim
 }
 \description{
-A stanfit object from fitting the BLICC model using \code{BLICC_fit} to the "eg_ld"
+A stanfit object from fitting the BLICC model using \link{blicc_fit} to the "eg_ld"
 data set. The draws can be extracted and reference points
-calculated using function \code{blicc_ref_pts}. The MCMC simulations are also
+calculated using function \link{blicc_ref_pts}. The MCMC simulations are also
 accessible through a variety of \code{rstan} and \code{posterior} functions.
-eg_slim <- blicc_fit(eg_ld, thin=2)
+eg_slim <- blicc_fit(eg_ld, nwarmup=500, thin=2)
 }
 \keyword{datasets}

@@ -35,8 +35,8 @@ survival, and catch in each length bin based on the BLICC model as a tibble.
 The model and provided parameter values are used to calculate the
 expected values for selectivity, survival, relative population numbers,
 total mortality and expected length frequency for each length bin. Input
-parameters are point estimates (reals). The standard data list provides the
-model dimensions and is produced by the function \code{\link[=blicc_dat]{blicc_dat()}}.
+parameters are point estimates. A standard data list provides the
+model dimensions as produced by the function \link{blicc_dat}.
 }
 \examples{
 blicc_get_expected(Linf = 32, Galpha = 100, Mk = 1.5, Fk = 1.5,

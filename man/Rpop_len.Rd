@@ -33,7 +33,8 @@ population number in each length bin taking into account variation in growth
 and varying mortality-at-length. This is analogous to an age based catch
 curve model, but for length. The model uses the Gauss-Laguerre quadrature
 rule for integration, so nodes and weights for this must be provided. This
-function is the same as \link{Rpop_F}, but does not return fishing mortality.
+function is the same as \link{Rpop_F}, but does not return fishing mortality and
+is written in R.
 }
 \examples{
 glq <- statmod::gauss.quad(90, kind = "laguerre", alpha = 0.0)

@@ -11,14 +11,14 @@ plot_SPR_contour(blicc_rp, gear = NULL)
 direction, the data object and expected lengths from \link{blicc_ref_pts}
 function.}
 
-\item{gear}{Specifies the gear to plot as an integer index or full name}
+\item{gear}{Specifies the gear(s) to plot as an integer index or full name}
 }
 \value{
 ggplot geom object for plotting
 }
 \description{
-The plot shows the SPR surface plotted against the fishing mortality (Fk) and
-the 50\% or maximum selectivity, dependent on the selectivity function of the
+The plot shows the SPR surface plotted against the fishing mortality (\code{Fk}) and
+the 50\% or maximum (location) selectivity, dependent on the selectivity functions of the
 reference gear. The current state of the stock is marked as a point and the
 SPR 40\% reference point is marked as a line. All values are calculated as
 means and uncertainty is not represented to maintain simplicity. The

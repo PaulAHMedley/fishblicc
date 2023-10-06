@@ -43,7 +43,8 @@ must be the same as fq if \code{gear_sel} is not provided. Required.}
 
 \item{gear_sel}{A list of integer vectors indexing which \code{sel_fun} are used
 for which gear. It can include multiple selectivity functions for each
-gear.  Optional.}
+gear.  If not provided, it is assumed each selectivity function is linked
+to each gear in order. Optional.}
 
 \item{Catch}{A vector of relative catches, one for each gear. Required if the
 number of gears is more than one.}
@@ -61,12 +62,14 @@ is used. (default is NA i.e. constant natural mortality)}
 \item{ma_L}{Mature biomass for each length bin. Optional.}
 
 \item{a}{The length-weight parameter: a*L^b. Not used in model fitting, but
-for plots etc. Optional.}
+used to calculate \code{wt_L} if that is not provided. for plots etc. Optional.}
 
-\item{b}{The length-weight exponent (a*L^b, usually close to 3.0) Optional.}
+\item{b}{The length-weight exponent (a*L^b, usually close to 3.0). Not used
+in model fitting, but used to calculate \code{wt_L} if that is not provided.
+Optional.}
 
 \item{L50}{The length at 50\% maturity, often referred to as "first" maturity,
-and primarily applies to females. Must be less than Linf, usually around
+and primarily applies to females. Must be less than \code{Linf}, usually around
 0.66 Linf, which is assumed if it is not provided. Optional.}
 
 \item{L95}{The length at 95\% maturity. Must be greater than L50 and less
@@ -78,40 +81,63 @@ safe value, but extends the run time of all calculations.  If not provided
 it is estimated. Optional.}
 }
 \value{
-\if{html}{\out{<div class="sourceCode">}}\preformatted{A list structured in a manner suitable for use in the Stan model
-}\if{html}{\out{</div>}}
-
-\code{BLICC.stan}.
+A list structured in a manner suitable for use in the Stan model
+\link{blicc_mpd} and \link{blicc_fit}.
 }
 \description{
-Vectors for the lower bound for each length bin and the number of fish in
-each length bin and combined with prior parameters into a data list as
-expected by the BLICC model.
+The function requires vectors for the lower bound for each length bin, a list
+of the number of fish in each length bin and prior parameters. This
+information is compiled into a data list which can be passed onto the BLICC
+model. The minimum requirement is the length bins and frequency data, the
+asymptotic mean length (\code{Linf}) and the set of one or more selectivity
+functions that will be used in the model. If there is more than one gear, you
+also have to provide the relative catches in numbers of fish taken by each
+gear. All other parameters are optional, although it is strongly recommended
+to use estimates of these parameters wherever they are available.
 }
 \details{
-This is a convenience function. The fitting and other functions
-accept a linked list of values providing necessary information for the
-BLICC model, including the length bin boundaries and length frequencies.
-Some basic error checking is carried out and error message is given if the
-inputs are incorrect.
+The fitting and other functions accept a linked list of values
+providing necessary information for the BLICC model, including the length
+bin boundaries and length frequencies. Some basic error checking is carried
+out and an error message is given if the inputs are incorrect.
 
 The data list produced as output contains data and parameters suitable for
-the model fit and producing output. These values can be changed in the
-list, but must have the same format. The majority of information is the
-length bin, frequency data and prior parameters (normal for Linf and
-log-normal for all other parameters). However, the list also contains NK,
-the number of knots (nodes) used in the quadrature integration. The default
-is 110, which is safe but extends running times. Lower values risk
-inaccurate integration but result in faster fitting.
+the BLICC model fit (\link{blicc_fit}; \link{blicc_mpd}) and other producing output
+(e.g. \link{plot_prior}). The majority of information is the length bin,
+frequency data and prior parameters (normal for \code{Linf} and log-normal for
+all other parameters). A warning is issued for any critical default prior
+parameters that are applied. No warning is issued for default prior
+parameters (such as Fk, selectivity parameters and negative binomial
+\code{NBphi}) that should not be very influential to the fit. Prior parameters
+can be subsequently changed using the various \code{blip_} functions:
+\link{blip_Linf}, \link{blip_Galpha}, \link{blip_Mk}, \link{blip_Fk}, \link{blip_LH_param} and
+\link{blip_NBphi}.
+
+The list also contains NK, the number of knots (nodes) used in the
+quadrature integration. The default is 110, which is safe but extends
+running times. Lower values risk inaccurate integration but result in
+faster fitting.
 
 The length frequencies should include zeros for bins which contained no
-fish. The length frequency should be bounded by a single zero bin as the
-first and last bin in the frequency.
+fish. It is recommended that the length frequency should be bounded by a
+single zero bin as the first and last bin in the frequency.
+
+The relative catches in numbers of fish are required if there is more than
+one gear. Where catches are negligible (e.g. a scientific survey), these
+can be set to zero so the fishing mortality is set to zero for this gear.
 
 To allow maximum flexibility, prior hyper-parameters for the selectivity
 functions (as log-values for means in the log-normal distribution) are
 defined in a single vector. These are linked to each function using an
-integer matrix with a row for each selectivity function (gear)
+integer matrix with a row for each selectivity function (gear). This
+internal structure is a little complicated but allows mixtures. If you have
+one selectivity function for each gear (the default), the data
+automatically sets up the correct links. If you are using mixtures, you
+need to set up the selectivity functions first and link them to each gear
+either using this function \code{blicc_dat} or using \link{blicc_selfun} and
+\link{blicc_gear_sel} separately. For mixtures, you will need to manually set
+the priors for each mixture function using \link{blip_set_sel} and
+\link{blip_mix_wt}.
 }
 \examples{
 ld <- blicc_dat(LLB = 25:35,

@@ -34,32 +34,35 @@ An object of class stanfit returned by \code{rstan::sampling()}
 }
 \description{
 The model is fitted to length frequency data using a Markov chain Monte Carlo
-(MCMC) simulation. The model assumes constant recruitment, double-sided
-normal selectivity, a single natural mortality parameter, and
+(MCMC) simulation. The model assumes constant recruitment, a fixed
+selectivity sub-model, a single natural mortality parameter, and
 Gamma-distributed von Bertalanffy growth to define expected numbers of fish
-in pre-defined length bins. The model also assumes a negative binomial
-likelihood function to fit to a single length frequency sample. Selectivity,
-mortality, asymptotic mean length and scale parameters are fitted to generate
-the spawning potential ratio as a measure of the stock status.
+in pre-defined length bins. The model can fit to multigear data with a length
+frequency sample from each gear. The model also assumes a negative binomial
+likelihood function. Selectivity, mortality, asymptotic mean length and scale
+parameters are fitted to generate the spawning potential ratio as a measure
+of the stock status.
 }
 \details{
 The fitted model estimates mortality and survival through sequential
 length intervals. This is then used to derive abundance and catch in
 numbers within each length bin. The mortality is required to remain
 constant within each bin, but otherwise can vary arbitrarily. However, in
-this implementation mortality is constrained by a parametric model with
-constant natural mortality by length and a double-sided normal selectivity
-function for fishing mortality.
+this implementation mortality is constrained by parametric models of
+selectivity based on the logistic or normal functions with constant natural
+mortality by length.
 
-The model fits 4 parameters plus 3 or more parameters for each selectivity
+The model fits 4 parameters plus 2-3 parameters for each selectivity
 function being fitted. In general, there is insufficient support from a
 single length frequency samples to estimate all these with any precision,
 and therefore informative priors are used where necessary. The default
 values for priors can follow recommendations based on meta-analyses or
 life-history invariant (see \link{blicc_dat}). However the user is still
-required to provide a prior on the mean maximum length (Linf) in each case.
+required to provide a prior on the mean maximum length (Linf) in each case
+and this parameter is usually an important pre-requisite for this type of
+analysis.
 
-It is recommended to fit a model using the \code{\link[=blicc_mpd]{blicc_mpd()}} function before
+It is recommended to fit a model using the \link{blicc_mpd} function before
 attempting the MCMC fit. This should show up any problems with the model or
 data object.
 
@@ -81,18 +84,22 @@ increasing the number of iterations (in this case, raise ntarget above
 2000). Other problems may require consultation with the \code{rstan::sampling()}
 documentation. The most likely significant problem would be "divergent"
 draws which are clearly identified in the stanfit object and in summary
-diagnostics. These invalidate the MCMC because they cannot be guaranteed as
-representative of the underlying posterior. This problem might be best
-addressed in the first instance by increasing the adapt_delta parameter
-above the default 0.8.
+diagnostics. Significant numbers of these invalidate the MCMC because they
+cannot be guaranteed as representative of the underlying posterior.
+Divergences are an indication of poor model fit, and it is possible it
+indicates this model is not appropriate for the data. The model already
+implements non-centred parameterization. Otherwise, it is worth checking
+the priors are aligned with the data (\link{plot_prior}) and then looking for
+improvements by adjusting the selectivity model. This problem might also be
+addressed by increasing the adapt_delta parameter above the default 0.8,
+but this action should probably be a last resort. The parameter
+"control=list(adapt_delta=0.9)" can be added to the parameter list on
+calling the function.
 
-By default, the start point for the MCMC is maximum posterior density (mpd)
-estimate. These or other estimates can supplied using the \code{init_fit}
+By default, the start point for the MCMC is the maximum posterior density
+(mpd) estimate. These or other estimates can supplied using the \code{init_fit}
 parameter. Start points far from the mpd point may take significantly
 longer to converge.
-
-For example, the parameter "control=list(adapt_delta=0.9)" can be added to
-the parameter list on calling the function.
 }
 \examples{
 stf <- blicc_fit(eg_ld, ntarget=100, nwarmup=200, nchain=1) #Quick test

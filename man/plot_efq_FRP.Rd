@@ -12,7 +12,7 @@ plot_efq_FRP(blicc_rp, gear = NULL)
 direction, the data object and expected lengths from \link{blicc_ref_pts}
 function.}
 
-\item{gear}{Specifies the gear to plot as an integer index or full name}
+\item{gear}{Specifies the gear(s) to plot as an integer index or full name}
 }
 \value{
 ggplot geom object for plotting expected length frequencies by SPR
@@ -22,11 +22,15 @@ level
 The facet plot covers the current estimated fishing mortality, together with
 fishing mortalities required to obtain SPR 20\%, SPR 30\% and SPR 40\%. The
 graphs show the expected values and 80\% credible intervals compared to
-current observations, and can be used to assess whether length frequencies
+current observations. They can be used to assess whether length frequencies
 should be able to detect changes in fishing mortality to these different
 levels. Note that if reference points do not exist, they are not plotted, so
 some graphs may be blank except for the data. The graphs show the number of
 MCMC draws for which the reference points exist in each case.
+}
+\details{
+If the apparent changes in length frequencies between the plots is small,
+relying on length frequency data alone may not be advisable.
 }
 \examples{
 plot_efq_FRP(eg_rp)

@@ -12,7 +12,7 @@ blip_LH_param(
   L95 = NA,
   ma_L = NA,
   wt_L = NA,
-  model_name = NA,
+  model_name = NULL,
   set_defaults = FALSE
 )
 }
@@ -21,12 +21,14 @@ blip_LH_param(
 \link{blicc_dat})}
 
 \item{a}{The length-weight parameter: a*L^b. Not used in model fitting, but
-for plots etc. Optional.}
+used to calculate \code{wt_L} if that is not provided. for plots etc. Optional.}
 
-\item{b}{The length-weight exponent (a*L^b, usually close to 3.0) Optional.}
+\item{b}{The length-weight exponent (a*L^b, usually close to 3.0). Not used
+in model fitting, but used to calculate \code{wt_L} if that is not provided.
+Optional.}
 
 \item{L50}{The length at 50\% maturity, often referred to as "first" maturity,
-and primarily applies to females. Must be less than Linf, usually around
+and primarily applies to females. Must be less than \code{Linf}, usually around
 0.66 Linf, which is assumed if it is not provided. Optional.}
 
 \item{L95}{The length at 95\% maturity. Must be greater than L50 and less
@@ -41,7 +43,7 @@ Optional.}
 object. Optional.}
 
 \item{set_defaults}{Logical indicating whether to set defaults or not if
-parameters are NA. Leaves then alone if FALSE.}
+parameters are \code{NA}. Leaves them alone if \code{FALSE}.}
 }
 \value{
 The data object blicc_ld with the new life-history parameters
@@ -51,8 +53,8 @@ Sets the maturity at length and weight-at-length vectors in the data object
 (from \link{blicc_dat}) to have new values. The values are either provided as
 vectors or model parameters are provided to calculate the vectors.
 Calculations are done for the length bin mid-points. The models for the
-calculation are the standard length-weight (W=aL^b)  and logistic model for
-the maturity-at-length (Lm = 1/(1+exp(Ls*(L-L50)))).
+calculation are the standard length-weight (\code{W=aL^b})  and logistic model for
+the maturity-at-length (\code{Lm = 1/(1+exp(Ls*(L-L50)))}).
 }
 \examples{
 new_ld <- blip_LH_param(eg_ld, a=1.2e-5, b=2.95, model_name="Alternative LW")
