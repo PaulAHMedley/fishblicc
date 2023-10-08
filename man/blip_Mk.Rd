@@ -7,7 +7,7 @@
 blip_Mk(
   blicc_ld,
   lMk = c(NA_real_, NA_real_),
-  ref_length = NULL,
+  ref_length = -1,
   model_name = NULL
 )
 }
@@ -17,7 +17,8 @@ blip_Mk(
 
 \item{lMk}{The mu and sigma for the lognormal natural mortality prior}
 
-\item{ref_length}{Reference length in the length-inverse mortality is applied}
+\item{ref_length}{Reference length in the length-inverse mortality is
+applied. Set to -1 to turn off the length-inverse model.}
 
 \item{model_name}{A string for a replacement model name in the data
 object. Optional.}

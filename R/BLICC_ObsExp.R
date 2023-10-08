@@ -146,7 +146,7 @@ blicc_ref_pts <-
     # Update data object
     New_NK <- LG_Nodes(blicc_ld, rp_df)   # Recalculates the LG knots
     if (blicc_ld$NK != New_NK) {
-      glq <- statmod::gauss.quad(blicc_ld$NK,
+      glq <- statmod::gauss.quad(New_NK,
                                  kind = "laguerre", alpha = 0.0)
       blicc_ld$NK <- New_NK
       blicc_ld$gl_nodes <- glq$nodes

@@ -17,7 +17,7 @@
 #' @examples
 #' blicc_priors(eg_ld)
 #'
-blicc_priors <- function(blicc_ld) {
+blicc_prior <- function(blicc_ld) {
 
   sel_fun <- Rsel_functions()
 

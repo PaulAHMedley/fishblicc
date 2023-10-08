@@ -103,8 +103,8 @@ The model fits the following parameters:
   each fishing gear contributing to fishing mortality
 
 - Sm All selectivity function parameters in a single vector, including
-  length location parameters and slope parameters for each parametric
-  selectivity function.
+  length location parameters, slope parameters for each parametric
+  selectivity function and mixed function weights.
 
 - phi the over-dispersion parameter of the counts in the length bins for
   the negative binomial.
@@ -118,12 +118,11 @@ SPR:
 - $b$ parameter for the length weight relationship $W=aL^b$ .
 
 The length interval catch curve is used to estimate the spawning
-potential ratio. To do this, estimates of natural mortality,
-length-weight and maturity are required. These generally cannot all be
-estimated independently from length frequency data, so informative
-priors from other sources are required. Being data-limited, there are
-minimum information requirements where defaults can be used if
-information is not available.
+potential ratio (SPR). To do this, estimates of length-weight and
+maturity are required. These generally cannot be estimated from length
+frequency data, so fixed values from other sources are required. Being
+data-limited, there are minimum information requirements where defaults
+can be used if information is not available.
 
 ## Example
 
@@ -152,7 +151,7 @@ library("fishblicc")
 dl <- blicc_dat(
   model_name = "Base: Mk ~ Length-inverse",
   LLB = 3:45,                       # Lower boundaries of length bins
-  fq = list(`Estuarine Set bagnet`= c(2,19,19,25,95,106,105,220,246,268,266,185,274,
+  fq = list(`Estuarine set bagnet`= c(2,19,19,25,95,106,105,220,246,268,266,185,274,
                                       213,240,206,165,137,119,122,88,65,43,29,27,15,5,
                                       15,5,6,6,14,25,1,1,5,0,9,0,2,0,0,3),
             `Gill net` = c(0,0,0,0,0,0,1,14,11,42,38,49,125,133,160,222,226,341,195,
@@ -183,7 +182,7 @@ slim <- blicc_mpd(dl)
 ><> Chain 1:     1188      -534.636   3.04848e-06     0.0352337      0.2984           1     1295   
 ><> Chain 1: Optimization terminated normally: 
 ><> Chain 1:   Convergence detected: relative gradient magnitude is below tolerance
-## "slim <- blicc_fit(ld)" to run the full MCMC, but this takes a little time to run.
+## "slim <- blicc_fit(dl)" to run the full MCMC, but this takes a little time to run.
 ## Calculate reference points and expected values etc.
 rp_res <- blicc_ref_pts(slim, dl)
 ## If estimating by MCMC, the calculation also takes a little time, so it is often best to save the results
@@ -192,7 +191,7 @@ rp_res <- blicc_ref_pts(slim, dl)
 
 This produces the following objects:
 
-- “dl” is the data file containing the length frequency and information
+- “dl” is the data list containing the length frequency and information
   for priors used in the fit.
 
 - “slim” is a stanfit object and there are useful tools in the package
@@ -205,10 +204,11 @@ This produces the following objects:
   `vdir` giving the ‘direction’ of search for reference points only
   relevant if there is more than one gear (see documentation).
 
-The priors used by the model can be inspected and produced as a table.
+The priors used by the model can be inspected and produced as a table
+(or plotted using `plot_prior`).
 
 ``` r
-blicc_priors(dl) 
+blicc_prior(dl) 
 ><> # A tibble: 20 × 6
 ><>    Gear                 Parameter `Function Type`     Mean     Mu    SD
 ><>    <chr>                <chr>     <chr>              <dbl>  <dbl> <dbl>
@@ -241,24 +241,24 @@ blicc_results(slim)
 ><> # A tibble: 19 × 3
 ><>    Parameter `Max. Posterior`        SE
 ><>    <chr>                <dbl>     <dbl>
-><>  1 Linf              42.4      1.45    
-><>  2 Galpha            97.0     25.5     
-><>  3 Mk                 2.01     0.210   
-><>  4 Fk[1]              0.122    0.0235  
-><>  5 Fk[2]              0.403    0.0924  
-><>  6 Fk[3]              1.07     0.234   
-><>  7 Sm[1]             13.8      0.584   
-><>  8 Sm[2]              0.0518   0.00743 
-><>  9 Sm[3]              0.00299  0.000667
-><> 10 Sm[4]             25.3      0.774   
-><> 11 Sm[5]              0.0229   0.00242 
-><> 12 Sm[6]              0.0114   0.00173 
-><> 13 Sm[7]             24.2      0.675   
-><> 14 Sm[8]              0.0249   0.00228 
-><> 15 Sm[9]              0.0100   0.00133 
-><> 16 NB_phi            18.0      4.19    
-><> 17 Gbeta              2.29     0.573   
-><> 18 SPR                0.337    0.0766  
+><>  1 Linf              42.4      1.39    
+><>  2 Galpha            97.0     24.9     
+><>  3 Mk                 2.01     0.200   
+><>  4 Fk[1]              0.122    0.0225  
+><>  5 Fk[2]              0.403    0.0892  
+><>  6 Fk[3]              1.07     0.221   
+><>  7 Sm[1]             13.8      0.601   
+><>  8 Sm[2]              0.0518   0.00753 
+><>  9 Sm[3]              0.00299  0.000709
+><> 10 Sm[4]             25.3      0.783   
+><> 11 Sm[5]              0.0229   0.00246 
+><> 12 Sm[6]              0.0114   0.00176 
+><> 13 Sm[7]             24.2      0.649   
+><> 14 Sm[8]              0.0249   0.00221 
+><> 15 Sm[9]              0.0100   0.00130 
+><> 16 NB_phi            18.0      3.96    
+><> 17 Gbeta              2.29     0.561   
+><> 18 SPR                0.337    0.0767  
 ><> 19 lp__            -535.      NA
 ```
 
@@ -281,21 +281,26 @@ Figure: Expected frequency
 
 </div>
 
+The model’s standardised residuals between the observed and expected
+length frequency is most useful to identify influential outliers on the
+edge of the main selected range. Individual length measurements which
+may be unreliable can affect the fit significantly.
+
 ``` r
 plot_residuals(rp_res) 
 ```
 
 <div class="figure">
 
-<img src="man/figures/README-unnamed-chunk-6-1.png" alt="Figure: Residuals" width="100%" />
+<img src="man/figures/README-unnamed-chunk-6-1.png" alt="Figure: Standardised residuals" width="100%" />
 <p class="caption">
-Figure: Residuals
+Figure: Standardised residuals
 </p>
 
 </div>
 
-The set bagnets show clear dome-shape, whereas the gill net continues to
-catch some larger fish, so this pattern is less clear.
+Based on this assessment, the marine set bagnet and gill net have almost
+identical selectivities.
 
 ``` r
 plot_selectivity(rp_res)
@@ -309,3 +314,9 @@ Figure: Fitted selectivities
 </p>
 
 </div>
+
+Further steps would be to try alternative selectivity functions, such as
+the logistic, see whether gill net and the marine set bagnet could share
+the same selectivity function or propose a more complex function mixture
+function for the gillnet. The priority would be to see whether any of
+these changes make much difference to the SPR estimate.

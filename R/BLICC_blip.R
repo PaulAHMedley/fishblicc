@@ -93,7 +93,8 @@ blip_Galpha <- function(blicc_ld,
 #' @inheritParams blip_Linf
 #' @inheritParams blicc_dat
 #' @param lMk The mu and sigma for the lognormal natural mortality prior
-#' @param ref_length Reference length in the length-inverse mortality is applied
+#' @param ref_length Reference length in the length-inverse mortality is
+#'   applied. Set to -1 to turn off the length-inverse model.
 #' @return The data object blicc_ld but with the prior and function for Mk
 #'   changed.
 #' @examples
@@ -101,21 +102,19 @@ blip_Galpha <- function(blicc_ld,
 #' 
 blip_Mk <- function(blicc_ld,
                     lMk = c(NA_real_, NA_real_),
-                    ref_length = NULL,
+                    ref_length = -1,
                     model_name = NULL) {
   # Natural mortality
-  if (!is.na(ref_length)) {
-    if (ref_length>0){
-      if (ref_length < min(blicc_ld$LLB) | ref_length > max(blicc_ld$LLB))
-        stop("Error: The reference length for the natural mortality must be within the length frequencies.")
-      M_L <- ref_length/blicc_ld$LMP
-    } else {
-      M_L <- rep(1, blicc_ld$NB)  # Fixed natural mortality
-      ref_length <- -1
-    }
-    blicc_ld$M_L <- M_L
-    blicc_ld$ref_length <- ref_length
+  if (ref_length > 0){
+    if (ref_length < min(blicc_ld$LLB) | ref_length > max(blicc_ld$LLB))
+      stop("Error: The reference length for the natural mortality must be within the length frequencies.")
+    M_L <- ref_length/blicc_ld$LMP
+  } else {
+    M_L <- rep(1, blicc_ld$NB)  # Fixed natural mortality
+    ref_length <- -1
   }
+  blicc_ld$M_L <- M_L
+  blicc_ld$ref_length <- ref_length
 
   if (! (is.vector(lMk, mode = "numeric") & length(lMk)==2))
     stop("Error: natural mortality must be provided as vector of mean and sigma for the lognormal.")
@@ -236,14 +235,17 @@ blip_LH_param <-
       }
       if (is.na(b) & set_defaults)
         b <- 3.0
-      else if (b <= 2 | b > 4) {
-        stop("Error: Length-weight exponent (b) must be greater than 2 and less than 4.")
+      else if (! is.na(b)) {
+        if (b <= 2 | b > 4) 
+          stop("Error: Length-weight exponent (b) must be greater than 2 and less than 4.")
       }
       if (!(is.na(a) | is.na(b)))
         wt_L <-
           with(blicc_ld, a * exp(b * log(LMP)))    # Estimated biomass per recruit
-      else
-        warning("a or b not specified: weight-at-length not changed.")
+      else {
+        if (set_defaults)
+          warning("a or b not specified: weight-at-length not changed.")
+      }
     } else {
       if (length(wt_L) != blicc_ld$NB) {
         stop("Error: Length of the weight-at-length vector must equal the number of length bins.")
