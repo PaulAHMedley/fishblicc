@@ -5,35 +5,38 @@
 
 
 
-#' Sets data object from [blicc_dat] to have a new `Linf` prior
+#' Set `Linf` prior parameters in the data object
 #'
-#' Checks the new `Linf` is a vector of 2 values, the new mu and sigma for
-#' the normal prior to be used. These are replaced in the data object,
-#' which is then returned.
+#' New `Linf` prior hyper-parameters are set in the [blicc_dat] data object as a
+#' vector of the mean (mu) and standard deviation (sigma) for the normal prior
+#' to be used. The `Linf` will need to be a vector of 2 values.
+#'
+#' The `Linf` defines the gamma growth probability density function mean, so it
+#' is the mean asymptotic length of the population.
 #'
 #' @export
 #' @inheritParams blicc_mpd
-#' @param Linf  A numeric vector of double containing the mu and
-#' sigma for the prior normal.
-#' @param model_name A string for a replacement model name in the data
-#' object. Optional.
+#' @param Linf  A numeric vector of double containing the mu and sigma for the
+#'   prior normal.
+#' @param model_name A string for a replacement model name in the data object.
+#'   Optional.
 #' @return The data object blicc_ld but with the prior for `Linf` changed.
 #' @examples
 #' new_ld <- blip_Linf(eg_ld, c(30,2), model_name="Sensitivity")
-#'
+#' 
 blip_Linf <- function(blicc_ld,
                       Linf,
                       model_name=NA) {
   if (! is.vector(Linf, mode="double") | length(Linf) != 2)
-    stop("Error: Linf must be a vector of 2 (mu, sigma) for the prior.")
+    stop("Error: Linf must be a vector of 2 (mu, sigma) for the prior. \n")
   if (Linf[1] <= min(blicc_ld$LLB)) {
     stop(paste(
       "Error: Linf must be greater than the lowest bin value:",
-      as.character(min(blicc_ld$LLB))
+      as.character(min(blicc_ld$LLB)), " \n"
     ))
   }
   if (Linf[2] <= 0) {
-    stop("Error: Linf prior sd must be greater than zero.")
+    stop("Error: Linf prior sd must be greater than zero. \n")
   }
 
   if (!is.na(model_name))
@@ -46,26 +49,31 @@ blip_Linf <- function(blicc_ld,
 }
 
 
-#' Sets data object from [blicc_dat] to have a new Galpha prior
+#' Set `Galpha` log-normal prior hyper-parameters in the data object
 #'
-#' The `Galpha` prior is updated with new values. CV: could be 5%
-#' (`log(1/0.05^2)`) to 30% (`log(1/0.3^2)`) recommended. A 30% CV makes length very
-#' uninformative on age however. 
-#' 
-#' Default in [blicc_dat] is CV=10%: `lGa1pha = c(log(1 / 0.1 ^ 2), 0.25)`.
+#' The `Galpha` lognormal prior is updated with new values for the mean (mu) and
+#' standard deviation (sigma). The CV is likely to be between 5% (`Galpha` mu =
+#' `log(1/0.05^2)`) and 30% (`Galpha` mu = `log(1/0.3^2)`) Values outside this
+#' range are not recommended. A 30% CV makes length very uninformative on age.
+#'
+#' `Galpha` is the alpha parameter in the gamma distribution for the Linf
+#' probability density. The default in [blicc_dat] is CV=10%: `lGa1pha = c(log(1
+#' / 0.1 ^ 2), 0.25)`. 
 #'
 #' @export
 #' @inheritParams blip_Linf
 #' @param lGalpha  A numeric vector of double containing the mean and sd for the
 #'   prior log-normal.
 #' @return The data object blicc_ld but with the prior for Galpha changed.
+#' @examples
+#' new_ld <- blip_Galpha(eg_ld, lGalpha=c(log(1/0.05^2), 0.1))
 #' 
 blip_Galpha <- function(blicc_ld,
                         lGalpha) {
-  if (!(is.numeric(lGalpha) & length(lGalpha)==2))
-    stop("Error: LGalpha must be numeric vector of the mu,sd for the Galpha lognormal prior.")
+  if (!(is.numeric(lGalpha) & length(lGalpha)==2 & lGalpha[2] > 0))
+    stop("Error: LGalpha must be numeric vector of the mu,sd for the Galpha lognormal prior. \n")
   if (lGalpha[1] > log(1/0.05^2) | lGalpha[1] < log(1/0.3^2))
-    warning("The Galpha prior lognormal mean is outside the expected 5-30% CV.")
+    warning("The Galpha prior lognormal mean is outside the expected 5-30% CV. \n")
   # Growth mean CV
   blicc_ld$polGam <- lGalpha[1]
   blicc_ld$polGas <- lGalpha[2]
@@ -73,30 +81,33 @@ blip_Galpha <- function(blicc_ld,
 }
 
 
-#' Sets data object from [blicc_dat] to have a new `Mk` prior
+#' Set `Mk` log-normal prior hyper-parameters in the data object
 #'
-#' Checks the new values are valid, then provide the mean and sd for the
-#' log-normal prior to be used. Also, if the ref_length parameter is defined,
-#' apply the inverse length function for natural mortality. These are replaced
-#' in the data object, which is then returned. Note that the Mk must be provided
-#' as the log value. The default in [blicc_dat] depends on the length at 50%
-#' maturity, but should be close to: `lMk = c(log(1.5), 0.1)` . Values are only
-#' changed if the supplied value is not `NA`.
+#' The `Mk` hyper-parameters are provided as a mean and sigma for the lognormal.
+#' The function checks the proposed values are valid. Also, if the ref_length
+#' parameter is defined, apply the inverse length function for natural
+#' mortality. These are replaced in the data object, which is then returned.
+#' Note that the Mk must be provided as the log value. The default in
+#' [blicc_dat] depends on the length at 50% maturity, but might be reasonably
+#' close to: `lMk = c(log(1.5), 0.1)`. Values are only changed if the supplied
+#' value is not `NA`.
 #'
-#' The `ref_length` parameter, if used, indicates the length where the given
-#' natural mortality applies. Therefore, the natural mortality within each
-#' length bin will be calculated as `Mk*ref_length/L` where `L` is the mid-point
-#' for the bin. Natural mortality will be constant within each bin. If
+#' The `ref_length` parameter, if used, indicates a length-inverse natural
+#' mortality model, where `ref_length` is the length where the given natural
+#' mortality applies. Therefore, the natural mortality within each length bin
+#' will be calculated as `Mki = Mk*ref_length/L` where `L` is the mid-point for
+#' the i^th^ bin. Natural mortality will be constant within each bin. If
 #' `ref_length` is not given, a constant natural mortality is assumed.
 #'
 #' @export
 #' @inheritParams blip_Linf
 #' @inheritParams blicc_dat
-#' @param lMk The mu and sigma for the lognormal natural mortality prior
+#' @param lMk A vector of the mu and sigma for the lognormal natural mortality
+#'   prior
 #' @param ref_length Reference length in the length-inverse mortality is
 #'   applied. Set to -1 to turn off the length-inverse model.
-#' @return The data object blicc_ld but with the prior and function for Mk
-#'   changed.
+#' @return The supplied data object blicc_ld but with the prior and function for
+#'   Mk changed.
 #' @examples
 #' new_ld <- blip_Mk(eg_ld, lMk=c(log(1.9), NA), ref_length=25)
 #' 
@@ -107,7 +118,7 @@ blip_Mk <- function(blicc_ld,
   # Natural mortality
   if (ref_length > 0){
     if (ref_length < min(blicc_ld$LLB) | ref_length > max(blicc_ld$LLB))
-      stop("Error: The reference length for the natural mortality must be within the length frequencies.")
+      stop("Error: The reference length for the natural mortality must be within the length frequencies. \n")
     M_L <- ref_length/blicc_ld$LMP
   } else {
     M_L <- rep(1, blicc_ld$NB)  # Fixed natural mortality
@@ -117,7 +128,7 @@ blip_Mk <- function(blicc_ld,
   blicc_ld$ref_length <- ref_length
 
   if (! (is.vector(lMk, mode = "numeric") & length(lMk)==2))
-    stop("Error: natural mortality must be provided as vector of mean and sigma for the lognormal.")
+    stop("Error: natural mortality must be provided as vector of mean and sigma for the lognormal. \n")
 
   if (!is.null(model_name))
     blicc_ld$model_name <- model_name
@@ -133,14 +144,15 @@ blip_Mk <- function(blicc_ld,
 }
 
 
-#' Sets data object from [blicc_dat] to have a new `Fk` prior
+#' Set `Fk` log-normal prior hyper-parameters in the data object
 #'
 #' The `Fk` lognormal prior is updated with new mu for each gear and a single
-#' sigma parameter. If no value (`NA`) is provided for lFk, the defaults are
+#' sigma parameter. If no value (`NA`) is provided for `lFk`, the defaults are
 #' assigned. These are the current natural mortality for fishing mortality mu
-#' and 2.0 for the sigma parameter. The sigma parameter should be kept
+#' and 2.0 for the sigma parameter. The sigma hyper-parameter should be kept
 #' reasonably large to allow the model to estimate this parameter. In general,
-#' the default values should be sufficient.
+#' the default values should be sufficient as the prior should be
+#' non-informative.
 #'
 #' For the multigear model, if a gear has negligible catches so the relative
 #' catch vector indicates zero catch for that gear, no fishing mortality is
@@ -149,8 +161,8 @@ blip_Mk <- function(blicc_ld,
 #'
 #' @export
 #' @inheritParams blip_Linf
-#' @param lFk   A vector of double containing the lognormal mean Fk for each
-#'   gear
+#' @param lFk   A vector containing the log-normal mean `Fk` for each gear
+#'   having a non-negligible catch
 #' @param lFks  A double containing the same lognormal sigma `Fk` for all gears
 #' @return The data object `blicc_ld` with the prior for `Fk` changed.
 #' @examples
@@ -177,25 +189,25 @@ blip_Fk <- function(blicc_ld,
 }
 
 
-#'Sets data object to have a new life-history vectors
+#' Set life-history parameters and vectors in the data object
 #'
-#'Sets the maturity at length and weight-at-length vectors in the data object
-#'(from [blicc_dat]) to have new values. The values are either provided as
-#'vectors or model parameters are provided to calculate the vectors.
-#'Calculations are done for the length bin mid-points. The models for the
-#'calculation are the standard length-weight (`W=aL^b`)  and logistic model for
-#'the maturity-at-length (`Lm = 1/(1+exp(Ls*(L-L50)))`).
+#' Sets the maturity-at-length and weight-at-length vectors in the data object
+#' (from [blicc_dat]) to new values. The values are either provided as vectors
+#' or model parameters to calculate the vectors. Calculations are done for the
+#' length bin mid-points. The models for the calculation are the standard
+#' length-weight (`W=aL^b`) and logistic model for the maturity-at-length: (`Lm
+#' = 1/(1+exp(Ls*(L-L50)))`).
 #'
-#'@export
-#'@inheritParams blip_Linf
-#'@inheritParams blicc_dat
-#'@param set_defaults Logical indicating whether to set defaults or not if
-#'  parameters are `NA`. Leaves them alone if `FALSE`.
-#'@return The data object blicc_ld with the new life-history parameters
-#'@examples
-#'new_ld <- blip_LH_param(eg_ld, a=1.2e-5, b=2.95, model_name="Alternative LW")
-#'
-blip_LH_param <-
+#' @export
+#' @inheritParams blip_Linf
+#' @inheritParams blicc_dat
+#' @param set_defaults Logical indicating whether to set defaults if parameters
+#'   are `NA`. Leaves them alone if `FALSE`.
+#' @return The data object blicc_ld with the new life-history parameters
+#' @examples
+#' new_ld <- blip_LH(eg_ld, a=1.2e-5, b=2.95, model_name="Alternative LW")
+#' 
+blip_LH <-
   function(blicc_ld,
            a = NA,
            b = NA,
@@ -212,7 +224,7 @@ blip_LH_param <-
         L50 <- 0.66 * Linf
     } else {
       if (L50 <= 0.2 * Linf | L50 >= Linf) {
-        stop("Error: Length at 50% maturity must be greater than 0.2*Linf and less than Linf.")
+        stop("Error: Length at 50% maturity must be greater than 0.2*Linf and less than Linf. \n")
       }
     }
     if (is.na(L95)) {
@@ -222,33 +234,36 @@ blip_LH_param <-
       else
         Ls <- NA
     } else {
-      if (L95 <= L50 | L95 >= Linf) {
-        stop("Error: Length at 95% maturity must be greater than L50 and less than Linf.")
+      if (L95 <= L50) {
+        stop("Error: Length at 95% maturity must be greater than L50. \n")
+      }
+      if (L95 > Linf) {
+        warning("Length at 95% maturity is greater than Linf. \n")
       }
       Ls <- -log(1 / 0.95 - 1) / (L95 - L50)
     }
     
     if (any(is.na(wt_L))) {
       if (is.na(a) & set_defaults) {
-        warning("No weight-at-length information provided - the weight units will be incorrect.")
+        warning("No weight-at-length information provided - the weight units will be incorrect. \n")
         a <- 1.0
       }
       if (is.na(b) & set_defaults)
         b <- 3.0
       else if (! is.na(b)) {
         if (b <= 2 | b > 4) 
-          stop("Error: Length-weight exponent (b) must be greater than 2 and less than 4.")
+          stop("Error: Length-weight exponent (b) must be greater than 2 and less than 4. \n")
       }
       if (!(is.na(a) | is.na(b)))
         wt_L <-
           with(blicc_ld, a * exp(b * log(LMP)))    # Estimated biomass per recruit
       else {
         if (set_defaults)
-          warning("a or b not specified: weight-at-length not changed.")
+          warning("a or b not specified: weight-at-length not changed. \n")
       }
     } else {
       if (length(wt_L) != blicc_ld$NB) {
-        stop("Error: Length of the weight-at-length vector must equal the number of length bins.")
+        stop("Error: Length of the weight-at-length vector must equal the number of length bins. \n")
       }
     }
     
@@ -257,11 +272,11 @@ blip_LH_param <-
         ma_L <-
           with(blicc_ld, wt_L / (1 + exp(-Ls * (LMP - L50))))    #Mature biomass
       else
-        warning("L50 or L95 not specified: mature biomass -at-length not changed.")
+        warning("L50 or L95 not specified: mature biomass -at-length not changed. \n")
     } else {
       if (length(ma_L) != blicc_ld$NB) {
         stop(
-          "Error: Length of the mature biomass -at-length vector must equal the number of length bins."
+          "Error: Length of the mature biomass -at-length vector must equal the number of length bins. \n"
         )
       }
     }
@@ -283,31 +298,34 @@ blip_LH_param <-
     return(blicc_ld)
   }
 
-#' Sets data object from [blicc_dat] to have a new selectivity priors
+#'Set automatic selectivity prior parameters in data object
 #'
-#' The priors for each function are defined loosely based on the available data
-#' ("empirical Bayes"). It is recommended that priors are weakly informative, so
-#' they are set primarily to aid fitting and discourage values outside a
-#' reasonable range.
+#'The priors for each function are defined loosely based on the available data
+#'("empirical Bayes"). It is recommended that priors are weakly informative, so
+#'they are set primarily to aid fitting and discourage values outside a
+#'reasonable range.
 #'
-#' The prior hyper-parameters are "estimated" if there is a single selectivity
-#' for a gear. The estimates are based on the 50% (median), 10% and 90%
-#' quartiles of the cumulative frequency. This ensures that the selectivity
-#' function is centred on the frequency data and provides a robust estimate of
-#' reasonable priors. Alternatively, setting parameters manually can be done
-#' using the [blip_set_sel] function.
+#'The prior hyper-parameters are "estimated" if there is a single selectivity
+#'for a gear. The estimates are based on the 50% (median), 10% and 90% quartiles
+#'of the cumulative frequency. This ensures that the selectivity function is
+#'centred on the frequency data and provides a robust estimate of reasonable
+#'priors. Alternatively, setting parameters manually can be done using the
+#'[blip_sel] function.
 #'
-#' If a selectivity is made up of a mixture of functions, prior parameters are
-#' not estimated and [blip_set_sel] must be used to set the parameters manually.
-#' This is necessary because the user must propose the hypothesis for the
-#' mixtures. It cannot be determined from the data what hypothesis you
-#' might have in mind.
+#'If a selectivity is made up of a mixture of functions, prior parameters are
+#'not estimated and [blip_sel] must be used to set the parameters manually. This
+#'is necessary because the user must propose the hypothesis for the mixtures and
+#'it cannot easily be determined from the data what a suitable hypothesis might
+#'be.
 #'
-#' @export
-#' @inheritParams blicc_selfun
-#' @return The data object blicc_ld but with the new selectivity priors
-blip_selectivity <- function(blicc_ld,
-                             sel_indx = NULL) {
+#'@export
+#'@inheritParams blicc_selfun
+#'@return The data object blicc_ld but with the new selectivity priors
+#' @examples
+#'new_ld <- blip_sel_auto(eg_ld)
+#'
+blip_sel_auto <- function(blicc_ld,
+                          sel_indx = NULL) {
   if (is.null(sel_indx))
     sel_indx = 1L:blicc_ld$NS
   else 
@@ -322,8 +340,9 @@ blip_selectivity <- function(blicc_ld,
   LMP <- blicc_ld$LMP
   Zk <- exp(blicc_ld$polMkm)*blicc_ld$M_L
   gl <- statmod::gauss.quad(110, "laguerre", alpha=0)
-  pop <- Rpop_len(gl$nodes, gl$weights, LLB, Zk, Galpha, Gbeta)
-
+  pop <- Rpop_len(gl$nodes, gl$weights, LLB, Zk, Galpha, Gbeta) 
+  mort_corr <- 1.0/(pop + (1.0/blicc_ld$NB)) # robust mortality correction
+  
   for (si in sel_indx) {
     par_range <- with(blicc_ld, sp_i[si]:sp_e[si])
     # find this selectivity function in a gear as a single function
@@ -344,9 +363,9 @@ blip_selectivity <- function(blicc_ld,
         )
       )
     else {
-      pfq <- blicc_ld$fq[[gi]] / pop  # adjust data for mortality
-      pfq <- pfq / sum(pfq)           # normalise
-      cfq <- cumsum(pfq)            # cumulative sum
+      pfq <- blicc_ld$fq[[gi]] * mort_corr  # adjust data for mortality
+      pfq <- pfq / sum(pfq)                 # normalise
+      cfq <- cumsum(pfq)                    # cumulative sum
       i10 <-
         max(1L, which(cfq < 0.1), na.rm = TRUE)    # 10% quartile index
       i25 <-
@@ -393,34 +412,35 @@ blip_selectivity <- function(blicc_ld,
 }
 
 
-#' Sets a selectivity function's prior hyper-parameters to particular given
-#' values
+#'Set a selectivity function's prior hyper-parameters to the given values
 #'
-#' Each parameter set is for a single selectivity function indexed by
-#' `sel_indx`. The location parameter (`loc`) is either the 50% selectivity for
-#' the logistic or the mode of the particular normal selectivity function, and
-#' is required. 
-#' 
-#' The `lslope` parameter is a single or double log value of the
-#' slope for the relevant function. This is either the log of the logistic slope
-#' parameter, or the log of the reciprocal of the variance for the normal
-#' functions. For the double-sided normal, two parameters must be provided and
-#' for all other functions only one parameter. If `lslope` is not provided, a
-#' default slope of -4.5 is applied if the slope parameters have not already
-#' set. If values are already present these are conserved.
+#'Each parameter set is for a single selectivity function indexed by `sel_indx`.
+#'The location parameter (`loc`) is either the 50% selectivity for the logistic
+#'or the mode of the particular normal selectivity function, and is required.
 #'
-#' @export
-#' @inheritParams blicc_mpd
-#' @param sel_indx Single integer indexing a selectivity function
-#' @param loc Single location parameter for the selectivity function
-#' @param lslope Vector of prior selectivity log slope parameters manually set
-#'   for the specified selectivity function. 
-#' @return The data object `blicc_ld` but with the new selectivity priors set
-#' 
-blip_set_sel <- function(blicc_ld,
-                         sel_indx,
-                         loc,
-                         lslope = NULL) {
+#'The `lslope` parameter is a single or double log value of the slope for the
+#'relevant function. This is either the log of the logistic slope parameter, or
+#'the log of the reciprocal of the variance for the normal functions. For the
+#'double-sided normal, two parameters must be provided and for all other
+#'functions only one parameter. If `lslope` is not provided, a default slope of
+#' -4.5 is applied if the slope parameters have not already been set. If values are
+#'already present these are conserved. Mixture weights, if they are used, can be
+#'set in [blip_mix].
+#'
+#'@export
+#'@inheritParams blicc_mpd
+#'@param sel_indx Single integer indexing a selectivity function
+#'@param loc Single location parameter for the selectivity function
+#'@param lslope Vector of prior selectivity log slope parameters manually set
+#'  for the specified selectivity function. Optional.
+#'@return The data object `blicc_ld` but with the new selectivity priors set
+#'@examples
+#'new_ld <- blip_sel(eg_ld, sel_indx = 1, loc = 10, lslope = -0.8)
+#'
+blip_sel <- function(blicc_ld,
+                     sel_indx,
+                     loc,
+                     lslope = NULL) {
   
   sel_indx <- parse_sel_indx(sel_indx, blicc_ld, TRUE)
 
@@ -450,7 +470,7 @@ blip_set_sel <- function(blicc_ld,
 
 
 
-#' Sets gear selectivity mixture weights
+#' Set gear selectivity mixture weights
 #'
 #' A single gear's prior mixture weights can be set or estimated if not
 #' provided. The weights are given as positive values greater than zero. All
@@ -458,8 +478,8 @@ blip_set_sel <- function(blicc_ld,
 #' functions having weights 0-1.
 #'
 #' If `mix_wt` is not provided it is estimated using a simple weighted least
-#' squares procedure. If this is used, the selectivity parameters need to have
-#' been previously set using [blip_set_sel].
+#' squares procedure. If this is used, the selectivity parameters for each
+#' function will need to have been previously set using [blip_sel].
 #'
 #' @export
 #' @inheritParams blicc_mpd
@@ -470,9 +490,9 @@ blip_set_sel <- function(blicc_ld,
 #'   least squares.
 #' @return The data object `blicc_ld` but with the new selectivity priors set
 #' 
-blip_mix_wt <- function(blicc_ld,
-                        gear,
-                        mix_wt = NULL) {
+blip_mix <- function(blicc_ld,
+                     gear,
+                     mix_wt = NULL) {
   nmix=pfq=gi=NULL
   
   gear <- parse_gear(gear, blicc_ld)
@@ -508,7 +528,7 @@ blip_mix_wt <- function(blicc_ld,
     for (i in 1:length(sel_indx)) {  # for each selectivity function in the mixture
       si <- sel_indx[i]
       switch(blicc_ld$fSel[si],
-             { #logistic- based very approx on integral of standard logistic F(x)=log(1+exp(x))
+             { 
                model_df[[i+1L]] <- with(blicc_ld, Rsel_logistic(Sm[sp_i[si]:sp_e[si]],  LMP))
              },
              { #normal
@@ -546,22 +566,27 @@ blip_mix_wt <- function(blicc_ld,
 }
 
 
-#' Sets data object from [blicc_dat] to have a new `NB_phi` prior
+#' Set the `NB_phi` prior hyper-parameters in the data object
 #'
-#' The `NB_phi` lognormal prior is updated with new values mu and sigma.
-#' NB_phi controls the negative binomial overdispersion compared to the
-#' Poisson distribution, where the variance is `mu + mu^2 / NB_phi`.
+#' The `NB_phi` log-normal prior is updated with a mean (mu) and standard
+#' deviation (sigma). NB_phi controls the negative binomial over-dispersion
+#' compared to the Poisson distribution.
+#'
+#' The variance is for the negative binomial is ` Var = mu + mu^2 / NB_phi`
+#' compared to `Var = mu` for the Poisson distribution.
 #'
 #' @export
 #' @inheritParams blip_Linf
 #' @param lNBphi  A numeric vector of double containing the mu and sigma for the
 #'   prior log-normal.
 #' @return The data object blicc_ld but with the prior for `NBphi` changed.
+#'@examples
+#'new_ld <- blip_NBphi(eg_ld, lNBphi = c(log(100), 0.05))
 #'
 blip_NBphi <- function(blicc_ld,
                        lNBphi) {
   if (!is.numeric(lNBphi) & length(lNBphi)==2)
-    stop("Error: lNBphi must be numeric vector of the mu,sd for the NB_phi lognormal prior.")
+    stop("Error: lNBphi must be numeric vector of the mu,sd for the NB_phi lognormal prior. \n")
   blicc_ld$polNB_phim <- lNBphi[1]
   blicc_ld$polNB_phis <- lNBphi[2]
   return(blicc_ld)
@@ -571,9 +596,9 @@ blip_NBphi <- function(blicc_ld,
 #' Estimate a minimum number of Gauss-Laguerre quadrature nodes for a defined
 #' tolerance
 #'
-#' The procedure compares population estimates at length to the safe number of
-#' nodes to identify the smallest number of nodes that produce estimates that
-#' are still within the specified tolerance.
+#' The procedure compares population estimates at length to estimates using a
+#' safe number of nodes to identify the smallest number of nodes that produce
+#' estimates that are still within the specified tolerance.
 #'
 #' @inheritParams blicc_mpd
 #' @param draws A dataframe of parameter draws to test
@@ -614,7 +639,7 @@ LG_Nodes <- function(blicc_ld, draws, toler=1.0e-06) {
       err <- max(abs(pop[[i]]-Cpop_len(glq$nodes, glq$weights, blicc_ld$LLB,
                                        Zki[[i]], draws$Galpha[i], draws$Gbeta[i])),
                  na.rm=T)
-      if (is.na(err)) stop("Error: Numerical error in LG integration: check the data.")
+      if (is.na(err)) stop("Error: Numerical error in LG integration: check the data. \n")
       else if (err > toler) break
     }
     if (err < toler | Opt_NK >= 110) break

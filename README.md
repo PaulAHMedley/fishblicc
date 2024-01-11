@@ -18,23 +18,14 @@ effective length sampling is in estimating quantities of interest.
 
 ## Installation
 
-You will also need to have Rtools installed so that the model can
-compile.
+You will need to have Rtools installed so that the model can compile.
 
 For Windows, Rtools can be downloaded from
 “<https://cran.r-project.org/bin/windows/Rtools/>”
 
-Note that for versions of R and RTools 4.2 and 4.3 you will need to
-manually install `rstan` as follows:
-
-``` r
-install.packages("StanHeaders", repos = c("https://mc-stan.org/r-packages/", getOption("repos")))
-install.packages("rstan", repos = c("https://mc-stan.org/r-packages/", getOption("repos")))
-```
-
-This is the preview of rstan 2.26 that will presumably eventually become
-available on CRAN so that this step will be obsolete (see
-<https://github.com/stan-dev/rstan/wiki/Configuring-C---Toolchain-for-Windows>).
+(also see
+<https://github.com/stan-dev/rstan/wiki/Configuring-C---Toolchain-for-Windows>
+for any issues with this).
 
 You can install the development version of fishblicc:
 
@@ -173,13 +164,19 @@ dl <- blicc_dat(
 
 ## Fit the model to these data 
 slim <- blicc_mpd(dl)
-><> Chain 1: Initial log joint probability = -15263.3
+><> Chain 1: Initial log joint probability = -16246.1
 ><> Chain 1:     Iter      log prob        ||dx||      ||grad||       alpha      alpha0  # evals  Notes 
-><> Chain 1:      499      -534.668   0.000647999        2.9011       0.739       0.739      546   
+><> Chain 1: Exception: neg_binomial_2_lpmf: Location parameter[1] is nan, but must be positive finite! (in 'string', line 263, column 6 to column 59)
+><> Exception: neg_binomial_2_lpmf: Location parameter[1] is nan, but must be positive finite! (in 'string', line 263, column 6 to column 59)
+><> Exception: neg_binomial_2_lpmf: Location parameter[1] is nan, but must be positive finite! (in 'string', line 263, column 6 to column 59)
+><> Exception: neg_binomial_2_lpmf: Location parameter[1] is nan, but must be positive finite! (in 'string', line 263, column 6 to column 59)
+><> Exception: neg_binomial_2_lpmf: Location parameter[1] is nan, but must be positive finite! (in 'string', line 263, column 6 to column 59)
+><> 
+><> Chain 1:      499      -535.698   0.000239045       4.26163           1           1      558   
 ><> Chain 1:     Iter      log prob        ||dx||      ||grad||       alpha      alpha0  # evals  Notes 
-><> Chain 1:      999      -534.636   6.04534e-06      0.255345      0.5031      0.5031     1091   
+><> Chain 1:      999      -535.646   1.53214e-05      0.372044           1           1     1110   
 ><> Chain 1:     Iter      log prob        ||dx||      ||grad||       alpha      alpha0  # evals  Notes 
-><> Chain 1:     1188      -534.636   3.04848e-06     0.0352337      0.2984           1     1295   
+><> Chain 1:     1455      -535.645   6.80675e-06     0.0321556      0.9018      0.9018     1614   
 ><> Chain 1: Optimization terminated normally: 
 ><> Chain 1:   Convergence detected: relative gradient magnitude is below tolerance
 ## "slim <- blicc_fit(dl)" to run the full MCMC, but this takes a little time to run.
@@ -219,13 +216,13 @@ blicc_prior(dl)
 ><>  5 Estuarine set bagnet Fk        Lognormal         0.385  -0.955  2   
 ><>  6 Gill net             Fk        Lognormal         0.449  -0.802  2   
 ><>  7 Marine set bagnet    Fk        Lognormal         1.30    0.264  2   
-><>  8 Estuarine set bagnet Mode      Lognormal        18.5     2.92   1.5 
-><>  9 <NA>                 Left SD   <NA>              0.0625 -2.77   1.5 
-><> 10 <NA>                 Right SD  <NA>              0.0331 -3.41   1.5 
-><> 11 Gill net             Mode      Lognormal        25.5     3.24   1.5 
-><> 12 <NA>                 Left SD   <NA>              0.0625 -2.77   1.5 
+><>  8 Estuarine set bagnet Mode      Lognormal        15.5     2.74   1.5 
+><>  9 <NA>                 Left SD   <NA>              0.111  -2.20   1.5 
+><> 10 <NA>                 Right SD  <NA>              0.0625 -2.77   1.5 
+><> 11 Gill net             Mode      Lognormal        23.5     3.16   1.5 
+><> 12 <NA>                 Left SD   <NA>              0.0816 -2.51   1.5 
 ><> 13 <NA>                 Right SD  <NA>              0.0816 -2.51   1.5 
-><> 14 Marine set bagnet    Mode      Lognormal        24.5     3.20   1.5 
+><> 14 Marine set bagnet    Mode      Lognormal        22.5     3.11   1.5 
 ><> 15 <NA>                 Left SD   <NA>              0.0816 -2.51   1.5 
 ><> 16 <NA>                 Right SD  <NA>              0.0625 -2.77   1.5 
 ><> 17 <NA>                 NB_phi    Lognormal       100       4.61   0.5 
@@ -241,25 +238,25 @@ blicc_results(slim)
 ><> # A tibble: 19 × 3
 ><>    Parameter `Max. Posterior`        SE
 ><>    <chr>                <dbl>     <dbl>
-><>  1 Linf              42.4      1.39    
-><>  2 Galpha            97.0     24.9     
-><>  3 Mk                 2.01     0.200   
-><>  4 Fk[1]              0.122    0.0225  
-><>  5 Fk[2]              0.403    0.0892  
-><>  6 Fk[3]              1.07     0.221   
-><>  7 Sm[1]             13.8      0.601   
-><>  8 Sm[2]              0.0518   0.00753 
-><>  9 Sm[3]              0.00299  0.000709
-><> 10 Sm[4]             25.3      0.783   
-><> 11 Sm[5]              0.0229   0.00246 
-><> 12 Sm[6]              0.0114   0.00176 
-><> 13 Sm[7]             24.2      0.649   
-><> 14 Sm[8]              0.0249   0.00221 
-><> 15 Sm[9]              0.0100   0.00130 
-><> 16 NB_phi            18.0      3.96    
-><> 17 Gbeta              2.29     0.561   
-><> 18 SPR                0.337    0.0767  
-><> 19 lp__            -535.      NA
+><>  1 Linf              42.4      1.38    
+><>  2 Galpha            97.1     24.6     
+><>  3 Mk                 2.00     0.197   
+><>  4 Fk[1]              0.122    0.0231  
+><>  5 Fk[2]              0.400    0.0964  
+><>  6 Fk[3]              1.06     0.241   
+><>  7 Sm[1]             13.7      0.564   
+><>  8 Sm[2]              0.0519   0.00700 
+><>  9 Sm[3]              0.00304  0.000689
+><> 10 Sm[4]             25.2      0.769   
+><> 11 Sm[5]              0.0230   0.00240 
+><> 12 Sm[6]              0.0115   0.00165 
+><> 13 Sm[7]             24.2      0.642   
+><> 14 Sm[8]              0.0250   0.00212 
+><> 15 Sm[9]              0.0101   0.00128 
+><> 16 NB_phi            18.0      4.06    
+><> 17 Gbeta              2.29     0.554   
+><> 18 SPR                0.340    0.0801  
+><> 19 lp__            -536.      NA
 ```
 
 There are a number of specialised plotting functions specific to length

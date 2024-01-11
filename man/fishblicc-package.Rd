@@ -6,7 +6,7 @@
 \alias{fishblicc}
 \title{The 'fishblicc' package.}
 \description{
-Procedures to fit catch curves to length frequency data based on the length intervals.
+Procedures to fit catch curves to length frequency data based using length intervals.
 }
 \references{
 Stan Development Team (NA). RStan: the R interface to Stan. R package version 2.26.13. https://mc-stan.org

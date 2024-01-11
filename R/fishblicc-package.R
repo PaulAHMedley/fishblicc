@@ -1,6 +1,6 @@
 #' The 'fishblicc' package.
 #'
-#' @description Procedures to fit catch curves to length frequency data based on the length intervals.
+#' @description Procedures to fit catch curves to length frequency data based using length intervals.
 #'
 #' @docType package
 #' @name fishblicc-package

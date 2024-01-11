@@ -17,10 +17,10 @@ ggplot geom object plotting observed and the prior's expected
 frequency, separated by gear.
 }
 \description{
-The graph shows the observed frequency and the prior's expected frequency for
-all gears. This allows a check that current prior parameter settings are
-consistent with observations. The prior means are also used as the start
-point for the \link{blicc_mpd} fits.
+The graph shows the observed frequency and the prior's predicted frequency
+for all (or specified) gears. This allows a check that current prior
+parameter settings are consistent with observations. The prior means are also
+used as the start point for the \link{blicc_mpd} fits.
 }
 \examples{
 plot_prior(eg_ld)

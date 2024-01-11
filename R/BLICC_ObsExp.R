@@ -3,6 +3,11 @@
 # ><> <>< ><> <>< ><> <>< ><> <>< ><> <>< ><> <>< ><> <><
 # ><> <>< ><> <>< ><> <>< ><> <>< ><> <>< ><> <>< ><> <><
 
+# To Do
+# Reconsider reference points:
+#   Optimum yield calculator (+ target)
+#   YPR / SPR calculators
+#   Kobe style plot with contour probability density?
 
 #' Generate posterior draws and standard reference points
 #'
@@ -280,7 +285,7 @@ blicc_expect_len <- function(rp_df, blicc_ld) {
 }
 
 
-#' Expected length interval selectivity, mortality, survival and frequency
+#' Get expected BLICC selectivity, mortality, survival and length frequency
 #'
 #' For a set of parameter values, returns the expected selectivity, mortality,
 #' survival, and catch in each length bin based on the BLICC model as a tibble.
@@ -331,7 +336,7 @@ blicc_get_expected <-
   }
 
 
-#' The expected length frequency
+#' Get the expected length frequency from BLICC model parameters
 #'
 #' For a set of parameter values, returns the expected catch in each length bin
 #' for each gear based on the BLICC model. This is the same as the
@@ -363,12 +368,12 @@ blicc_get_efq <-
   }
 
 
-#' A posterior predicted length frequency data set
+#' Get a posterior predicted length frequency
 #'
 #' For a set of MCMC parameter draws, returns a simulated catch in each
 #' length bin based on the BLICC model. This matrix of simulated data that
 #' might be expected if the model is correct, can be used in the posterior
-#' and bayesplot packages for evaluation.
+#' and `bayesplot` packages for evaluation.
 #'
 #' @export
 #' @param blicc_rp List of fishblicc result tables from [blicc_ref_pts]
@@ -383,7 +388,7 @@ posterior_predict <- function(blicc_rp, gear=NULL, draws = 0) {
   .draw = Lgroup = Sgroup = efq = NULL
   gear <- parse_gear(gear, blicc_rp$ld)
   if (length(gear) > 1)
-    stop("Error: a single gear must be specified.")
+    stop("Error: a single gear must be specified. \n")
 
   if ((draws <= 0) | (draws >= nrow(blicc_rp$rp_df))) {
     df <- blicc_rp$lx_df

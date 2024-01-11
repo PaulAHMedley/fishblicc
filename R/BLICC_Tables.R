@@ -3,9 +3,12 @@
 # ><> <>< ><> <>< ><> <>< ><> <>< ><> <>< ><> <>< ><> <><
 # ><> <>< ><> <>< ><> <>< ><> <>< ><> <>< ><> <>< ><> <><
 
+# To Do
+# Function returning parameter names for tables
+# Function table of reference point estimates
 
 
-#' Returns a tibble containing a summary of the fishblicc priors being applied
+#' Return a tibble containing a summary of the fishblicc priors being applied
 #'
 #' This function provides a summary of the priors contained in a
 #' fishblicc data object in a tibble. This can be used to inspect the model's
@@ -15,7 +18,7 @@
 #' @inheritParams blicc_mpd
 #' @return A tibble describing the priors being applied.
 #' @examples
-#' blicc_priors(eg_ld)
+#' blicc_prior(eg_ld)
 #'
 blicc_prior <- function(blicc_ld) {
 
@@ -73,12 +76,12 @@ blicc_prior <- function(blicc_ld) {
 }
 
 
-#' Returns a tibble containing a summary of the results from a fishblicc fit
+#' Return a tibble containing a summary of the results from a fishblicc fit
 #'
 #' This function provides a summary of results from the fitted model in a form
 #' suitable for displaying in a table. Note that other packages, such as rstan,
 #' bayesplot and posterior can extract information from the stanfit object and
-#' the [blicc_ref_pts] `rp_df` draws object in more detailed form.
+#' the [blicc_ref_pts] `rp_df` 'draws' object in more detailed form.
 #'
 #' @export
 #' @param blicc_res Results from [blicc_fit] (stanfit object), [blicc_mpd] or
@@ -89,7 +92,8 @@ blicc_prior <- function(blicc_ld) {
 #' 
 blicc_results <- function(blicc_res) {
   Fk=Linf=Parameter=Rhat=Sm=Value=lp__=median=mpd=n_eff=par=sd=se=slim=NULL
-
+  `2.5%` = `97.5%` = NULL
+  
   if (class(blicc_res)[1]=="stanfit") {
     NF <- blicc_res@par_dims$nFk
     NP <- blicc_res@par_dims$nSm
@@ -110,7 +114,9 @@ blicc_results <- function(blicc_res) {
       dplyr::select(Parameter,
              Mean = mean,
              SD = sd,
-             `Effective N` = n_eff,
+             `2.5%`,
+             `97.5%`,
+             `N (eff)` = n_eff,
              Rhat)
   } else if (tibble::is_tibble(blicc_res) & paste(names(blicc_res), collapse=" ")=="par mpd se") {
     res <- blicc_res |>
@@ -132,13 +138,17 @@ blicc_results <- function(blicc_res) {
     p_order <- names(res)
     res <- res |>
       tidyr::pivot_longer(cols=tidyselect::everything(), names_to="Parameter",
-                          values_to="Value") |>
-      dplyr::mutate(Parameter = factor(Parameter, levels=p_order)) |>
-      dplyr::group_by(Parameter) |>
-      dplyr::summarise(Mean=mean(Value), SD=sd(Value),
-                       `10%`= stats::quantile(Value, probs = 0.1),
-                       `50%`= median(Value),
-                       `90%` = stats::quantile(Value, probs = 0.9))
+                          values_to="Value") 
+    if (nrow(blicc_res$rp_df) > 1) {
+      res <- res |>
+        dplyr::mutate(Parameter = factor(Parameter, levels=p_order)) |>
+        dplyr::group_by(Parameter) |>
+        dplyr::summarise(Mean=mean(Value), SD=sd(Value),
+                         `10%`= stats::quantile(Value, probs = 0.1),
+                         `50%`= median(Value),
+                         `90%` = stats::quantile(Value, probs = 0.9)) |>
+        dplyr::ungroup()
+    }
     # dplyr::summarise(dplyr::across(Value, list(Mean=mean, SD=sd,
       #                                            `10%`= ~quantile(., probs = 0.1),
       #                                            `50%`=median, `Q90%` = ~quantile(., probs = 0.9)),

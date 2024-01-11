@@ -2,7 +2,7 @@
 % Please edit documentation in R/BLICC_Tables.R
 \name{blicc_prior}
 \alias{blicc_prior}
-\title{Returns a tibble containing a summary of the fishblicc priors being applied}
+\title{Return a tibble containing a summary of the fishblicc priors being applied}
 \usage{
 blicc_prior(blicc_ld)
 }
@@ -19,6 +19,6 @@ fishblicc data object in a tibble. This can be used to inspect the model's
 assumptions or to create a table in a report.
 }
 \examples{
-blicc_priors(eg_ld)
+blicc_prior(eg_ld)
 
 }

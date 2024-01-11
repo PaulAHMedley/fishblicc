@@ -2,7 +2,7 @@
 % Please edit documentation in R/BLICC_ObsExp.R
 \name{posterior_predict}
 \alias{posterior_predict}
-\title{A posterior predicted length frequency data set}
+\title{Get a posterior predicted length frequency}
 \usage{
 posterior_predict(blicc_rp, gear = NULL, draws = 0)
 }
@@ -21,7 +21,7 @@ A matrix with rows equal to gears*draws and columns to length
 For a set of MCMC parameter draws, returns a simulated catch in each
 length bin based on the BLICC model. This matrix of simulated data that
 might be expected if the model is correct, can be used in the posterior
-and bayesplot packages for evaluation.
+and \code{bayesplot} packages for evaluation.
 }
 \examples{
 yrep <- posterior_predict(blicc_rp = eg_rp, gear=1, draws=100)

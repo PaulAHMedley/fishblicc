@@ -2,7 +2,7 @@
 % Please edit documentation in R/BLICC_blip.R
 \name{blip_Mk}
 \alias{blip_Mk}
-\title{Sets data object from \link{blicc_dat} to have a new \code{Mk} prior}
+\title{Set \code{Mk} log-normal prior hyper-parameters in the data object}
 \usage{
 blip_Mk(
   blicc_ld,
@@ -15,32 +15,35 @@ blip_Mk(
 \item{blicc_ld}{A standard data list suitable for the model (see function
 \link{blicc_dat})}
 
-\item{lMk}{The mu and sigma for the lognormal natural mortality prior}
+\item{lMk}{A vector of the mu and sigma for the lognormal natural mortality
+prior}
 
 \item{ref_length}{Reference length in the length-inverse mortality is
 applied. Set to -1 to turn off the length-inverse model.}
 
-\item{model_name}{A string for a replacement model name in the data
-object. Optional.}
+\item{model_name}{A string for a replacement model name in the data object.
+Optional.}
 }
 \value{
-The data object blicc_ld but with the prior and function for Mk
-changed.
+The supplied data object blicc_ld but with the prior and function for
+Mk changed.
 }
 \description{
-Checks the new values are valid, then provide the mean and sd for the
-log-normal prior to be used. Also, if the ref_length parameter is defined,
-apply the inverse length function for natural mortality. These are replaced
-in the data object, which is then returned. Note that the Mk must be provided
-as the log value. The default in \link{blicc_dat} depends on the length at 50\%
-maturity, but should be close to: \code{lMk = c(log(1.5), 0.1)} . Values are only
-changed if the supplied value is not \code{NA}.
+The \code{Mk} hyper-parameters are provided as a mean and sigma for the lognormal.
+The function checks the proposed values are valid. Also, if the ref_length
+parameter is defined, apply the inverse length function for natural
+mortality. These are replaced in the data object, which is then returned.
+Note that the Mk must be provided as the log value. The default in
+\link{blicc_dat} depends on the length at 50\% maturity, but might be reasonably
+close to: \code{lMk = c(log(1.5), 0.1)}. Values are only changed if the supplied
+value is not \code{NA}.
 }
 \details{
-The \code{ref_length} parameter, if used, indicates the length where the given
-natural mortality applies. Therefore, the natural mortality within each
-length bin will be calculated as \code{Mk*ref_length/L} where \code{L} is the mid-point
-for the bin. Natural mortality will be constant within each bin. If
+The \code{ref_length} parameter, if used, indicates a length-inverse natural
+mortality model, where \code{ref_length} is the length where the given natural
+mortality applies. Therefore, the natural mortality within each length bin
+will be calculated as \code{Mki = Mk*ref_length/L} where \code{L} is the mid-point for
+the i^th^ bin. Natural mortality will be constant within each bin. If
 \code{ref_length} is not given, a constant natural mortality is assumed.
 }
 \examples{

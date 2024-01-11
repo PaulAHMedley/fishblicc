@@ -17,8 +17,10 @@ function.}
 ggplot geom object for plotting
 }
 \description{
-The 80\%CI is only available for the MCMC fit. All gears specified are plotted
-on a single graph.
+The selectivity at length is plotted for the specified gears. All gears, or
+specified gears, are plotted on a single graph. These curves have to be
+multiplied by the fishing mortality (Fk) parameters to obtain the relative
+fishing mortality at length. The 80\%CI is only available for the MCMC fit.
 }
 \examples{
 plot_selectivity(eg_rp)

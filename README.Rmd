@@ -22,17 +22,11 @@ knitr::opts_chunk$set(
 
 ## Installation
 
-You will also need to have Rtools installed so that the model can compile. 
+You will need to have Rtools installed so that the model can compile. 
 
 For Windows, Rtools can be downloaded from "https://cran.r-project.org/bin/windows/Rtools/"
 
-Note that for versions of R and RTools 4.2 and 4.3 you will need to manually install `rstan` as follows:
-
-``` r
-install.packages("StanHeaders", repos = c("https://mc-stan.org/r-packages/", getOption("repos")))
-install.packages("rstan", repos = c("https://mc-stan.org/r-packages/", getOption("repos")))
-```
-This is the preview of rstan 2.26 that will presumably eventually become available on CRAN so that this step will be obsolete (see https://github.com/stan-dev/rstan/wiki/Configuring-C---Toolchain-for-Windows).  
+(also see https://github.com/stan-dev/rstan/wiki/Configuring-C---Toolchain-for-Windows for any issues with this).  
 
 You can install the development version of fishblicc:
 

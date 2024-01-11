@@ -2,7 +2,7 @@
 % Please edit documentation in R/BLICC_blip.R
 \name{blip_Linf}
 \alias{blip_Linf}
-\title{Sets data object from \link{blicc_dat} to have a new \code{Linf} prior}
+\title{Set \code{Linf} prior parameters in the data object}
 \usage{
 blip_Linf(blicc_ld, Linf, model_name = NA)
 }
@@ -10,19 +10,23 @@ blip_Linf(blicc_ld, Linf, model_name = NA)
 \item{blicc_ld}{A standard data list suitable for the model (see function
 \link{blicc_dat})}
 
-\item{Linf}{A numeric vector of double containing the mu and
-sigma for the prior normal.}
+\item{Linf}{A numeric vector of double containing the mu and sigma for the
+prior normal.}
 
-\item{model_name}{A string for a replacement model name in the data
-object. Optional.}
+\item{model_name}{A string for a replacement model name in the data object.
+Optional.}
 }
 \value{
 The data object blicc_ld but with the prior for \code{Linf} changed.
 }
 \description{
-Checks the new \code{Linf} is a vector of 2 values, the new mu and sigma for
-the normal prior to be used. These are replaced in the data object,
-which is then returned.
+New \code{Linf} prior hyper-parameters are set in the \link{blicc_dat} data object as a
+vector of the mean (mu) and standard deviation (sigma) for the normal prior
+to be used. The \code{Linf} will need to be a vector of 2 values.
+}
+\details{
+The \code{Linf} defines the gamma growth probability density function mean, so it
+is the mean asymptotic length of the population.
 }
 \examples{
 new_ld <- blip_Linf(eg_ld, c(30,2), model_name="Sensitivity")

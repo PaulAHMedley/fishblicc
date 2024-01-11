@@ -1,10 +1,10 @@
-# BLICC Parsing Functions ---------------------------------------------------
+# BLICC Parsing Functions for internal use ------------------------------------
 
 # ><> <>< ><> <>< ><> <>< ><> <>< ><> <>< ><> <>< ><> <><
 # ><> <>< ><> <>< ><> <>< ><> <>< ><> <>< ><> <>< ><> <><
 
 
-#' Returns a list of supported selectivity functions with parameters
+#' Return a list of supported selectivity functions with parameters
 #'
 #' This function documents the list of available selectivity functions. This is
 #' used in various routines as a constant. The intent is to make it easier to
@@ -147,7 +147,6 @@ parse_gear <- function(Gear, blicc_ld) {
 }
 
 
-
 #' Get indices for all referenced selectivity functions for the specified gears
 #'
 #' The gear parameter is assumed to be an integer vector already parsed. The
@@ -166,6 +165,39 @@ get_selectivities <- function(gear, blicc_ld)  {
     sindx <- with(blicc_ld, c(sindx, GSmix2[GSmix1[mii]:GSmix1[mii+1L]]))
   }
   return(sort(unique(sindx))) # indices of selectivity functions being used by Gear
+}
+
+
+
+#' Get selectivity parameter names
+#'
+#' The selectivity parameters listed in the data object are given names based on
+#' the selectivity function number of the purpose of the parameter (location or
+#' slope).
+#'
+#' @inheritParams parse_gear
+#' @return Vector of selectivity parameter names
+#' @noRd
+#' 
+get_sel_par_names <- function(blicc_ld)  {
+  par_names <- character(blicc_ld$NP)
+  j <- 1
+  for (i in 1:blicc_ld$NS) {
+    if (blicc_ld$fSel[i] %in% 1:3) { 
+      par_names[j] <- paste0("S", as.character(i), "_loc")
+      j <- j + 1
+      par_names[j] <- paste0("S", as.character(i), "_slp")
+      j <- j + 1
+    } else {
+      par_names[j] <- paste0("S", as.character(i), "_loc")
+      j <- j + 1
+      par_names[j] <- paste0("S", as.character(i), "_slp1")
+      j <- j + 1
+      par_names[j] <- paste0("S", as.character(i), "_slp2")
+      j <- j + 1
+    }
+  }
+  return(par_names)
 }
 
 

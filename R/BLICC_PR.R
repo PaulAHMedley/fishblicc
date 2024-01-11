@@ -1,7 +1,9 @@
-# BLICC Per Recruit Reference point functions -----------------------------
+# BLICC Per Recruit Reference point functions for internal use ---------------
 
 # ><> <>< ><> <>< ><> <>< ><> <>< ><> <>< ><> <>< ><> <><
 # ><> <>< ><> <>< ><> <>< ><> <>< ><> <>< ><> <>< ><> <><
+# ToDo:
+# Develop YPR performance indices including selectivity based on Lopt
 
 
 #' Calculate the SPR for the fishing mortalities and selectivities
@@ -330,4 +332,22 @@ fSPR <- function(Galpha, Gbeta, Mk, Fk, Rsel, blicc_ld) {
   return(sum(N_L * blicc_ld$ma_L))
 }
 
+
+#' Optimum length with maximum yield
+#'
+#' Used to find the maximum YPR (at optimum exploitation length) subject to a
+#' SPR constraint. NOT USED
+#'
+#' @inheritParams fYPR
+#' @param tarSPR  Target Spawner Potential Ratio
+#' @return maximum yield-per-recruit
+#' @noRd
+#' 
+maxYPR <- function(Galpha, Gbeta, Mk, tarSPR, blicc_ld) {
+  Zki <- Mk * blicc_ld$M_L
+
+  N_L <- with(blicc_ld, Cpop_len(gl_nodes, gl_weights, LLB, Zki, Galpha, Gbeta))
+  Pwt_L <- N_L  * blicc_ld$wt_L
+  return(sum(Pwt_L))
+}
 

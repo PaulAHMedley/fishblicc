@@ -1,7 +1,7 @@
 ---
 title: "A Length-dependent Mortality Model for a Data-Limited Bayesian Stock Assessment"
 author: "Paul A H Medley"
-date: "25-August-2022"
+date: 2022-08-25
 format: 
   html:
     toc: true
@@ -201,6 +201,8 @@ This expected number in the length frequency can be included in a suitable likel
 
 It is worth noting that this model is exact for the situation where there is constant recruitment (or a single cohort is sampled throughout its life), the growth model and variability has a von Bertalanffy model mean within a gamma distribution probability and mortality is fixed within each interval. In that sense, it is exactly analogous to an age-based catch curve, but takes account of growth.  
 
+This modelling approach for length data has been widely used in, for example, 
+
 ## Selectivity
 
 The selectivity function describes how fishing mortality changes with length. Because the mortality has to be constant in each bin, the selectivity function is calculated for the mid-point of each bin even if the function is continuous over length. A useful flexible function that is quite widely used is the double-sided normal. This is the normal distribution giving a bell-shaped selectivity in relation to length, but with separate $\sigma$ parameters for the left hand side and right hand side of the mode.  
@@ -211,7 +213,11 @@ $$
 
 where $L_i$ is the midpoint length in each bin $i$, $S_{mx}$ is the modal length where selectivity is maximum and $S_s$ are two parameters controlling the selectivity steepness on the left and right side of the mode. If the right hand side parameter $S_s$ is set to zero, the selectivity becomes "flat-topped", and is similar to the logistic model.  
 
-Although the logistic and double-sided normal selectivity function are suggested in the fishblicc package, any function based on length could be used. However, some function may be more problematic to fit because their parameters may be aliased with the mortality parameters. Based on experience of real data, it is suggested to use a minimal mixture of simple logistic or normal selectivity functions to explain length frequency observations. This allows the model to explain multi-mode length frequencies and more complex selectivities which may apply in some fisheries.  
+Although the logistic and double-sided normal selectivity function are suggested in the `fishblicc` package, any function based on length could be used. However, some functions may be more problematic to fit because their parameters may be aliased with the mortality parameters. Based on experience of real data, it is suggested to use a minimal mixture of simple logistic or normal selectivity functions to explain length frequency observations. This allows the model to explain multi-mode length frequencies and more complex selectivities which may apply in some fisheries.  
+
+Proposing a selectivity function is a significant assumption that may not always be testable. For example, a selectivity function could, by itself, explain length frequency data without reference to any mortality (i.e. fishing mortality could be estimated as negligible). Clearly. a non-parametric smoothing function could fit the data perfectly well while assuming the underlying population has equal numbers of fish in each length bin. So, it is the tension between the shape of the selectivity function and shape of the mortality function that allows fishing mortality to be estimated. This means that it is necessary to propose a hypothetical selectivity function that is not aliased with mortality to proceed to estimation. 
+
+The logistic model is a good choice because there is no downward trend so it is not correlated with mortality. The normal and double-sided normal have a downward slope beyond the mode that will likely be correlated to some degree with the effect of mortality. However, on a log-scale and mapping length to age, this curvature would be approximately quadratic in shape compared to a more linear decline caused by mortality. The differences in shape of these functions make it possible to fit the mortality and selectivity together. 
 
 # Less Technical Model Description  
 
@@ -477,6 +483,8 @@ $$
 The function is calculated at each Gauss-Laguerre node for $x$, and the weighted sum provides an estimate of the integral. Tests of the Gauss-Laguerre integral found 110 nodes provided stable results across the whole range of parameters that would be apply in this model, but fewer nodes may be adequate dependent on the desired accuracy. Fewer nodes reduces the function calculation cost proportionately.  
 
 # References
+
+Hordyk, A., Ono, K., Sainsbury, K., Loneragan, N., and J. Prince. 2015. Some explorations of the life history ratios to describe length composition, spawning-per-recruit, and the spawning potential ratio. ICES Journal of Marine Science, doi:10.1093/icesjms/fst235.
 
 Kenchington, T.J. 2014. Natural mortality estimators for information-limited fisheries. Fish and Fisheries, 15, 533–562  
 

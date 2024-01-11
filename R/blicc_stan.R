@@ -98,13 +98,14 @@ blicc_mpd <- function(blicc_ld) {
 #'
 #' The model is fitted to length frequency data using a Markov chain Monte Carlo
 #' (MCMC) simulation. The model assumes constant recruitment, a fixed
-#' selectivity sub-model, a single natural mortality parameter, and
-#' Gamma-distributed von Bertalanffy growth to define expected numbers of fish
-#' in pre-defined length bins. The model can fit to multigear data with a length
-#' frequency sample from each gear. The model also assumes a negative binomial
-#' likelihood function. Selectivity, mortality, asymptotic mean length and scale
-#' parameters are fitted to generate the spawning potential ratio as a measure
-#' of the stock status.
+#' selectivity sub-model, a single natural mortality parameter, and von
+#' Bertalanffy growth with gamma probability distribution for individual fish
+#' Linf to define expected numbers of fish in pre-defined length bins. The
+#' model can fit to multigear data with a length frequency sample from each
+#' gear. The model also assumes a negative binomial likelihood function.
+#' Selectivity, mortality, asymptotic mean length and scale parameters are
+#' fitted to generate the spawning potential ratio as a measure of the stock
+#' status.
 #'
 #' @details The fitted model estimates mortality and survival through sequential
 #'   length intervals. This is then used to derive abundance and catch in
@@ -193,7 +194,7 @@ blicc_fit <- function(blicc_ld,
 
   # Find the posterior mode to start
   # # Distributed version
-  if (is.null(init_fit)) {
+  #if (is.null(init_fit)) {
     init_fit <-
       rstan::optimizing(
         stanmodels$BLICC,
@@ -214,7 +215,17 @@ blicc_fit <- function(blicc_ld,
         tol_rel_grad = 1e5,
         tol_param = 1e-8
       )
-  }
+  #}
+  
+  # New_NK <- LG_Nodes(blicc_ld, rp_df)   # Recalculates the LG knots
+  # if (blicc_ld$NK != New_NK) {
+  #   glq <- statmod::gauss.quad(New_NK,
+  #                              kind = "laguerre", alpha = 0.0)
+  #   blicc_ld$NK <- New_NK
+  #   blicc_ld$gl_nodes <- glq$nodes
+  #   blicc_ld$gl_weights <- glq$weights
+  # }
+  
   niter <- nwarmup + ntarget / nchain
   # Distributed version
   stf <- rstan::sampling(
@@ -264,7 +275,7 @@ blicc_fit <- function(blicc_ld,
 #'   parameters (such as Fk, selectivity parameters and negative binomial
 #'   `NBphi`) that should not be very influential to the fit. Prior parameters
 #'   can be subsequently changed using the various `blip_` functions:
-#'   [blip_Linf], [blip_Galpha], [blip_Mk], [blip_Fk], [blip_LH_param] and
+#'   [blip_Linf], [blip_Galpha], [blip_Mk], [blip_Fk], [blip_LH] and
 #'   [blip_NBphi].
 #'
 #'   The list also contains NK, the number of knots (nodes) used in the
@@ -290,8 +301,8 @@ blicc_fit <- function(blicc_ld,
 #'   need to set up the selectivity functions first and link them to each gear
 #'   either using this function `blicc_dat` or using [blicc_selfun] and
 #'   [blicc_gear_sel] separately. For mixtures, you will need to manually set
-#'   the priors for each mixture function using [blip_set_sel] and
-#'   [blip_mix_wt].
+#'   the priors for each mixture function using [blip_sel] and
+#'   [blip_mix].
 #'
 #' @export
 #' @param model_name A name for the model (species or fishery). Optional.
@@ -362,11 +373,11 @@ blicc_dat <-
 
     if (!is.vector(LLB, mode="numeric")) {
       stop(
-        "Error: LLB required - the lower bound of bins as a vector of unique values and in ascending order."
+        "Error: LLB required - the lower bound of bins as a vector of unique values and in ascending order. \n"
       )
     }
     if (any(diff(LLB) <= 0)) {
-      stop("Error: lower bound of bins (LLB) must be unique and in ascending order.")
+      stop("Error: lower bound of bins (LLB) must be unique and in ascending order. \n")
     }
     NB <- length(LLB)
     LMP <- c((LLB[-NB] + LLB[-1]) * 0.5, LLB[NB] + 0.5*(LLB[NB]-LLB[NB-1])) # Length bin mid points (LMP) used for plotting etc. Not used in Stan model.
@@ -375,20 +386,20 @@ blicc_dat <-
     if (is.vector(fq, mode="numeric")) fq <- list(fq)  #convert to list if possible
     if (!is.list(fq)) {
       stop(
-        "Error: fq (frequency data) must be supplied as a list of vectors (or can be given as a vector if only one.)"
+        "Error: fq (frequency data) must be supplied as a list of vectors (or can be given as a vector if only one.) \n"
       )
     }
     Ngear <- length(fq)
     for (i in 1:Ngear)
       if (!is.vector(fq[[i]], mode="numeric") | (NB != length(fq[[i]]))) {
         stop(
-          "Error: fq must be a frequency for every bin, including zeroes as vectors of the same length as the number of bins."
+          "Error: fq must be a frequency for every bin, including zeroes as vectors of the same length as the number of bins. \n"
         )
       }
 
     # Catches
     if (!is.vector(Catch) | length(Catch) != Ngear | any(Catch<0) | !any(Catch>0)) {
-      stop("Error: Catch (relative catches) must be provided for each length frequency.")
+      stop("Error: Catch (relative catches) must be provided for each length frequency. \n")
     }
     Fgear <- integer(Ngear)
     fi <- 1
@@ -406,12 +417,12 @@ blicc_dat <-
       gear_names <- paste0("Gear_", as.character(1:Ngear))
     } else
       if ((length(gear_names) != Ngear) | !is.character(gear_names)) {
-        stop("Error: gear_names must be a character vector with the same length as the number of gears.")
+        stop("Error: gear_names must be a character vector with the same length as the number of gears. \n")
       }
 
     # Natural mortality
     if (!is.na(Mk) & Mk <= 0) {
-      stop("Error: Mk must be greater than zero.")
+      stop("Error: Mk must be greater than zero. \n")
     }
 
     dl <- list(
@@ -447,7 +458,7 @@ blicc_dat <-
 
     dl <- blip_Linf(dl, Linf)
     dl <- blip_Galpha(dl, c(log(1 / 0.1 ^ 2), 0.25))
-    dl <- blip_LH_param(dl, a, b, L50, L95, ma_L, wt_L, set_defaults=TRUE)
+    dl <- blip_LH(dl, a, b, L50, L95, ma_L, wt_L, set_defaults=TRUE)
     
     if (is.na(Mk)) {
       # from Prince et al. 2015
@@ -468,9 +479,9 @@ blicc_dat <-
     # Medium level of overdispersion
     dl <- blip_NBphi(dl, c(log(100), 0.5))
     #  Catch: sigma for lognormal
-    dl$polCs <- 0.01
+    dl$polCs <- 0.1
 
-    dl <- blip_selectivity(dl)
+    dl <- blip_sel_auto(dl)
     
     # Gauss-Laguerre quadrature grid size
     if (is.na(NK)) {
@@ -571,11 +582,11 @@ blicc_selfun <-
     } else {
       if (blicc_ld$NS == 0)
         stop(
-          "Error: No previous functions to reference, so replace all functions (sel_indx=NULL)."
+          "Error: No previous functions to reference, so replace all functions (sel_indx=NULL). \n"
         )
       sel_indx <- parse_sel_indx(sel_indx, blicc_ld, FALSE)
       if (length(sel_indx) != length(sel_fun))
-        stop("Error: sel_indx must have the same length as sel_fun.")
+        stop("Error: sel_indx must have the same length as sel_fun. \n")
       
       nfSel <- blicc_ld$fSel
       nfSel[sel_indx] <- sel_fun
@@ -622,7 +633,7 @@ blicc_selfun <-
       blicc_ld$model_name <- model_name
     
     if (all(blicc_ld$GSbase > 0))
-      blicc_ld <- blip_selectivity(blicc_ld, sel_indx = sel_indx)
+      blicc_ld <- blip_sel_auto(blicc_ld, sel_indx = sel_indx)
     return(blicc_ld)
   }
 
@@ -697,10 +708,10 @@ blicc_gear_sel <-
           gii <- which(gear==gi)
           new_map <- gear_sel[[gii]]
           if (! (is.vector(new_map) & is.numeric(new_map)))
-            stop("Error: New links to selectivity must be provided as integer vectors indexing selectivity functions.")
+            stop("Error: New links to selectivity must be provided as integer vectors indexing selectivity functions. \n")
           new_map <- unique(round(new_map))
           if ((length(new_map) < 1L) | (min(new_map) < 1L) | (max(new_map) > blicc_ld$NS))
-            stop(paste0("Error: Selectivity function index out of bounds for gear .", as.character(gii)))
+            stop(paste0("Error: Selectivity function index out of bounds for gear ", as.character(gii), " \n"))
           blicc_ld$GSbase[gi] <- new_map[1L]
           if (length(new_map) > 1L) {
             # mixtures present
@@ -734,7 +745,7 @@ blicc_gear_sel <-
       blicc_ld$model_name <- model_name
 
     if ( blicc_model_OK(blicc_ld) == "OK" )
-      blicc_ld <- blip_selectivity(blicc_ld)
+      blicc_ld <- blip_sel_auto(blicc_ld)
 
     return(blicc_ld)
   }
@@ -753,8 +764,8 @@ blicc_ini <- function(blicc_ld) {
     nLinf   = 0,
     nGalpha = 0,
     nMk    = 0,
-    nFk    = rep(0.0, blicc_ld$NF),
-    nSm    = rep(0, blicc_ld$NP),
+    nFk    = as.array(rep(0.0, blicc_ld$NF), dim=1),
+    nSm    = rep(0.0, blicc_ld$NP),
     nNB_phi = 0
   ))
 }

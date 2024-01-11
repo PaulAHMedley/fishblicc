@@ -2,7 +2,7 @@
 % Please edit documentation in R/BLICC_blip.R
 \name{blip_NBphi}
 \alias{blip_NBphi}
-\title{Sets data object from \link{blicc_dat} to have a new \code{NB_phi} prior}
+\title{Set the \code{NB_phi} prior hyper-parameters in the data object}
 \usage{
 blip_NBphi(blicc_ld, lNBphi)
 }
@@ -17,7 +17,15 @@ prior log-normal.}
 The data object blicc_ld but with the prior for \code{NBphi} changed.
 }
 \description{
-The \code{NB_phi} lognormal prior is updated with new values mu and sigma.
-NB_phi controls the negative binomial overdispersion compared to the
-Poisson distribution, where the variance is \code{mu + mu^2 / NB_phi}.
+The \code{NB_phi} log-normal prior is updated with a mean (mu) and standard
+deviation (sigma). NB_phi controls the negative binomial over-dispersion
+compared to the Poisson distribution.
+}
+\details{
+The variance is for the negative binomial is \code{ Var = mu + mu^2 / NB_phi}
+compared to \code{Var = mu} for the Poisson distribution.
+}
+\examples{
+new_ld <- blip_NBphi(eg_ld, lNBphi = c(log(100), 0.05))
+
 }

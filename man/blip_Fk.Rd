@@ -2,7 +2,7 @@
 % Please edit documentation in R/BLICC_blip.R
 \name{blip_Fk}
 \alias{blip_Fk}
-\title{Sets data object from \link{blicc_dat} to have a new \code{Fk} prior}
+\title{Set \code{Fk} log-normal prior hyper-parameters in the data object}
 \usage{
 blip_Fk(blicc_ld, lFk = NA, lFks = NA, model_name = NULL)
 }
@@ -10,24 +10,25 @@ blip_Fk(blicc_ld, lFk = NA, lFks = NA, model_name = NULL)
 \item{blicc_ld}{A standard data list suitable for the model (see function
 \link{blicc_dat})}
 
-\item{lFk}{A vector of double containing the lognormal mean Fk for each
-gear}
+\item{lFk}{A vector containing the log-normal mean \code{Fk} for each gear
+having a non-negligible catch}
 
 \item{lFks}{A double containing the same lognormal sigma \code{Fk} for all gears}
 
-\item{model_name}{A string for a replacement model name in the data
-object. Optional.}
+\item{model_name}{A string for a replacement model name in the data object.
+Optional.}
 }
 \value{
 The data object \code{blicc_ld} with the prior for \code{Fk} changed.
 }
 \description{
 The \code{Fk} lognormal prior is updated with new mu for each gear and a single
-sigma parameter. If no value (\code{NA}) is provided for lFk, the defaults are
+sigma parameter. If no value (\code{NA}) is provided for \code{lFk}, the defaults are
 assigned. These are the current natural mortality for fishing mortality mu
-and 2.0 for the sigma parameter. The sigma parameter should be kept
+and 2.0 for the sigma parameter. The sigma hyper-parameter should be kept
 reasonably large to allow the model to estimate this parameter. In general,
-the default values should be sufficient.
+the default values should be sufficient as the prior should be
+non-informative.
 }
 \details{
 For the multigear model, if a gear has negligible catches so the relative

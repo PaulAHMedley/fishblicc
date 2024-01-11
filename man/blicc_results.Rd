@@ -2,7 +2,7 @@
 % Please edit documentation in R/BLICC_Tables.R
 \name{blicc_results}
 \alias{blicc_results}
-\title{Returns a tibble containing a summary of the results from a fishblicc fit}
+\title{Return a tibble containing a summary of the results from a fishblicc fit}
 \usage{
 blicc_results(blicc_res)
 }
@@ -17,7 +17,7 @@ A tibble summarising results of the model fit object.
 This function provides a summary of results from the fitted model in a form
 suitable for displaying in a table. Note that other packages, such as rstan,
 bayesplot and posterior can extract information from the stanfit object and
-the \link{blicc_ref_pts} \code{rp_df} draws object in more detailed form.
+the \link{blicc_ref_pts} \code{rp_df} 'draws' object in more detailed form.
 }
 \examples{
 blicc_results(eg_rp)

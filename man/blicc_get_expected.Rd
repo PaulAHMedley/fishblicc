@@ -2,7 +2,7 @@
 % Please edit documentation in R/BLICC_ObsExp.R
 \name{blicc_get_expected}
 \alias{blicc_get_expected}
-\title{Expected length interval selectivity, mortality, survival and frequency}
+\title{Get expected BLICC selectivity, mortality, survival and length frequency}
 \usage{
 blicc_get_expected(Linf, Galpha, Mk, Fk, Sm, blicc_ld)
 }

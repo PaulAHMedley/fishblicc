@@ -6,10 +6,10 @@
 
 #' Plot the observed and expected frequency data based on the prior parameters
 #'
-#' The graph shows the observed frequency and the prior's expected frequency for
-#' all gears. This allows a check that current prior parameter settings are
-#' consistent with observations. The prior means are also used as the start
-#' point for the [blicc_mpd] fits.
+#' The graph shows the observed frequency and the prior's predicted frequency
+#' for all (or specified) gears. This allows a check that current prior
+#' parameter settings are consistent with observations. The prior means are also
+#' used as the start point for the [blicc_mpd] fits.
 #'
 #' @export
 #' @inheritParams blicc_mpd
@@ -52,14 +52,14 @@ plot_prior <- function(blicc_ld, gear = "All") {
   return(gp)
 }
 
-#' Plot the observed and expected frequency data
+#' Plot the observed and expected length frequency data
 #'
-#' The graph shows the observed frequency and the expected frequency for the
-#' specified gears. The plots include the 80% credible intervals for the
-#' estimate (if an MCMC is provided) and 80% credible intervals for the
-#' observations. The latter takes into account the negative binomial observation
-#' error, so on average 8 out of ten observations would be expected within these
-#' bounds.
+#' The graph shows the observed length frequency and the posterior predicted
+#' frequency for the specified gears. The plots include the 80% credible
+#' intervals for the estimate (if an MCMC is provided) and 80% credible
+#' intervals for the observations. The latter takes into account the negative
+#' binomial observation error, so on average 8 out of ten observations would be
+#' expected within these bounds.
 #'
 #' @export
 #' @inheritParams plot_prior
@@ -68,9 +68,9 @@ plot_prior <- function(blicc_ld, gear = "All") {
 #'   function.
 #' @return ggplot geom object plotting observed and expected frequency
 #' @examples
-#' plot_expected_frequency(eg_rp)
-#'
-plot_expected_frequency <-
+#' plot_posterior(eg_rp)
+#' 
+plot_posterior <-
   function(blicc_rp, gear = "All") {
     .draw = Lgroup = LMP = fq = NB_phi = NULL  # Not necessary but stops CMD check notes
     efq = fq_lo = fq_hi = efq_m = efq_lo = efq_hi = dat_lo = dat_hi = NULL
@@ -176,7 +176,7 @@ plot_expected_frequency <-
 #' selectivities and `Lgroup` for the lengths.
 #'
 #' @export
-#' @inheritParams plot_expected_frequency
+#' @inheritParams plot_posterior
 #' @return ggplot geom object plotting standardised residuals
 #' @examples
 #' plot_residuals(eg_rp)
@@ -258,11 +258,13 @@ plot_residuals <- function(blicc_rp, gear = "All") {
 
 #' Plot selectivity and 80% credible interval, if available, by length.
 #'
-#' The 80%CI is only available for the MCMC fit. All gears specified are plotted
-#' on a single graph.
+#' The selectivity at length is plotted for the specified gears. All gears, or
+#' specified gears, are plotted on a single graph. These curves have to be
+#' multiplied by the fishing mortality (Fk) parameters to obtain the relative
+#' fishing mortality at length. The 80%CI is only available for the MCMC fit.
 #'
 #' @export
-#' @inheritParams plot_expected_frequency
+#' @inheritParams plot_posterior
 #' @return ggplot geom object for plotting
 #' @examples
 #' plot_selectivity(eg_rp)
@@ -309,7 +311,7 @@ plot_selectivity <- function(blicc_rp, gear = NULL) {
 #' reference point. This plot requires the MCMC to have been run.
 #'
 #' @export
-#' @inheritParams plot_expected_frequency
+#' @inheritParams plot_posterior
 #' @return ggplot geom object for plotting
 #' @examples
 #' plot_SPR_density(eg_rp)
@@ -339,7 +341,7 @@ plot_SPR_density <- function(blicc_rp) {
 #' This plot requires the MCMC to have been run.
 #'
 #' @export
-#' @inheritParams plot_expected_frequency
+#' @inheritParams plot_posterior
 #' @return ggplot geom object for plotting
 #' @examples
 #' plot_FkF40_density(eg_rp)
@@ -446,17 +448,16 @@ plot_FkF40_density <- function(blicc_rp) {
 #' relying on length frequency data alone may not be advisable.
 #'
 #' @export
-#' @inheritParams plot_expected_frequency
+#' @inheritParams plot_posterior
 #' @return ggplot geom object for plotting expected length frequencies by SPR
 #'   level
 #' @examples
 #' plot_efq_FRP(eg_rp)
 #' 
 plot_efq_FRP <- function(blicc_rp, gear = NULL) {
-  # Not necessary but stops CMD check notes
   Linf = Galpha = Mk = Fk = Sm = NB_phi = Sgroup = NULL
   .draw = Lgroup = Current = SPR20 = SPR40 = SMY = LMP = fq = Harvest_Level =
-    NULL
+    NULL # Not necessary but stops CMD check notes
   F20 = F30 = F40 = efq = fq_lo = fq_hi = N = efq_m = dat_lo = dat_hi =
     lab = x = y = NULL
 
@@ -587,7 +588,7 @@ plot_efq_FRP <- function(blicc_rp, gear = NULL) {
 #' actions.
 #'
 #' @export
-#' @inheritParams plot_expected_frequency
+#' @inheritParams plot_posterior
 #' @return ggplot geom object plotting expected length frequencies by
 #'   selectivity
 #' @examples
@@ -725,7 +726,7 @@ plot_efq_SRP <- function(blicc_rp, gear = NULL) {
 #' single reference gear.
 #'
 #' @export
-#' @inheritParams plot_expected_frequency
+#' @inheritParams plot_posterior
 #' @return ggplot geom object for plotting
 #' @examples
 #' plot_SPR_contour(eg_rp)
@@ -885,7 +886,7 @@ plot_SPR_contour <- function(blicc_rp, gear = NULL) {
 #' multiple gears, the surface is calculated for a single reference gear.
 #'
 #' @export
-#' @inheritParams plot_expected_frequency
+#' @inheritParams plot_posterior
 #' @return ggplot geom object for plotting
 #' @examples
 #' plot_YPR_contour(eg_rp)
