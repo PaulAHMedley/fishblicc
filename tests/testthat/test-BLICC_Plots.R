@@ -18,15 +18,18 @@ suppressWarnings(
 mpd_fit <- blicc_mpd(ld)
 mpd_rp <- blicc_ref_pts(mpd_fit, ld)
 
-# plot_expected_frequency
+test_that("Plot prior expected frequency exist",{
+  p <- plot_prior(ld)
+  expect_true(ggplot2::is.ggplot(p))
+})
 
 test_that("Plot mpd expected frequency exist",{
-  p <- plot_expected_frequency(mpd_rp)
+  p <- plot_posterior(mpd_rp)
   expect_true(ggplot2::is.ggplot(p))
 })
 
 test_that("Plot mcmc expected frequency exist",{
-  p <- plot_expected_frequency(eg_rp)
+  p <- plot_posterior(eg_rp)
   expect_true(ggplot2::is.ggplot(p))
 })
 

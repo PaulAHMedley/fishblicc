@@ -2,12 +2,12 @@
 
 
 test_that("Prior table tibble exists", {
-  expect_true(tibble::is_tibble(blicc_priors(eg_ld)))
+  expect_true(tibble::is_tibble(blicc_prior(eg_ld)))
 })
 
 
 test_that("Prior table tibble exists", {
-  expect_true(tibble::is_tibble(blicc_priors(blip_Mk(eg_ld, ref_length=25))))
+  expect_true(tibble::is_tibble(blicc_prior(blip_Mk(eg_ld, ref_length=25))))
 })
 
 
