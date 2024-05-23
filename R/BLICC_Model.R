@@ -242,18 +242,18 @@ Rpop_len <- function(node, wt, Len, Zki, Galpha, Gbeta)  {
 Rselectivities <- function(Sm, blicc_ld) {
   Ski <- list()
   GSki <- list()
-    for (si in 1:blicc_ld$NS) {
-      Indx <- with(blicc_ld, sp_i[si] : sp_e[si])
-      #
-      # Need to be changed to C functions or a single C function
-      #
-      Ski[[si]] <- with(blicc_ld,
-                        switch(fSel[si],
-                          Rsel_logistic(Sm[Indx], LMP),
-                          Rsel_normal(Sm[Indx], LMP),
-                          Rsel_ssnormal(Sm[Indx], LMP),
-                          Rsel_dsnormal(Sm[Indx], LMP)))
-    }
+  for (si in 1:blicc_ld$NS) {
+    Indx <- with(blicc_ld, sp_i[si] : sp_e[si])
+    #
+    # Need to be changed to C functions or a single C function
+    #
+    Ski[[si]] <- with(blicc_ld,
+                      switch(fSel[si],
+                        Rsel_logistic(Sm[Indx], LMP),
+                        Rsel_normal(Sm[Indx], LMP),
+                        Rsel_ssnormal(Sm[Indx], LMP),
+                        Rsel_dsnormal(Sm[Indx], LMP)))
+  }
 
     for (gi in 1:blicc_ld$NG) {
       GSki[[gi]] <- Ski[[blicc_ld$GSbase[gi]]]

@@ -11,3 +11,15 @@ Procedures to fit catch curves to length frequency data based using length inter
 \references{
 Stan Development Team (NA). RStan: the R interface to Stan. R package version 2.26.13. https://mc-stan.org
 }
+\seealso{
+Useful links:
+\itemize{
+  \item \url{https://github.com/PaulAHMedley/fishblicc}
+  \item Report bugs at \url{https://github.com/PaulAHMedley/fishblicc/issues}
+}
+
+}
+\author{
+\strong{Maintainer}: Paul A.H. Medley \email{paulahmedley@gmail.com}
+
+}
