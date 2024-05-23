@@ -242,18 +242,18 @@ Rpop_len <- function(node, wt, Len, Zki, Galpha, Gbeta)  {
 Rselectivities <- function(Sm, blicc_ld) {
   Ski <- list()
   GSki <- list()
-    for (si in 1:blicc_ld$NS) {
-      Indx <- with(blicc_ld, sp_i[si] : sp_e[si])
-      #
-      # Need to be changed to C functions or a single C function
-      #
-      Ski[[si]] <- with(blicc_ld,
-                        switch(fSel[si],
-                          Rsel_logistic(Sm[Indx], LMP),
-                          Rsel_normal(Sm[Indx], LMP),
-                          Rsel_ssnormal(Sm[Indx], LMP),
-                          Rsel_dsnormal(Sm[Indx], LMP)))
-    }
+  for (si in 1:blicc_ld$NS) {
+    Indx <- with(blicc_ld, sp_i[si] : sp_e[si])
+    #
+    # Need to be changed to C functions or a single C function
+    #
+    Ski[[si]] <- with(blicc_ld,
+                      switch(fSel[si],
+                        Rsel_logistic(Sm[Indx], LMP),
+                        Rsel_normal(Sm[Indx], LMP),
+                        Rsel_ssnormal(Sm[Indx], LMP),
+                        Rsel_dsnormal(Sm[Indx], LMP)))
+  }
 
     for (gi in 1:blicc_ld$NG) {
       GSki[[gi]] <- Ski[[blicc_ld$GSbase[gi]]]
@@ -285,4 +285,30 @@ RSPR_0 <- function(Galpha, Gbeta, Mk, blicc_ld) {
   return(sum(pop * blicc_ld$ma_L))
 }
 
+#' Calculate the relative biomass (depletion)
+#'
+#' The model calculates the relative biomass compared to the unexploited state
+#' by dividing the weight times proportion of numbers in each length bin with
+#' fishing by the same calculation with no fishing.
+#'
+#' @export inheritParams Rpop_F
+#' @return The biomass as a proportion of the unexploited biomass..
+#' @examples
+#' RB_B0(Galpha=100, Gbeta=100/50, Mk=1.5, lSm=eg_ld$polSm, lFkm=eg_ld$polFkm, blicc_ld=eg_ld)
+#' 
+RB_B0 <- function(Galpha, Gbeta, Mk, Sm, Fk, blicc_ld) {
+  Zki <- Mk * blicc_ld$M_L
+  pop <- with(blicc_ld,
+              Rpop_len(gl_nodes, gl_weights,
+                       LLB, Zki, Galpha, Gbeta))
+  B0 <- sum(pop * blicc_ld$wt_L)
+  
+  
+  Sel <- Rselectivities(Sm, blicc_ld)
+  pop <- Rpop_F(Galpha, Gbeta, Mk, Fk,
+                FSel=Sel, blicc_ld)
+  Bt <- sum(pop$N_L * blicc_ld$wt_L)
+  
+  return(Bt/B0)
+}
 
