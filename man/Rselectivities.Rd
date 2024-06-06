@@ -14,8 +14,7 @@ including mixture weights at the end of the vector}
 \link{blicc_dat})}
 }
 \value{
-Selectivities as a vector for each length bin in a list for each
-gear.
+Selectivities as a list of vectors one for each gear's length bin.
 }
 \description{
 The function calculates the selectivities for each gear based on the relevant

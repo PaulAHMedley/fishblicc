@@ -234,8 +234,7 @@ Rpop_len <- function(node, wt, Len, Zki, Galpha, Gbeta)  {
 #' @inheritParams blicc_mpd
 #' @param  Sm  Vector of parameters for all the selectivity functions
 #'   including mixture weights at the end of the vector
-#' @return Selectivities as a vector for each length bin in a list for each
-#'   gear.
+#' @return Selectivities as a list of vectors one for each gear's length bin.
 #' @examples
 #' S <- Rselectivities(exp(eg_ld$polSm), eg_ld)
 #' plot(y=S[[1]], x=eg_ld$LMP, type="l")
@@ -283,32 +282,5 @@ RSPR_0 <- function(Galpha, Gbeta, Mk, blicc_ld) {
               Rpop_len(gl_nodes, gl_weights,
                        LLB, Zki, Galpha, Gbeta))
   return(sum(pop * blicc_ld$ma_L))
-}
-
-#' Calculate the relative biomass (depletion)
-#'
-#' The model calculates the relative biomass compared to the unexploited state
-#' by dividing the weight times proportion of numbers in each length bin with
-#' fishing by the same calculation with no fishing.
-#'
-#' @export inheritParams Rpop_F
-#' @return The biomass as a proportion of the unexploited biomass..
-#' @examples
-#' RB_B0(Galpha=100, Gbeta=100/50, Mk=1.5, lSm=eg_ld$polSm, lFkm=eg_ld$polFkm, blicc_ld=eg_ld)
-#' 
-RB_B0 <- function(Galpha, Gbeta, Mk, Sm, Fk, blicc_ld) {
-  Zki <- Mk * blicc_ld$M_L
-  pop <- with(blicc_ld,
-              Rpop_len(gl_nodes, gl_weights,
-                       LLB, Zki, Galpha, Gbeta))
-  B0 <- sum(pop * blicc_ld$wt_L)
-  
-  
-  Sel <- Rselectivities(Sm, blicc_ld)
-  pop <- Rpop_F(Galpha, Gbeta, Mk, Fk,
-                FSel=Sel, blicc_ld)
-  Bt <- sum(pop$N_L * blicc_ld$wt_L)
-  
-  return(Bt/B0)
 }
 

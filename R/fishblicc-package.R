@@ -1,8 +1,15 @@
 #' The 'fishblicc' package.
 #'
-#' @description Procedures to fit catch curves to length frequency data based using length intervals.
+#' @description Procedures to fit catch curves to length frequency data based
+#'   using length intervals.
 #'
-#' @docType package
+#' @details The package supports fitting a Bayesian length interval catch curve,
+#'   with selectivity modelled as an optional mixture of logistic and normal
+#'   functions. The package is designed to be used with multiple gears with
+#'   different selectivities fishing the same stock.
+#'
+#' @keywords internal
+"_PACKAGE"
 #' @name fishblicc-package
 #' @aliases fishblicc
 #' @useDynLib fishblicc, .registration = TRUE

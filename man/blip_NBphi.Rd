@@ -22,7 +22,7 @@ deviation (sigma). NB_phi controls the negative binomial over-dispersion
 compared to the Poisson distribution.
 }
 \details{
-The variance is for the negative binomial is \code{ Var = mu + mu^2 / NB_phi}
+The variance for the negative binomial is \code{ Var = mu + mu^2 / NB_phi}
 compared to \code{Var = mu} for the Poisson distribution.
 }
 \examples{

@@ -136,8 +136,8 @@ blicc_results(slim)
 
 There are a number of specialised plotting functions specific to length frequency and yield-per-recruit analysis for convenience. This is a plot showing the observed and expected length frequency, with 80% credible interval for the observations (including the expected variation in the data).  
 
-```{r fig.cap = "Figure: Expected frequency"}
-plot_expected_frequency(rp_res, gear=1:3) #Plot the results to check the model fit
+```{r fig.cap = "Figure: Posterior expected frequency"}
+plot_posterior(rp_res, gear=1:3) #Plot the results to check the model fit
 ```
 
 The model's standardised residuals between the observed and expected length frequency is most useful to identify influential outliers on the edge of the main selected range. Individual length measurements which may be unreliable can affect the fit significantly.  

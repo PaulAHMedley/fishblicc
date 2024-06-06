@@ -572,7 +572,7 @@ blip_mix <- function(blicc_ld,
 #' deviation (sigma). NB_phi controls the negative binomial over-dispersion
 #' compared to the Poisson distribution.
 #'
-#' The variance is for the negative binomial is ` Var = mu + mu^2 / NB_phi`
+#' The variance for the negative binomial is ` Var = mu + mu^2 / NB_phi`
 #' compared to `Var = mu` for the Poisson distribution.
 #'
 #' @export
@@ -586,7 +586,7 @@ blip_mix <- function(blicc_ld,
 blip_NBphi <- function(blicc_ld,
                        lNBphi) {
   if (!is.numeric(lNBphi) & length(lNBphi)==2)
-    stop("Error: lNBphi must be numeric vector of the mu,sd for the NB_phi lognormal prior. \n")
+    stop("Error: lNBphi must be numeric vector of the c(mu,sd) for the NB_phi lognormal prior. \n")
   blicc_ld$polNB_phim <- lNBphi[1]
   blicc_ld$polNB_phis <- lNBphi[2]
   return(blicc_ld)

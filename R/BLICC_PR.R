@@ -32,6 +32,36 @@ Calc_SPR <-
     return(SPR/SPR0)
   }
 
+#' Calculate the relative biomass (depletion)
+#'
+#' The model calculates the relative biomass compared to the unexploited state
+#' by dividing the exploitable biomass in each length bin with
+#' fishing by the exploitable biomass with no fishing. The exploitable biomass is
+#' the biomass at length weighted by the fishing mortality at each length
+#' (i.e. overall selectivity).
+#'
+#' @inheritParams Calc_SPR
+#' @return The biomass as a proportion of the unexploited biomass.
+#' @noRd
+#' 
+Calc_BB0 <- function(Galpha, Gbeta, Mk, Fk, Sm, blicc_ld) {
+  Sel <- Rselectivities(Sm, blicc_ld)
+  popZ <- Rpop_F(Galpha, Gbeta, Mk, Fk,
+                 FSel=Sel, blicc_ld)
+  Wt <- double(blicc_ld$NB)
+  for (i in 2:length(popZ$Fki))
+    Wt <- Wt + popZ$Fki[[i]]
+  Wt <- Wt * blicc_ld$wt_L
+  Bt <- sum(popZ$N_L * Wt)
+  
+  Zki <- Mk * blicc_ld$M_L
+  popM <- with(blicc_ld,
+               Rpop_len(gl_nodes, gl_weights,
+                        LLB, Zki, Galpha, Gbeta))
+  B0 <- sum(popM * Wt)
+  
+  return(Bt/B0)
+}
 
 #' Solve for a fishing mortality which produces the target SPR
 #'
@@ -81,6 +111,7 @@ FSPR_solve <-
     Rsel <- Rselectivities(Sm, blicc_ld)
     SPR0 <- RSPR_0(Galpha, Gbeta, Mk, blicc_ld) # Unexploited SPR
     min_SRP <- SRP_eval(-1)
+    if (is.na(min_SRP)) return(NA)
     if (min_SRP < 0) return(NA)  # Needs to > tarSPR
     max_SRP <- SRP_eval(maxval)
 

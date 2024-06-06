@@ -164,7 +164,7 @@ dl <- blicc_dat(
 
 ## Fit the model to these data 
 slim <- blicc_mpd(dl)
-><> Chain 1: Initial log joint probability = -16246.1
+><> Chain 1: Initial log joint probability = -14122.9
 ><> Chain 1:     Iter      log prob        ||dx||      ||grad||       alpha      alpha0  # evals  Notes 
 ><> Chain 1: Exception: neg_binomial_2_lpmf: Location parameter[1] is nan, but must be positive finite! (in 'string', line 263, column 6 to column 59)
 ><> Exception: neg_binomial_2_lpmf: Location parameter[1] is nan, but must be positive finite! (in 'string', line 263, column 6 to column 59)
@@ -172,11 +172,9 @@ slim <- blicc_mpd(dl)
 ><> Exception: neg_binomial_2_lpmf: Location parameter[1] is nan, but must be positive finite! (in 'string', line 263, column 6 to column 59)
 ><> Exception: neg_binomial_2_lpmf: Location parameter[1] is nan, but must be positive finite! (in 'string', line 263, column 6 to column 59)
 ><> 
-><> Chain 1:      499      -535.698   0.000239045       4.26163           1           1      558   
+><> Chain 1:      499      -535.644   0.000305269      0.522976           1           1      559   
 ><> Chain 1:     Iter      log prob        ||dx||      ||grad||       alpha      alpha0  # evals  Notes 
-><> Chain 1:      999      -535.646   1.53214e-05      0.372044           1           1     1110   
-><> Chain 1:     Iter      log prob        ||dx||      ||grad||       alpha      alpha0  # evals  Notes 
-><> Chain 1:     1455      -535.645   6.80675e-06     0.0321556      0.9018      0.9018     1614   
+><> Chain 1:      726      -535.644   6.32268e-06    0.00814902       1.536      0.1536      802   
 ><> Chain 1: Optimization terminated normally: 
 ><> Chain 1:   Convergence detected: relative gradient magnitude is below tolerance
 ## "slim <- blicc_fit(dl)" to run the full MCMC, but this takes a little time to run.
@@ -216,13 +214,13 @@ blicc_prior(dl)
 ><>  5 Estuarine set bagnet Fk        Lognormal         0.385  -0.955  2   
 ><>  6 Gill net             Fk        Lognormal         0.449  -0.802  2   
 ><>  7 Marine set bagnet    Fk        Lognormal         1.30    0.264  2   
-><>  8 Estuarine set bagnet Mode      Lognormal        15.5     2.74   1.5 
+><>  8 <NA>                 Mode      Lognormal        15.5     2.74   1.5 
 ><>  9 <NA>                 Left SD   <NA>              0.111  -2.20   1.5 
 ><> 10 <NA>                 Right SD  <NA>              0.0625 -2.77   1.5 
-><> 11 Gill net             Mode      Lognormal        23.5     3.16   1.5 
+><> 11 <NA>                 Mode      Lognormal        23.5     3.16   1.5 
 ><> 12 <NA>                 Left SD   <NA>              0.0816 -2.51   1.5 
 ><> 13 <NA>                 Right SD  <NA>              0.0816 -2.51   1.5 
-><> 14 Marine set bagnet    Mode      Lognormal        22.5     3.11   1.5 
+><> 14 <NA>                 Mode      Lognormal        22.5     3.11   1.5 
 ><> 15 <NA>                 Left SD   <NA>              0.0816 -2.51   1.5 
 ><> 16 <NA>                 Right SD  <NA>              0.0625 -2.77   1.5 
 ><> 17 <NA>                 NB_phi    Lognormal       100       4.61   0.5 
@@ -238,24 +236,24 @@ blicc_results(slim)
 ><> # A tibble: 19 × 3
 ><>    Parameter `Max. Posterior`        SE
 ><>    <chr>                <dbl>     <dbl>
-><>  1 Linf              42.4      1.38    
-><>  2 Galpha            97.1     24.6     
+><>  1 Linf              42.4      1.39    
+><>  2 Galpha            97.1     24.3     
 ><>  3 Mk                 2.00     0.197   
-><>  4 Fk[1]              0.122    0.0231  
-><>  5 Fk[2]              0.400    0.0964  
-><>  6 Fk[3]              1.06     0.241   
-><>  7 Sm[1]             13.7      0.564   
-><>  8 Sm[2]              0.0519   0.00700 
-><>  9 Sm[3]              0.00304  0.000689
-><> 10 Sm[4]             25.2      0.769   
-><> 11 Sm[5]              0.0230   0.00240 
-><> 12 Sm[6]              0.0115   0.00165 
-><> 13 Sm[7]             24.2      0.642   
-><> 14 Sm[8]              0.0250   0.00212 
-><> 15 Sm[9]              0.0101   0.00128 
-><> 16 NB_phi            18.0      4.06    
-><> 17 Gbeta              2.29     0.554   
-><> 18 SPR                0.340    0.0801  
+><>  4 Fk[1]              0.123    0.0264  
+><>  5 Fk[2]              0.399    0.0996  
+><>  6 Fk[3]              1.06     0.231   
+><>  7 Sm[1]             13.7      0.583   
+><>  8 Sm[2]              0.0519   0.00732 
+><>  9 Sm[3]              0.00303  0.000703
+><> 10 Sm[4]             25.2      0.768   
+><> 11 Sm[5]              0.0230   0.00239 
+><> 12 Sm[6]              0.0115   0.00173 
+><> 13 Sm[7]             24.2      0.641   
+><> 14 Sm[8]              0.0250   0.00216 
+><> 15 Sm[9]              0.0101   0.00131 
+><> 16 NB_phi            18.0      3.95    
+><> 17 Gbeta              2.29     0.547   
+><> 18 SPR                0.340    0.0773  
 ><> 19 lp__            -536.      NA
 ```
 
@@ -266,14 +264,14 @@ interval for the observations (including the expected variation in the
 data).
 
 ``` r
-plot_expected_frequency(rp_res, gear=1:3) #Plot the results to check the model fit
+plot_posterior(rp_res, gear=1:3) #Plot the results to check the model fit
 ```
 
 <div class="figure">
 
-<img src="man/figures/README-unnamed-chunk-5-1.png" alt="Figure: Expected frequency" width="100%" />
+<img src="man/figures/README-unnamed-chunk-5-1.png" alt="Figure: Posterior expected frequency" width="100%" />
 <p class="caption">
-Figure: Expected frequency
+Figure: Posterior expected frequency
 </p>
 
 </div>

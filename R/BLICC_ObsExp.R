@@ -182,7 +182,14 @@ blicc_ref_pts <-
           .progress = "SPR"
         ))
     }
-
+    rp_df <- rp_df |>
+      dplyr::mutate(B_B0 = purrr::pmap_dbl(
+        list(Galpha, Gbeta, Mk, Fk, Sm),
+        Calc_BB0,
+        blicc_ld = blicc_ld,
+        .progress = "B_B0"
+      ))
+    
     rp_df <- rp_df |>
       dplyr::mutate(
         F20 = purrr::pmap(
@@ -193,14 +200,14 @@ blicc_ref_pts <-
           blicc_ld = blicc_ld,
           .progress = "F20"
         ),
-        F30 = purrr::pmap(
-          list(Linf, Galpha, Mk, Fk, Sm),
-          FSPR_solve,
-          tarSPR = 0.3,
-          vdir = vdir,
-          blicc_ld = blicc_ld,
-          .progress = "F30"
-        ),
+        # F30 = purrr::pmap(
+        #   list(Linf, Galpha, Mk, Fk, Sm),
+        #   FSPR_solve,
+        #   tarSPR = 0.3,
+        #   vdir = vdir,
+        #   blicc_ld = blicc_ld,
+        #   .progress = "F30"
+        # ),
         F40 = purrr::pmap(
           list(Linf, Galpha, Mk, Fk, Sm),
           FSPR_solve,
@@ -209,21 +216,21 @@ blicc_ref_pts <-
           blicc_ld = blicc_ld,
           .progress = "F40"
         ),
-        F01 = purrr::pmap(
-          list(Linf, Galpha, Mk, Fk, Sm),
-          F01_solve,
-          vdir = vdir,
-          blicc_ld = blicc_ld,
-          .progress = "F01"
-        ),
-        S20 = purrr::pmap(
-          list(Linf, Galpha, Mk, Fk, Sm),
-          SSPR_solve,
-          tarSPR = 0.2,
-          vdir = vdir,
-          blicc_ld = blicc_ld,
-          .progress = "S20"
-        ),
+        # F01 = purrr::pmap(
+        #   list(Linf, Galpha, Mk, Fk, Sm),
+        #   F01_solve,
+        #   vdir = vdir,
+        #   blicc_ld = blicc_ld,
+        #   .progress = "F01"
+        # ),
+        # S20 = purrr::pmap(
+        #   list(Linf, Galpha, Mk, Fk, Sm),
+        #   SSPR_solve,
+        #   tarSPR = 0.2,
+        #   vdir = vdir,
+        #   blicc_ld = blicc_ld,
+        #   .progress = "S20"
+        # ),
         S40 = purrr::pmap(
           list(Linf, Galpha, Mk, Fk, Sm),
           SSPR_solve,

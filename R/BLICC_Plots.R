@@ -432,29 +432,44 @@ plot_FkF40_density <- function(blicc_rp) {
 }
 
 
-#' Plot expected length frequencies for a range of fishing mortality reference
-#' points
+#' Plot expected length frequencies for a range of fishing mortality and
+#' selectivity reference points
 #'
-#' The facet plot covers the current estimated fishing mortality, together with
-#' fishing mortalities required to obtain SPR 20%, SPR 30% and SPR 40%. The
-#' graphs show the expected values and 80% credible intervals compared to
-#' current observations. They can be used to assess whether length frequencies
-#' should be able to detect changes in fishing mortality to these different
-#' levels. Note that if reference points do not exist, they are not plotted, so
-#' some graphs may be blank except for the data. The graphs show the number of
-#' MCMC draws for which the reference points exist in each case.
+#' The facet plot estimates the length frequency data expected for a range of
+#' fishing mortality and selectivity to show how the length frequency data might
+#' respond to changes in mortality and/or selectivity. Fishing mortalities
+#' tested are SPR 20% and SPR 40% and selectivity to obtain SPR 40% and the
+#' maximum yield.
 #'
-#' If the apparent changes in length frequencies between the plots is small,
-#' relying on length frequency data alone may not be advisable.
+#' @details The graphs show the expected values and 80% credible intervals
+#'   compared to the observations. They can be used to assess whether length
+#'   frequencies should be able to detect changes in fishing mortality to these
+#'   different levels. In many cases, differences between frequencies can be
+#'   subtle and the precision of data collection may not be sufficient to detect
+#'   such changes reliably.  Dependent on the selectivity, reference points may
+#'   not exist. It may not be possible to achieve an SPR level without changing
+#'   multiple parameters, whereas these scenarios are restricted to only
+#'   changing either the fishing mortality or the selectivity function central
+#'   locations. If reference points do not exist, they are not plotted, so some
+#'   graphs may be blank except for the data. The graphs show the number of MCMC
+#'   draws for which the reference points exist in each case.
+#'
+#'   If the apparent changes in length frequencies between the plots is small,
+#'   relying on length frequency data alone may not be advisable.
+#'
+#'   If selectivity mixtures are used, all location parameters for the mixtures
+#'   will be shifted equally by default. This may not make a lot of sense in
+#'   practice and more realistic scenarios may need to be constructed to test
+#'   possible management actions.
 #'
 #' @export
 #' @inheritParams plot_posterior
 #' @return ggplot geom object for plotting expected length frequencies by SPR
 #'   level
 #' @examples
-#' plot_efq_FRP(eg_rp)
+#' plot_efq(eg_rp)
 #' 
-plot_efq_FRP <- function(blicc_rp, gear = NULL) {
+plot_efq <- function(blicc_rp, gear = NULL) {
   Linf = Galpha = Mk = Fk = Sm = NB_phi = Sgroup = NULL
   .draw = Lgroup = Current = SPR20 = SPR40 = SMY = LMP = fq = Harvest_Level =
     NULL # Not necessary but stops CMD check notes
@@ -480,35 +495,47 @@ plot_efq_FRP <- function(blicc_rp, gear = NULL) {
     df <- blicc_rp$rp_df |>
       dplyr::mutate(Lgroup = list(factor(blicc_ld$LLB))) |>
       dplyr::mutate(
-        SPR20 = purrr::pmap(
+        F_SPR20 = purrr::pmap(
           list(Linf, Galpha, Mk, F20, Sm),
           blicc_get_efq,
           gear_i = gear_i,
           blicc_ld = blicc_ld
         ),
-        SPR30 = purrr::pmap(
-          list(Linf, Galpha, Mk, F30, Sm),
+        # SPR30 = purrr::pmap(
+        #   list(Linf, Galpha, Mk, F30, Sm),
+        #   blicc_get_efq,
+        #   gear_i = gear_i,
+        #   blicc_ld = blicc_ld
+        # ),
+        F_SPR40 = purrr::pmap(
+          list(Linf, Galpha, Mk, F40, Sm),
           blicc_get_efq,
           gear_i = gear_i,
           blicc_ld = blicc_ld
         ),
-        SPR40 = purrr::pmap(
-          list(Linf, Galpha, Mk, F40, Sm),
+        Sel_SPR40 = purrr::pmap(
+          list(Linf, Galpha, Mk, Fk, S40),
+          blicc_get_efq,
+          gear_i = gear_i,
+          blicc_ld = blicc_ld
+        ),
+        Sel_MY = purrr::pmap(
+          list(Linf, Galpha, Mk, Fk, SMY),
           blicc_get_efq,
           gear_i = gear_i,
           blicc_ld = blicc_ld
         )
       ) |>
-      dplyr::select(`.draw`, NB_phi, Lgroup, SPR20:SPR40) |>
-      tidyr::unnest(Lgroup:SPR40) |>
-      dplyr::left_join(
-        dplyr::select(blicc_lx, .draw, Lgroup, Current = efq),
-        by = c(".draw", "Lgroup")
-      )
+      dplyr::select(`.draw`, NB_phi, Lgroup, F_SPR20:Sel_MY) |>
+      tidyr::unnest(Lgroup:Sel_MY) #|>
+      # dplyr::left_join(
+      #   dplyr::select(blicc_lx, .draw, Lgroup, Current = efq),
+      #   by = c(".draw", "Lgroup")
+      # )
   )
 
   df1 <- df |>
-    tidyr::pivot_longer(cols = SPR20:Current,
+    tidyr::pivot_longer(cols = F_SPR20:Sel_MY,
                         names_to = "Harvest_Level",
                         values_to = "efq") |>
     dplyr::mutate(
@@ -587,12 +614,11 @@ plot_efq_FRP <- function(blicc_rp, gear = NULL) {
 #' relaistic scenarios may need to be constructed to test possible management
 #' actions.
 #'
-#' @export
+#' 
 #' @inheritParams plot_posterior
 #' @return ggplot geom object plotting expected length frequencies by
 #'   selectivity
-#' @examples
-#' plot_efq_SRP(eg_rp)
+#' @noRd
 #' 
 plot_efq_SRP <- function(blicc_rp, gear = NULL) {
   Linf = Galpha = Mk = Fk = Sm = NB_phi = Sgroup = NULL
@@ -768,7 +794,7 @@ plot_SPR_contour <- function(blicc_rp, gear = NULL) {
   ))
   Sm <- as.vector(tapply(
     X = unlist(dplyr::pull(rp_df, Sm)),
-    INDEX = rep(1:blicc_ld$NP, nrow(rp_df)),
+    INDEX = rep(1:(blicc_ld$NP+blicc_ld$NM), nrow(rp_df)),
     FUN = mean
   ))
   # Include checks for NA
@@ -783,14 +809,14 @@ plot_SPR_contour <- function(blicc_rp, gear = NULL) {
       FUN = mean,
       na.rm = TRUE
     )
-  vF30 <- dplyr::pull(rp_df, F30)
-  vF30 <- vF30[!is.na(vF30)]
-  if (length(vF30) == 0)
-    F30 <- NA
+  vF40 <- dplyr::pull(rp_df, F40)
+  vF40 <- vF40[!is.na(vF40)]
+  if (length(vF40) == 0)
+    F40 <- NA
   else
-    F30 <- tapply(
-      X = unlist(vF30),
-      INDEX = rep(1:blicc_ld$NF, length(vF30)),
+    F40 <- tapply(
+      X = unlist(vF40),
+      INDEX = rep(1:blicc_ld$NF, length(vF40)),
       FUN = mean,
       na.rm = TRUE
     )
@@ -812,16 +838,16 @@ plot_SPR_contour <- function(blicc_rp, gear = NULL) {
 
   svdir <- blicc_rp$vdir[blicc_ld$Fkg > 0]
 
-  F30 <- double(GridN)
+  F40 <- double(GridN)
   for (i in 1:GridN) {
     # Calculate the same proportional change to the selectivity parameters for all gears
     vSm[indx] <- (1 + svdir * dL[i]) * Sm[indx]
-    F30_g <-
+    F40_g <-
       FSPR_solve(Linf, Galpha, Mk, Fk, vSm, 0.3, blicc_rp$vdir, blicc_ld)
-    F30[i] <- F30_g[blicc_ld$Fkg[gear_i]]
+    F40[i] <- F40_g[blicc_ld$Fkg[gear_i]]
   }
-  SPRRP <- tibble::tibble(Smx_rp = mSmx, F30 = F30) |>
-    dplyr::filter(F30 <= MaxF)
+  SPRRP <- tibble::tibble(Smx_rp = mSmx, F40 = F40) |>
+    dplyr::filter(F40 <= MaxF)
 
   SPRCurve <- tidyr::expand_grid(mFk = mFk, Smx = mSmx) |>
     dplyr::mutate(
@@ -858,7 +884,7 @@ plot_SPR_contour <- function(blicc_rp, gear = NULL) {
     cp <- cp +
       ggplot2::geom_line(
         data = SPRRP,
-        ggplot2::aes(x = Smx_rp, y = F30),
+        ggplot2::aes(x = Smx_rp, y = F40),
         colour = "darkred",
         linewidth = 1.5,
         inherit.aes = F
@@ -866,8 +892,8 @@ plot_SPR_contour <- function(blicc_rp, gear = NULL) {
       ggplot2::annotate(
         "text",
         x = max(SPRRP$Smx_rp) + 0.5,
-        y = max(SPRRP$F30) + 0.3,
-        label = paste0("SPR30%"),
+        y = max(SPRRP$F40) + 0.3,
+        label = paste0("SPR40%"),
         colour = "darkred"
       )
   }
@@ -936,7 +962,7 @@ plot_YPR_contour <- function(blicc_rp, gear = NULL) {
   Sm <-
     as.vector(tapply(
       X = unlist(dplyr::pull(blicc_rp$rp_df, Sm)),
-      INDEX = rep(1:blicc_ld$NP, nrow(blicc_rp$rp_df)),
+      INDEX = rep(1:(blicc_ld$NP+blicc_ld$NM), nrow(blicc_rp$rp_df)),
       FUN = mean
     ))
   vF20 <- dplyr::pull(rp_df, F20)
@@ -951,15 +977,15 @@ plot_YPR_contour <- function(blicc_rp, gear = NULL) {
       FUN = mean,
       na.rm = TRUE
     )
-  vF30 <- dplyr::pull(rp_df, F30)
-  vF30 <- vF30[!is.na(vF30)]
-  if (length(vF30) == 0)
-    F30 <- NA
+  vF40 <- dplyr::pull(rp_df, F40)
+  vF40 <- vF40[!is.na(vF40)]
+  if (length(vF40) == 0)
+    F40 <- NA
   else
-    F30 <-
+    F40 <-
     tapply(
-      X = unlist(vF30),
-      INDEX = rep(1:blicc_ld$NF, length(vF30)),
+      X = unlist(vF40),
+      INDEX = rep(1:blicc_ld$NF, length(vF40)),
       FUN = mean,
       na.rm = TRUE
     )
