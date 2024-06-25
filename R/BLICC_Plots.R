@@ -1000,7 +1000,7 @@ plot_YPR_contour <- function(blicc_rp, gear = NULL) {
   dL <- (mSmx / Gear_Smx[gear_i] - 1) / blicc_rp$vdir[gear_i]
 
   vSm <- Sm
-  indx <- with(blicc_ld, sp_i[Fkg > 0])
+  indx <- blicc_ld$sp_i[blicc_ld$Fkg > 0]
 
   svdir <- blicc_rp$vdir[blicc_ld$Fkg > 0]
 

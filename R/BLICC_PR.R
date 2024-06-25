@@ -48,10 +48,15 @@ Calc_BB0 <- function(Galpha, Gbeta, Mk, Fk, Sm, blicc_ld) {
   Sel <- Rselectivities(Sm, blicc_ld)
   popZ <- Rpop_F(Galpha, Gbeta, Mk, Fk,
                  FSel=Sel, blicc_ld)
-  Wt <- double(blicc_ld$NB)
-  for (i in 2:length(popZ$Fki))
-    Wt <- Wt + popZ$Fki[[i]]
-  Wt <- Wt * blicc_ld$wt_L
+  
+  Fl <- double(blicc_ld$NB)
+  for (gi in 1:blicc_ld$NG) {
+    if (blicc_ld$Fkg[gi] > 0) {
+      Fl <- Fl + popZ$Fki[[gi]]
+    }
+  }
+  Wt <- Fl * blicc_ld$wt_L  # Fish weight * Total F for each length
+  
   Bt <- sum(popZ$N_L * Wt)
   
   Zki <- Mk * blicc_ld$M_L
