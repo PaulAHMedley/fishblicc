@@ -82,26 +82,26 @@ test_that("Plot mcmc FkF40 density exists",{
 # plot_efq_FRP
 
 test_that("Plot mpd expected frequencies for F reference points exists",{
-  p <- plot_efq_FRP(mpd_rp)
+  p <- plot_efq(mpd_rp)
   expect_true(ggplot2::is.ggplot(p))
 })
 
 test_that("Plot mcmc expected frequencies for F reference points exists",{
-  p <- plot_efq_FRP(eg_rp)
+  p <- plot_efq(eg_rp)
   expect_true(ggplot2::is.ggplot(p))
 })
 
-# plot_efq_SRP
+# plot_efq_SRP no longer proposed
 
-test_that("Plot mpd expected frequencies for selectivity reference points exists",{
-  p <- plot_efq_SRP(mpd_rp)
-  expect_true(ggplot2::is.ggplot(p))
-})
+# test_that("Plot mpd expected frequencies for selectivity reference points exists",{
+#   p <- plot_efq_SRP(mpd_rp)
+#   expect_true(ggplot2::is.ggplot(p))
+# })
 
-test_that("Plot mcmc expected frequencies for selectivity reference points exists",{
-  p <- plot_efq_SRP(eg_rp)
-  expect_true(ggplot2::is.ggplot(p))
-})
+# test_that("Plot mcmc expected frequencies for selectivity reference points exists",{
+#   p <- plot_efq_SRP(eg_rp)
+#   expect_true(ggplot2::is.ggplot(p))
+# })
 
 # plot_SPR_contour
 

@@ -471,10 +471,10 @@ plot_FkF40_density <- function(blicc_rp) {
 #' 
 plot_efq <- function(blicc_rp, gear = NULL) {
   Linf = Galpha = Mk = Fk = Sm = NB_phi = Sgroup = NULL
-  .draw = Lgroup = Current = SPR20 = SPR40 = SMY = LMP = fq = Harvest_Level =
-    NULL # Not necessary but stops CMD check notes
-  F20 = F30 = F40 = efq = fq_lo = fq_hi = N = efq_m = dat_lo = dat_hi =
-    lab = x = y = NULL
+  .draw = Lgroup = Current = SPR20 = SPR40 = SMY = NULL
+  F_SPR40 = S40 = Sel_MY = LMP = fq = Harvest_Level = NULL # Not necessary but stops CMD check notes
+  F_SPR20 = F20 = F30 = F40 = efq = fq_lo = fq_hi = N = NULL
+  efq_m = dat_lo = dat_hi = lab = x = y = NULL
 
   blicc_ld <- blicc_rp$ld
   blicc_lx <- blicc_rp$lx_df
@@ -621,7 +621,7 @@ plot_efq <- function(blicc_rp, gear = NULL) {
 #' @noRd
 #' 
 plot_efq_SRP <- function(blicc_rp, gear = NULL) {
-  Linf = Galpha = Mk = Fk = Sm = NB_phi = Sgroup = NULL
+  Linf = Galpha = Mk = Fk = Sm = NB_phi = Sgroup = F_SPR40 = NULL
   .draw = Lgroup = Current = SPR20 = SPR40 = LMP = fq = Harvest_Level =
     NULL
   S20 = S40 = SMY = efq = fq_lo = fq_hi = N = efq_m = dat_lo = dat_hi =
