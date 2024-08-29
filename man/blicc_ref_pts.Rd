@@ -56,8 +56,9 @@ adjusted, then the direction would be \code{vdir=c(1, 0)}. It is possible to
 provide a vector such as \code{vdir=c(1, 0.5)} to represent only a 50\% reduction
 in the second gear compared to the first, for example. This will only be
 applied to the fishing mortality. The selectivity changes will continue to
-use the vector as a dummy variable, so for selectivity:
-
+use the vector as a dummy variable, but the quantity will be ignored and
+all \code{vdir} with non-zero values for gears will be treated as having equal
+displacement; so for example a selectivity evaluation for
 \code{vdir = c(1.0, 0.5)} is equivalent to \code{vdir = c(1, 1)}.
 
 It is likely that proper simulation projections would be required for more

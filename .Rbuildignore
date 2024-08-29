@@ -15,4 +15,5 @@
 ^IO_YFT_Example_Analysis\.qmd$
 ^data/iotc_yft_2013_19\.rda$
 ^data/Cynoscion_virescens_SPR\.rda$
+^data/GuyanaSeatrout_ld\.rda$
 ^test$

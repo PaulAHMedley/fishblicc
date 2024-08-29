@@ -765,7 +765,7 @@ blicc_ini <- function(blicc_ld) {
     nGalpha = 0,
     nMk    = 0,
     nFk    = as.array(rep(0.0, blicc_ld$NF), dim=1),
-    nSm    = rep(0.0, blicc_ld$NP),
+    nSm    = rep(0.0, blicc_ld$NP+blicc_ld$NM),
     nNB_phi = 0
   ))
 }
