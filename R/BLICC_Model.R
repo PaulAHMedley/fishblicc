@@ -224,6 +224,41 @@ Rpop_len <- function(node, wt, Len, Zki, Galpha, Gbeta)  {
   return(pop)
 }
 
+#' Alternate to test for speed - ai corrected so may not work.... :-)
+#' 
+Rpop_len2 <- function(node, wt, Len, Zki, Galpha, Gbeta)  {
+  lgamma_Galpha <- lgamma(Galpha)
+  nv <- length(node)
+  LN <- length(Len)
+  surv <- double(LN)
+  x_beta <- node / Gbeta
+  log_x_beta <- log(x_beta)
+  
+  calc_ss <- function(L1, L2, Z1, Z2) {
+    ss <- (log(x_beta + L2 - L1) * Z1) +
+      log_x_beta * Z1 +
+      log(node + Gbeta * L2) * (Galpha - 1.0) -
+      Gbeta * L2 - lgamma_Galpha
+    return(sum(exp(ss) * wt))
+  }
+  
+  ss <- log(node + Gbeta * Len[1]) * (Galpha - 1.0) - Gbeta * Len[1] - lgamma_Galpha
+  surv[1] <- sum(exp(ss) * wt)
+  surv[2] <- calc_ss(Len[1], Len[2], -Zki[1], Zki[1])
+  
+  for (Li in 3:LN) {
+    Ln <- Len[Li]
+    Lrange <- Ln - Len[1:(Li - 1)]
+    Zii <- c(-Zki[1], Zki[1:(Li - 2)] - Zki[2:(Li - 1)])
+    lim <- log_x_beta * Zki[Li - 1] + vapply(x_beta, function(x) sum(log(x + Lrange) * Zii), numeric(1))
+    ss <- lim + log(node + Gbeta * Ln) * (Galpha - 1.0) - Gbeta * Ln - lgamma_Galpha
+    surv[Li] <- sum(exp(ss) * wt)
+  }
+  pop <- c(surv[-LN] - surv[-1], surv[LN]) / Zki
+  return(pop)
+}
+
+
 
 #' Calculate the selectivities for each length bin for each gear
 #'

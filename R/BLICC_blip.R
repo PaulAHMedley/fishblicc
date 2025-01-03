@@ -566,6 +566,76 @@ blip_mix <- function(blicc_ld,
 }
 
 
+#' Normalize selectivity mixture weights, so the maximum mixture weight is 1.0
+#'
+#' The function checks each gear that has mixtures that the maximum weight is
+#' 1.0. If it is higher than 1.0, the selectivity with the highest weight is
+#' moved to the base component using `blip_MainComp`.
+#' 
+#' @export
+#' @inheritParams blicc_mpd
+#' @return The data object `blicc_ld` with normalized weights
+#' 
+blip_normalize_mix <- function(blicc_ld) {
+  for (gi in 1:blicc_ld$NG) {
+    si <- 2L*gi-1L
+    if (blicc_ld$GSmix1[si] > 0) {
+      mix_indx <-  blicc_ld$GSmix1[si]:blicc_ld$GSmix1[si+1L]
+      max_i <- which.max(blicc_ld$polSm[blicc_ld$NP+mix_indx])
+      if (blicc_ld$polSm[blicc_ld$NP+max_i] > 0) {
+        blicc_ld <- blip_main_sel(blicc_ld, gi, blicc_ld$GSmix2[mix_indx[max_i]])
+      }
+    }
+  }
+  return(blicc_ld)
+}
+
+
+#' Set gear selectivity component to main
+#'
+#' A gear's selectivity component is set so that its weight equals 1.0. Other 
+#' mixture weights are adjusted accordingly. 
+#'
+#' @export
+#' @param gear Single integer or exact name indexing one gear
+#' @param sel_N Index for the new main selectivity component with weight=1.
+#' @return The data object `blicc_ld` but with the new main selectivity
+#' 
+blip_main_sel <- function(blicc_ld,
+                          gear,
+                          sel_N) {
+
+  if (length(gear) != 1)
+    stop("Error: `gear` must reference a single gear. \n")
+  
+  gear <- parse_gear(gear, blicc_ld)
+  
+  if (length(sel_N) != 1 | ! is.numeric(sel_N))
+    stop("Error: `sel_N` must reference a single selectivity component. \n")
+  
+  # check component is in gear
+  
+  si <- 2L*gear-1L
+  if (blicc_ld$GSmix1[si]==0) return(blicc_ld) # ignore as no mixtures
+
+  mix_sel_i <-  blicc_ld$GSmix1[si]:blicc_ld$GSmix1[si+1L]
+  new_sel_i <- blicc_ld$GSmix2[mix_sel_i]==sel_N
+  
+  if (! any(new_sel_i)) 
+    stop("Error: Selectivity component not used by this gear. \n")
+
+  old_sel <- blicc_ld$GSbase[gear]
+  blicc_ld$GSbase[gear] <- sel_N
+  sel_i <- mix_sel_i[new_sel_i]
+  blicc_ld$GSmix2[sel_i] <- old_sel
+  wt_norm <- blicc_ld$polSm[blicc_ld$NP+sel_i]
+  blicc_ld$polSm[blicc_ld$NP+sel_i] <- 0
+  blicc_ld$polSm[blicc_ld$NP+mix_sel_i] <- blicc_ld$polSm[blicc_ld$NP+mix_sel_i] - wt_norm
+
+  return(blicc_ld)
+}
+
+
 #' Set the `NB_phi` prior hyper-parameters in the data object
 #'
 #' The `NB_phi` log-normal prior is updated with a mean (mu) and standard
