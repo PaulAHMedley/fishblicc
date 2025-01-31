@@ -25,8 +25,8 @@ making a contribution}
 \link{blicc_dat})}
 }
 \value{
-A list of the population size in each length bin and a list of
-fishing mortalities at length for each gear.
+A list of the population size in each length bin for each time period
+and a list of fishing mortalities at length for each gear / time period.
 }
 \description{
 The model integrates over the growth rate variability and sums mortality

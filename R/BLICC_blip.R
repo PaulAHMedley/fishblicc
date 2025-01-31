@@ -26,7 +26,7 @@
 #' 
 blip_Linf <- function(blicc_ld,
                       Linf,
-                      model_name=NA) {
+                      model_name=NULL) {
   if (! is.vector(Linf, mode="double") | length(Linf) != 2)
     stop("Error: Linf must be a vector of 2 (mu, sigma) for the prior. \n")
   if (Linf[1] <= min(blicc_ld$LLB)) {
@@ -39,7 +39,7 @@ blip_Linf <- function(blicc_ld,
     stop("Error: Linf prior sd must be greater than zero. \n")
   }
 
-  if (!is.na(model_name))
+  if (!is.null(model_name))
     blicc_ld$model_name <- model_name
   # Expected Linf
   blicc_ld$poLinfm <- Linf[1]
@@ -163,20 +163,22 @@ blip_Mk <- function(blicc_ld,
 #' @inheritParams blip_Linf
 #' @param lFk   A vector containing the log-normal mean `Fk` for each gear
 #'   having a non-negligible catch
-#' @param lFks  A double containing the same lognormal sigma `Fk` for all gears
+#' @param lFks  A double containing the same log-normal sigma `Fk` for all gears
 #' @return The data object `blicc_ld` with the prior for `Fk` changed.
 #' @examples
 #' new_ld <- blip_Fk(eg_ld, lFk=log(1.9), lFks=1.5)
 #' 
 blip_Fk <- function(blicc_ld,
-                    lFk  = NA,
-                    lFks = NA,
+                    lFk  = NULL,
+                    lFks = NULL,
                     model_name=NULL) {
-  if (any(is.na(lFk))) {
+  if (is.null(lFk)) {
     lFk <- blicc_ld$polMkm + log(blicc_ld$prop_catch)
   }
-  if (any(is.na(lFks)))
+  if (any(is.null(lFks)))
     lFks = 2.0
+  if (length(lFks) != 1) 
+    stop("Error: lFks must be a single real number for the prior Fk log-normal sigma.")
   if (! (is.numeric(lFk) & is.numeric(lFks)))
     stop("Error in blip_Fk: supplied values are not numeric.")
   if (blicc_ld$NF != length(lFk))
@@ -184,7 +186,7 @@ blip_Fk <- function(blicc_ld,
   if (! is.null(model_name))
     blicc_ld$model_name <- model_name
   blicc_ld$polFkm <- as.array(lFk)
-  blicc_ld$polFks = lFks
+  blicc_ld$polFks <- lFks
   return(blicc_ld)
 }
 
@@ -209,17 +211,17 @@ blip_Fk <- function(blicc_ld,
 #' 
 blip_LH <-
   function(blicc_ld,
-           a = NA,
-           b = NA,
-           L50 = NA,
-           L95 = NA,
-           ma_L = NA,
-           wt_L = NA,
+           a = NULL,
+           b = NULL,
+           L50 = NULL,
+           L95 = NULL,
+           ma_L = NULL,
+           wt_L = NULL,
            model_name = NULL,
            set_defaults = FALSE) {
     Linf <- blicc_ld$poLinfm
     # Weight and maturity
-    if (is.na(L50)) {
+    if (is.null(L50)) {
       if (set_defaults)
         L50 <- 0.66 * Linf
     } else {
@@ -227,12 +229,12 @@ blip_LH <-
         stop("Error: Length at 50% maturity must be greater than 0.2*Linf and less than Linf. \n")
       }
     }
-    if (is.na(L95)) {
+    if (is.null(L95)) {
       # Ls = -log(1/0.95 - 1)/(L95-L50)
       if (set_defaults)
         Ls <- -log(1 / 0.95 - 1) / (0.05 * (Linf - L50))
       else
-        Ls <- NA
+        Ls <- NULL
     } else {
       if (L95 <= L50) {
         stop("Error: Length at 95% maturity must be greater than L50. \n")
@@ -243,18 +245,18 @@ blip_LH <-
       Ls <- -log(1 / 0.95 - 1) / (L95 - L50)
     }
     
-    if (any(is.na(wt_L))) {
-      if (is.na(a) & set_defaults) {
+    if (is.null(wt_L)) {
+      if (is.null(a) & set_defaults) {
         warning("No weight-at-length information provided - the weight units will be incorrect. \n")
         a <- 1.0
       }
-      if (is.na(b) & set_defaults)
-        b <- 3.0
+      if (is.null(b))
+        if (set_defaults) b <- 3.0
       else if (! is.na(b)) {
         if (b <= 2 | b > 4) 
           stop("Error: Length-weight exponent (b) must be greater than 2 and less than 4. \n")
       }
-      if (!(is.na(a) | is.na(b)))
+      if (!(is.null(a) | is.null(b)))
         wt_L <-
           with(blicc_ld, a * exp(b * log(LMP)))    # Estimated biomass per recruit
       else {
@@ -262,38 +264,38 @@ blip_LH <-
           warning("a or b not specified: weight-at-length not changed. \n")
       }
     } else {
-      if (length(wt_L) != blicc_ld$NB) {
-        stop("Error: Length of the weight-at-length vector must equal the number of length bins. \n")
+      if (!is.numeric(wt_L) | length(wt_L) != blicc_ld$NB) {
+        stop("Error: Weight-at-length vector must be a numeric vector with size equal to the number of length bins. \n")
       }
     }
     
-    if (any(is.na(ma_L))) {
-      if (!(is.na(Ls) | is.na(L50)))
+    if (any(is.null(ma_L))) {
+      if (!(is.null(Ls) | is.null(L50)))
         ma_L <-
           with(blicc_ld, wt_L / (1 + exp(-Ls * (LMP - L50))))    #Mature biomass
       else
         warning("L50 or L95 not specified: mature biomass -at-length not changed. \n")
     } else {
-      if (length(ma_L) != blicc_ld$NB) {
+      if (!is.numeric(ma_L) | length(ma_L) != blicc_ld$NB) {
         stop(
-          "Error: Length of the mature biomass -at-length vector must equal the number of length bins. \n"
+          "Error: Mature biomass -at-length vector must be a numeric vector with size equal to the number of length bins. \n"
         )
       }
     }
     
     if (!is.null(model_name))
       blicc_ld$model_name <- model_name
-    if (!is.na(a))
+    if (!is.null(a))
       blicc_ld$a <- a
-    if (!is.na(b))
+    if (!is.null(b))
       blicc_ld$b <- b
-    if (!is.na(L50))
+    if (!is.null(L50))
       blicc_ld$L50 <- L50
-    if (!is.na(Ls))
+    if (!is.null(Ls))
       blicc_ld$Ls <- Ls
-    if (!any(is.na(wt_L)))
+    if (!any(is.null(wt_L)))
       blicc_ld$wt_L <- wt_L
-    if (!any(is.na(ma_L)))
+    if (!any(is.null(ma_L)))
       blicc_ld$ma_L <- ma_L
     return(blicc_ld)
   }
@@ -359,11 +361,13 @@ blip_sel_auto <- function(blicc_ld,
           "Selectivity function ",
           as.character(si),
           " is in a mixture, so the prior will need to be set directly. ",
-          "See function `blip_set_sel`. \n"
+          "See function `blip_sel`. \n"
         )
       )
     else {
-      pfq <- blicc_ld$fq[[gi]] * mort_corr  # adjust data for mortality
+      
+      qi <- which(blicc_ld$Gi==gi) # Choose single frequency for this gear
+      pfq <- blicc_ld$fq[[qi[1]]] * mort_corr  # adjust data for mortality
       pfq <- pfq / sum(pfq)                 # normalise
       cfq <- cumsum(pfq)                    # cumulative sum
       i10 <-
@@ -516,7 +520,7 @@ blip_mix <- function(blicc_ld,
     sel_indx <- c(blicc_ld$GSbase[gear], blicc_ld$GSmix2[mix_sel])
 
     if (any(is.na(blicc_ld$polSm[blicc_ld$sp_i[sel_indx]])))
-      stop("Error: Selectivity priors must be set using `blip_set_sel` before mixture weights can be estimated. \n")
+      stop("Error: Selectivity priors must be set using `blip_sel` before mixture weights can be estimated. \n")
 
     ns <- length(sel_indx)
     wts <- 1/(blicc_ld$fq[[gear]]+1) # approximate least-squares weights
@@ -582,7 +586,7 @@ blip_normalize_mix <- function(blicc_ld) {
     if (blicc_ld$GSmix1[si] > 0) {
       mix_indx <-  blicc_ld$GSmix1[si]:blicc_ld$GSmix1[si+1L]
       max_i <- which.max(blicc_ld$polSm[blicc_ld$NP+mix_indx])
-      if (blicc_ld$polSm[blicc_ld$NP+max_i] > 0) {
+      if (blicc_ld$polSm[blicc_ld$NP+mix_indx[max_i]] > 0) {
         blicc_ld <- blip_main_sel(blicc_ld, gi, blicc_ld$GSmix2[mix_indx[max_i]])
       }
     }
@@ -693,9 +697,9 @@ LG_Nodes <- function(blicc_ld, draws, toler=1.0e-06) {
     # Grid values
     Zki[[i]] <- draws$Mk[i] * blicc_ld$M_L
     FSel <- Rselectivities(Sm[i,], blicc_ld)
-    for (gi in 1:blicc_ld$NG) {
-      if (blicc_ld$Fkg[gi] > 0) {
-        Zki[[i]] <- Zki[[i]] + FSel[[gi]] * Fk[i, blicc_ld$Fkg[gi]] # Total mortality
+    for (qi in 1:blicc_ld$NQ) {
+      if (blicc_ld$Fkq[qi] > 0) {
+        Zki[[i]] <- Zki[[i]] + FSel[[blicc_ld$Gi[qi]]] * Fk[i, blicc_ld$Fkq[qi]] # Total mortality
       }
     }
     pop[[i]] <- Cpop_len(glq$nodes, glq$weights, blicc_ld$LLB, Zki[[i]], draws$Galpha[i], draws$Gbeta[i])

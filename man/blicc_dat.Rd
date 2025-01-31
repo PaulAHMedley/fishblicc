@@ -11,17 +11,21 @@ blicc_dat(
   Linf,
   sel_fun,
   gear_sel = NULL,
+  gear_freq = NULL,
+  period_freq = NULL,
+  freq_names = NULL,
+  gear_names = NULL,
+  period_names = NULL,
   Catch = 1,
-  gear_names = NA,
-  Mk = NA,
+  Mk = NULL,
   ref_length = -1,
-  wt_L = NA,
-  ma_L = NA,
+  wt_L = NULL,
+  ma_L = NULL,
   a = 0.001,
   b = 3,
-  L50 = NA,
-  L95 = NA,
-  NK = NA
+  L50 = NULL,
+  L95 = NULL,
+  NK = NULL
 )
 }
 \arguments{
@@ -46,10 +50,24 @@ for which gear. It can include multiple selectivity functions for each
 gear.  If not provided, it is assumed each selectivity function is linked
 to each gear in order. Optional.}
 
-\item{Catch}{A vector of relative catches, one for each gear. Required if the
-number of gears is more than one.}
+\item{gear_freq}{An integer vector indexing which data frequencies are from
+each gear. If not provided, one-to-one link is assumed if possible,
+otherwise an error is raised. Optional.}
+
+\item{period_freq}{An integer vector indexing which data frequencies are in
+each time period. If not provided, it is assumed there is only one time
+period for all frequencies. Optional.}
+
+\item{freq_names}{A vector of names for the data frequencies for reference.
+Optional.}
 
 \item{gear_names}{A vector of names for the gears for reference. Optional.}
+
+\item{period_names}{A vector of names for the time periods for reference.
+Optional.}
+
+\item{Catch}{A vector of relative catches, one for each gear. Required if the
+number of gears is more than one.}
 
 \item{Mk}{Natural mortality divided by the growth rate K (usually around
 1.5). Optional.}
@@ -136,8 +154,7 @@ automatically sets up the correct links. If you are using mixtures, you
 need to set up the selectivity functions first and link them to each gear
 either using this function \code{blicc_dat} or using \link{blicc_selfun} and
 \link{blicc_gear_sel} separately. For mixtures, you will need to manually set
-the priors for each mixture function using \link{blip_sel} and
-\link{blip_mix}.
+the priors for each mixture function using \link{blip_sel} and \link{blip_mix}.
 }
 \examples{
 ld <- blicc_dat(LLB = 25:35,

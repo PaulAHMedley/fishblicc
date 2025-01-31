@@ -40,7 +40,7 @@ blicc_prior <- function(blicc_ld) {
     SD <- c(SD, NA)
   }
   
-  gear_names <- c(gear_names, blicc_ld$gname[blicc_ld$Fkg])
+  gear_names <- c(gear_names, blicc_ld$fqname[blicc_ld$Fkq>0])
   function_type <- c(function_type, rep("Lognormal", blicc_ld$NF))
   par_names <- c(par_names, rep("Fk", blicc_ld$NF))
 
@@ -99,6 +99,7 @@ blicc_results <- function(blicc_res) {
   if (class(blicc_res)[1]=="stanfit") {
     NF <- blicc_res@par_dims$nFk
     NP <- blicc_res@par_dims$nSm
+    NT <- blicc_res@par_dims$SPR
     params <- c(
       "Linf",
       "Galpha",
@@ -107,7 +108,7 @@ blicc_results <- function(blicc_res) {
       paste0("Sm[", as.character(1:NP), "]"),
       "NB_phi",
       "Gbeta",
-      "SPR",
+      paste0("SPR[", as.character(1:NT), "]"),
       "lp__"
     )
     par_value <- rstan::summary(blicc_res, pars = params, probs = 0.5)$summary
@@ -124,24 +125,26 @@ blicc_results <- function(blicc_res) {
     res <- blicc_res |>
       dplyr::rename(Parameter=par, `Max. Posterior` = mpd, `SE`=se)
   } else {
-    if ("vdir rp_df lx_df ld" != paste(names(blicc_res), collapse=" ")) {
+    if ("dr_df lx_df ld scenario rp_df" != paste(names(blicc_res), collapse=" ")) {
       stop(
         "The provided parameter must be a stanfit object, mpd fit or a results list from blicc_ref_pts() function."
       )
     }
     suppressWarnings(
-      res <- blicc_res$rp_df |>
-        dplyr::select(Linf:lp__) |>
+      res <- blicc_res$dr_df |>
+        dplyr::select(Linf:lp__, SPR) |>
         tidyr::unnest_wider(col=Fk, names_sep="[") |>
         dplyr::rename_with(~ paste0(.x, "]"), tidyselect::starts_with("Fk")) |>
         tidyr::unnest_wider(col=Sm, names_sep="[") |>
-        dplyr::rename_with(~ paste0(.x, "]"), tidyselect::starts_with("Sm"))
+        dplyr::rename_with(~ paste0(.x, "]"), tidyselect::starts_with("Sm")) |>
+        tidyr::unnest_wider(col=SPR, names_sep="[") |>
+        dplyr::rename_with(~ paste0(.x, "]"), tidyselect::starts_with("SPR"))
     )
     p_order <- names(res)
     res <- res |>
       tidyr::pivot_longer(cols=tidyselect::everything(), names_to="Parameter",
                           values_to="Value") 
-    if (nrow(blicc_res$rp_df) > 1) {
+    if (nrow(blicc_res$dr_df) > 1) {
       res <- res |>
         dplyr::mutate(Parameter = factor(Parameter, levels=p_order)) |>
         dplyr::group_by(Parameter) |>

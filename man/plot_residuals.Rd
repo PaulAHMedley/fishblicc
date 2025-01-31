@@ -4,7 +4,7 @@
 \alias{plot_residuals}
 \title{Plot standardised residuals against length}
 \usage{
-plot_residuals(blicc_rp, gear = "All")
+plot_residuals(blicc_rp, gear = "All", time_period = "All")
 }
 \arguments{
 \item{blicc_rp}{A list of posterior draws, reference points with associated
@@ -12,6 +12,9 @@ direction, the data object and expected lengths from \link{blicc_ref_pts}
 function.}
 
 \item{gear}{Specifies the gear(s) to plot as an integer index or full name}
+
+\item{time_period}{Specifies the period(s) to plot as an integer index or
+full name}
 }
 \value{
 ggplot geom object plotting standardised residuals

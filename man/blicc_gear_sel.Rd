@@ -2,7 +2,7 @@
 % Please edit documentation in R/blicc_stan.R
 \name{blicc_gear_sel}
 \alias{blicc_gear_sel}
-\title{Returns data object from \link{blicc_dat} with new gear-selectivity links}
+\title{Returns data list from \link{blicc_dat} with new gear-selectivity links}
 \usage{
 blicc_gear_sel(blicc_ld, gear_sel = NULL, gear = NULL, model_name = NULL)
 }
@@ -24,7 +24,7 @@ selectivity functions}
 The data object blicc_ld with the new selectivity-gear links.
 }
 \description{
-Sets up the data object with the new links between the selectivity functions
+Sets up the data list with the new links between the selectivity functions
 and the gears. This allows the gears to be associated with more than one
 selectivity function (mixtures), so increasing the flexibility of the gear
 selectivity. The new references are replaced in the data object, which is

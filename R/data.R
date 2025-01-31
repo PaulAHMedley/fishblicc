@@ -16,18 +16,24 @@
 #'@format A list of 26 data vectors used in the BLICC model:
 #'\describe{
 #'  \item{model_name}{Model and/or fit and/or species name}
+#'  \item{NQ}{Number of length frequency data sets}
 #'  \item{NG}{Number of gears}
 #'  \item{NS}{Number of selectivity functions}
+#'  \item{NT}{Number of time periods}
 #'  \item{NF}{Number of fishing mortality estimates}
 #'  \item{NB}{Number of bins in the length frequency}
 #'  \item{NP}{Number of selectivity function parameters}
 #'  \item{NM}{Number of mixture selectvity models}
+#'  \item{fqname}{Length frequency data set names}
 #'  \item{gname}{Fishing gear names}
+#'  \item{tpname}{Time period names}
 #'  \item{LLB}{Vector of length bin lower boundaries}
 #'  \item{LMP}{Length bin mid-points, used for selectivity and plotting}
 #'  \item{fq}{List of length frequency vectors, one for each gear}
+#'  \item{Gi}{Integer vector linking length frequency data sets to gears}
+#'  \item{Ti}{Integer vector linking length frequency data sets to time periods}
 #'  \item{prop_catch}{Vector of proportional catch by gear of length NF}
-#'  \item{Fkg}{Integer vector of index for gears link to fishing mortality}
+#'  \item{Fkq}{Integer vector of length frequency data sets index linking to fishing mortality}
 #'  \item{fSel}{Index of selectivity function to use for each selectvity model}
 #'  \item{GSbase}{Index of based selectivity model for each gear}
 #'  \item{GSmix1}{Index of start and end mixtures in GSmix2: 0 implies no mixture}
@@ -79,12 +85,13 @@
 #'An example data table of parameter draws and reference points from the BLICC model
 #'  eg_rp <- blicc_ref_pts(eg_slim, eg_ld)
 #'
-#'@format A list of data frames and the data object of results from a BLICC model fit:
+#'@format A list of data frames of results and input information for a BLICC model fit:
 #'\describe{
-#'  \item{vdir}{A vector describing the "direction" across gears for RP estimates}
-#'  \item{rp_df}{A draws tibble of parameter estimates and reference points}
+#'  \item{dr_df}{A draws tibble of parameter estimates}
 #'  \item{lx_df}{A tibble of expected numbers of fish in each length bin for each gear}
-#'  \item{ld}{The data object from [blicc_dat] used to fit the model and calculate indicators and results }
+#'  \item{ld}{The data list from [blicc_dat] used to fit the model and calculate indicators and results}
+#'  \item{scenario}{A list of time period, gears, a vector describing the "direction" across gears and data list used to calculate reference points}
+#'  \item{rp_df}{A draws tibble of parameter estimates and reference points for the scenario}
 #'}
 #'@format rp_df is a tibble of parameter estimates from a BLICC model fit:
 #'\describe{
@@ -95,16 +102,11 @@
 #'  \item{Sm}{A list vector of selectivity model parameters}
 #'  \item{NB_phi}{Negative binomial parameter: Excess variance compared to the Poisson}
 #'  \item{Gbeta}{Gamma distribution "rate" parameter: (=Galpha/Linf)}
-#'  \item{SPR}{Spawning potential ratio}
-#'  \item{lp__}{Log posterior probability for the draw}
 #'  \item{.chain}{MCMC chain identifier}
 #'  \item{.iteration}{MCMC iteration identifier}
 #'  \item{.draw}{MCMC draw identifier}
 #'  \item{F20}{List vector of fishing mortality estimated to achieve 20% SPR}
-#'  \item{F30}{List vector of fishing mortality estimated to achieve 30% SPR}
 #'  \item{F40}{List vector of fishing mortality estimated to achieve 40% SPR}
-#'  \item{F01}{List vector of fishing mortality at 10% of the yield curve slope at the origin (F0.1)}
-#'  \item{S20}{List vector of selectivity location estimated to achieve 20% SPR}
 #'  \item{S40}{List vector of selectivity location estimated to achieve 40% SPR}
 #'  \item{SMY}{List vector of selectivity location estimated to achieve maximum yield per recruit}
 #'}
@@ -121,18 +123,25 @@
 #'@format A list of 26 data vectors used in the BLICC model:
 #'\describe{
 #'  \item{model_name}{Model and/or fit and/or species name}
+#'  \item{model_name}{Model and/or fit and/or species name}
+#'  \item{NQ}{Number of length frequency data sets}
 #'  \item{NG}{Number of gears}
 #'  \item{NS}{Number of selectivity functions}
+#'  \item{NT}{Number of time periods}
 #'  \item{NF}{Number of fishing mortality estimates}
 #'  \item{NB}{Number of bins in the length frequency}
 #'  \item{NP}{Number of selectivity function parameters}
 #'  \item{NM}{Number of mixture selectvity models}
+#'  \item{fqname}{Length frequency data set names}
 #'  \item{gname}{Fishing gear names}
+#'  \item{tpname}{Time period names}
 #'  \item{LLB}{Vector of length bin lower boundaries}
 #'  \item{LMP}{Length bin mid-points, used for selectivity and plotting}
 #'  \item{fq}{List of length frequency vectors, one for each gear}
+#'  \item{Gi}{Integer vector linking length frequency data sets to gears}
+#'  \item{Ti}{Integer vector linking length frequency data sets to time periods}
 #'  \item{prop_catch}{Vector of proportional catch by gear of length NF}
-#'  \item{Fkg}{Integer vector of index for gears link to fishing mortality}
+#'  \item{Fkq}{Integer vector of length frequency data sets index linking to fishing mortality}
 #'  \item{fSel}{Index of selectivity function to use for each selectvity model}
 #'  \item{GSbase}{Index of based selectivity model for each gear}
 #'  \item{GSmix1}{Index of start and end mixtures in GSmix2: 0 implies no mixture}

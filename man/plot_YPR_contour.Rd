@@ -23,7 +23,9 @@ current state of the stock is marked as a point and the F0.1 reference point
 is marked as a line. All values are calculated as means and uncertainty is
 not represented to maintain simplicity. The reference line is plotted if it
 exists within a reasonable range of the current estimated status. For
-multiple gears, the surface is calculated for a single reference gear.
+multiple gears, the surface is calculated for a single reference gear. For
+multiple time series, the plot is for the time period used to estimate
+reference points (see \link{blicc_ref_pts})
 }
 \examples{
 plot_YPR_contour(eg_rp)

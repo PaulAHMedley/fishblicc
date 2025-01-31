@@ -70,17 +70,18 @@ blicc_mpd <- function(blicc_ld) {
   full_par_names <- c("Linf", "Galpha", "Mk",
                       paste0("Fk[", as.character(1:blicc_ld$NF), "]"),
                       paste0("Sm[", as.character(1:(blicc_ld$NP+blicc_ld$NM)), "]"),
-                      "NB_phi", "Gbeta", "SPR")
+                      "NB_phi", "Gbeta", paste0("SPR[", as.character(1:blicc_ld$NT), "]"))
   rd <- fit$theta_tilde[ , full_par_names]
-  if (blicc_ld$NF>1)
-    par_names <- c("Linf", "Galpha", "Mk",
-                   paste0("Fk", as.character(1:blicc_ld$NF)),
+
+  if (blicc_ld$NF>1) F_names <- paste0("Fk", as.character(1:blicc_ld$NF)) 
+  else F_names <- "Fk"
+  if (blicc_ld$NT>1) SPR_names <- paste0("SPR", as.character(1:blicc_ld$NT)) 
+  else SPR_names <- "SPR"
+  
+  
+  par_names <- c("Linf", "Galpha", "Mk", F_names,
                    paste0("Sm", as.character(1:(blicc_ld$NP+blicc_ld$NM))),
-                   "NB_phi", "Gbeta", "SPR")
-  else
-    par_names <- c("Linf", "Galpha", "Mk", "Fk",
-                   paste0("Sm", as.character(1:(blicc_ld$NP+blicc_ld$NM))),
-                   "NB_phi", "Gbeta", "SPR")
+                   "NB_phi", "Gbeta", SPR_names)
   se <- tryCatch(unname(c(apply(rd, MARGIN=2, FUN="sd"), NA)),
                  error=function(cond) return(NA))
 
@@ -301,8 +302,7 @@ blicc_fit <- function(blicc_ld,
 #'   need to set up the selectivity functions first and link them to each gear
 #'   either using this function `blicc_dat` or using [blicc_selfun] and
 #'   [blicc_gear_sel] separately. For mixtures, you will need to manually set
-#'   the priors for each mixture function using [blip_sel] and
-#'   [blip_mix].
+#'   the priors for each mixture function using [blip_sel] and [blip_mix].
 #'
 #' @export
 #' @param model_name A name for the model (species or fishery). Optional.
@@ -320,9 +320,19 @@ blicc_fit <- function(blicc_ld,
 #'   for which gear. It can include multiple selectivity functions for each
 #'   gear.  If not provided, it is assumed each selectivity function is linked
 #'   to each gear in order. Optional.
+#' @param gear_freq An integer vector indexing which data frequencies are from
+#'   each gear. If not provided, one-to-one link is assumed if possible,
+#'   otherwise an error is raised. Optional.
+#' @param period_freq An integer vector indexing which data frequencies are in
+#'   each time period. If not provided, it is assumed there is only one time
+#'   period for all frequencies. Optional.
 #' @param Catch A vector of relative catches, one for each gear. Required if the
 #'   number of gears is more than one.
+#' @param freq_names A vector of names for the data frequencies for reference.
+#'   Optional.
 #' @param gear_names A vector of names for the gears for reference. Optional.
+#' @param period_names A vector of names for the time periods for reference.
+#'   Optional.
 #' @param Mk  Natural mortality divided by the growth rate K (usually around
 #'   1.5). Optional.
 #' @param ref_length  The reference length for the inverse length function if it
@@ -359,17 +369,21 @@ blicc_dat <-
            Linf,
            sel_fun,
            gear_sel = NULL,
+           gear_freq = NULL,
+           period_freq = NULL,
+           freq_names = NULL,
+           gear_names = NULL,
+           period_names = NULL,
            Catch = 1,
-           gear_names = NA,
-           Mk = NA,
+           Mk = NULL,
            ref_length = -1,
-           wt_L = NA,
-           ma_L = NA,
+           wt_L = NULL,
+           ma_L = NULL,
            a = 0.001,
            b = 3,
-           L50 = NA,
-           L95 = NA,
-           NK = NA) {
+           L50 = NULL,
+           L95 = NULL,
+           NK = NULL) {
 
     if (!is.vector(LLB, mode="numeric")) {
       stop(
@@ -382,54 +396,142 @@ blicc_dat <-
     NB <- length(LLB)
     LMP <- c((LLB[-NB] + LLB[-1]) * 0.5, LLB[NB] + 0.5*(LLB[NB]-LLB[NB-1])) # Length bin mid points (LMP) used for plotting etc. Not used in Stan model.
 
-        # Data vectors
+    # Data vectors
     if (is.vector(fq, mode="numeric")) fq <- list(fq)  #convert to list if possible
     if (!is.list(fq)) {
       stop(
         "Error: fq (frequency data) must be supplied as a list of vectors (or can be given as a vector if only one.) \n"
       )
     }
-    Ngear <- length(fq)
-    for (i in 1:Ngear)
+    Nfq <- length(fq)
+    
+    if (Nfq > 1 & all(c(is.null(gear_sel), is.null(gear_freq), is.null(period_freq),
+                          is.null(gear_names), is.null(period_names))))
+      stop("Error: At least one of gear_sel, gear_freq, period_freq, gear_names or period_names needs to be specified so length frequencies can be allocated correctly./n")    
+    
+    
+    for (i in 1:Nfq)
       if (!is.vector(fq[[i]], mode="numeric") | (NB != length(fq[[i]]))) {
         stop(
           "Error: fq must be a frequency for every bin, including zeroes as vectors of the same length as the number of bins. \n"
         )
       }
 
-    # Catches
-    if (!is.vector(Catch) | length(Catch) != Ngear | any(Catch<0) | !any(Catch>0)) {
-      stop("Error: Catch (relative catches) must be provided for each length frequency. \n")
+    # Parse Time Periods
+    ErrStr <- "Error: period_freq must be an integer vector linking each frequency to separate time periods.\n"
+    if (is.null(period_freq)) {
+      Nperiod <- 1 
+      period_freq <- rep(1, Nfq)
+    } else { 
+      if (length(period_freq) != Nfq)
+        stop(ErrStr)
+      suppressWarnings(Nperiod <- as.integer(max(period_freq)))
+      if(is.na(Nperiod) | Nperiod < 1) 
+        stop(ErrStr)
+      tp <- sort(unique(period_freq))
+      suppressWarnings(
+        if (length(tp) != Nperiod | any(tp != 1:Nperiod)) {
+          stop(ErrStr)
+        })
     }
-    Fgear <- integer(Ngear)
-    fi <- 1
-    for (gi in 1:Ngear) {
-      if (Catch[gi] > 0) {
-        Fgear[gi] <- fi
-        fi <- fi + 1
+    if (is.null(period_names)) {
+      period_names <- paste0("Period_", as.character(1:Nperiod))
+    } else
+      if ((length(period_names) != Nperiod) | !is.character(period_names)) {
+        stop("Error: period_names must be a character vector with the same length as the number of time periods.\n")
+      }
+    
+    # Parse Gears
+    Ngear <- 0
+    if (!is.null(gear_freq)) {
+      if (length(gear_freq) != Nfq)
+        stop(
+          "Error: gear_freq must specify the gear applying to each data frequency. \n"
+        )
+      if (is.character(gear_freq) & is.character(gear_names)) 
+        gear_freq <- match(gear_freq, gear_names)
+      if (any(is.na(gear_freq))) 
+        stop("Error: gear_freq and gear_names must contain identical gear names.\n")
+      if (!is.numeric(gear_freq))
+          stop("Error: gear_freq must be an vector indexing gears to frequencies.\n")
+      Ngear <- max(gear_freq)
+      if (length(unique(gear_freq)) != Ngear) 
+        stop("Error: gear_freq must use unique identifiers up to the number of gears.\n")
+    }
+    if (!is.null(gear_sel)) {
+      Ngear1 <- length(gear_sel)
+      if(is.na(Ngear1) | Ngear1 < 1) 
+        stop(
+          "Error: gear_sel must be a list of integer vectors that link all selectivity components to each gear.\n"
+        )
+      if (Ngear > 0 & Ngear1 != Ngear)
+        stop("Error: Number of gears referenced in gear_freq and length of gear_sel list must be the same.\n")
+      else Ngear <- Ngear1
+      if (is.null(gear_freq)) {
+        if (Nperiod==1 & Nfq==Ngear) gear_freq <- 1:Nfq 
+        else stop("Error: gear_freq needs to be specified indicating which gear produced which length frequency.\n")
+      }
+    }
+    
+    if (Ngear==0) {
+      if (length(gear_names) == Nfq) {
+        Ngear <- Nfq 
+        gear_freq <- 1:Nfq
+      } else {
+        Ngear <- 1 
+        gear_freq <- rep(1, Nfq)
+        Catch <- rep(1, Nfq)
       }
     }
 
-    catch_prop <- Catch[Catch > 0] / sum(Catch)
-
-    # Gear names
-    if (any(is.na(gear_names))) {
+    if (is.null(gear_names)) {
       gear_names <- paste0("Gear_", as.character(1:Ngear))
     } else
       if ((length(gear_names) != Ngear) | !is.character(gear_names)) {
-        stop("Error: gear_names must be a character vector with the same length as the number of gears. \n")
+        stop("Error: gear_names must be a character vector with the same length as the number of gears.\n")
       }
+    
+    # Parse Catches
+    if (Ngear==1) {
+      catch_prop <- rep(1, Nfq)
+    } else {
+      if (!is.vector(Catch) | length(Catch) != Nfq | any(Catch<0) | !any(Catch>0)) {
+        stop("Error: Relative catches, including zeros where negligible, must be provided for each length frequency. \n")
+      }
+      sums <- tapply(Catch, period_freq, sum)
+      catch_prop <- Catch[Catch > 0] / sums[period_freq[Catch > 0]] # Normalise
+      names(catch_prop) <- NULL
+    }
+    
+    # Create the F index based on catches
+    Ffq <- integer(Nfq)
+    fi <- 1L
+    for (qi in 1:Nfq) {
+      if (catch_prop[qi] > 0) {
+        Ffq[qi] <- fi
+        fi <- fi + 1L
+      }
+    }
 
-    # Natural mortality
-    if (!is.na(Mk) & Mk <= 0) {
-      stop("Error: Mk must be greater than zero. \n")
+    # Frequency data names
+    if (is.null(freq_names)) {
+      freq_names <- dplyr::case_when(
+        Nperiod==1 ~ gear_names[gear_freq],
+        Ngear==1   ~ period_names[period_freq],
+        TRUE       ~ paste(gear_names[gear_freq], 
+                           period_names[period_freq]))
+    } else
+      if ((length(freq_names) != Nfq) | !is.character(freq_names)) {
+        stop("Error: freq_names must be a character vector with the same length as the number of data frequencies.\n")
     }
 
     dl <- list(
       model_name = model_name,
       # Number of gears: separate length frequencies
+      NQ = Nfq,
       NG = Ngear,
       NS = 0,
+      NT = Nperiod,
       # Number of F's: gears associated with non-zero catches
       NF = length(catch_prop),
       # Number of length bins
@@ -437,18 +539,24 @@ blicc_dat <-
       # Place holders for number of selectivity parameters
       NP = 0,
       NM = 0,
+      # Data frequency names
+      fqname = as.array(freq_names),
       # Gear names
       gname = as.array(gear_names),
+      # Time period names
+      tpname = as.array(period_names),
       # Lower length boundaries for each bin
       LLB = LLB,
       # Length bin mid points (for plotting etc.)
       LMP = LMP,
-      # Frequency data
+      # Frequency data with time period and gear indexing
       fq = fq,
+      Gi = as.array(gear_freq),
+      Ti = as.array(period_freq),
       # Estimated total relative catch in numbers of fish, excluding zeroes for surveys etc.
       prop_catch = as.array(catch_prop),
-      # Index of the Fk associated with each gear: 0 implies catch negligible
-      Fkg = as.array(Fgear),
+      # Index of the Fk associated with each frequency: 0 implies catch negligible
+      Fkq = as.array(Ffq),
       
       fSel = integer(0),
       GSbase = as.array(integer(Ngear)),
@@ -460,16 +568,20 @@ blicc_dat <-
     dl <- blip_Galpha(dl, c(log(1 / 0.1 ^ 2), 0.25))
     dl <- blip_LH(dl, a, b, L50, L95, ma_L, wt_L, set_defaults=TRUE)
     
-    if (is.na(Mk)) {
+    if (is.null(Mk)) {
       # from Prince et al. 2015
       Mk <-
         with(dl, b * (1 - (L50 / poLinfm)) / (L50 / poLinfm))
       warning(paste0("Default Mk, based on life history invariant estimate, is: ",
                      format(Mk, digits=2), "\n"))
+    } else {
+      # Natural mortality
+      if (Mk <= 0) 
+        stop("Error: Mk must be greater than zero. \n")
     }
 
     dl <- blip_Mk(dl, c(log(Mk), 0.1), ref_length)
-    dl <- blip_Fk(dl, NA, 2.0)  # loose prior for fully exploited stock
+    dl <- blip_Fk(dl, NULL, 2.0)  # loose prior for fully exploited stock
 
     # Selectivity functions
     dl <- blicc_selfun(dl, sel_fun)
@@ -484,7 +596,7 @@ blicc_dat <-
     dl <- blip_sel_auto(dl)
     
     # Gauss-Laguerre quadrature grid size
-    if (is.na(NK)) {
+    if (is.null(NK)) {
       if (any(is.na(dl$polSm)))
         dl$NK <- 110  # safe value
       else {
@@ -638,9 +750,9 @@ blicc_selfun <-
   }
 
 
-#' Returns data object from [blicc_dat] with new gear-selectivity links
+#' Returns data list from [blicc_dat] with new gear-selectivity links
 #'
-#' Sets up the data object with the new links between the selectivity functions
+#' Sets up the data list with the new links between the selectivity functions
 #' and the gears. This allows the gears to be associated with more than one
 #' selectivity function (mixtures), so increasing the flexibility of the gear
 #' selectivity. The new references are replaced in the data object, which is
@@ -751,6 +863,109 @@ blicc_gear_sel <-
   }
 
 
+
+#' Returns data list from [blicc_dat] with only the selected time period
+#' included
+#'
+#' Subsets the data list with only selectivity components, gears, frequencies
+#' and parameters relevant to the defined time period.
+#'
+#' @export
+#' @inheritParams blicc_mpd
+#' @param time_period  The names or integer vector of the time periods being
+#'   selected
+#' @return The data object blicc_ld subset for the new time period.
+#' 
+blicc_period_filter <- function(blicc_ld, time_period) {
+  time_period <- parse_period(sort(time_period), blicc_ld)
+  
+  if (blicc_ld$NT==1L) return(blicc_ld)
+  
+  Qindx <- blicc_ld$Ti %in% time_period
+  Findx <- Qindx & blicc_ld$Fkq > 0
+  Gindx <- unique(blicc_ld$Gi[Qindx])
+  Sindx <- get_selectivities(Gindx, blicc_ld)
+  Pindx <- integer(0)
+  for (si in Sindx) {
+    Pindx <- c(Pindx, blicc_ld$sp_i[si]:blicc_ld$sp_e[si])
+  }
+  #Mindx <- + MIXWeights
+  
+  ld <- blicc_ld
+  ld$model_name <- paste(blicc_ld$model_name, "Subset Periods", 
+                         paste(as.character(time_period), collapse=" "))
+  ld$NQ <- sum(Qindx)
+  ld$NG <- length(Gindx)
+  ld$NS <- length(Sindx)
+  ld$fSel <- as.array(blicc_ld$fSel[Sindx])
+
+  ld$NT <- length(time_period)
+  ld$NF <- sum(Findx)
+  ld$NP <- length(Pindx)
+  #ld$NM <- length(Mindx)
+  ld$fqname <- as.array(blicc_ld$fqname[Qindx])
+  ld$gname <- as.array(blicc_ld$gname[Gindx])
+  ld$tpname <- as.array(blicc_ld$tpname[time_period])
+  
+  ld$fq <- blicc_ld$fq[Qindx]
+  ld$Gi <- as.array(match(blicc_ld$Gi[Qindx], Gindx))
+  ld$Ti <- as.array(match(blicc_ld$Ti[Qindx], time_period))
+  
+  ld$prop_catch <- as.array(blicc_ld$prop_catch[Qindx])
+  ld$Fkq <- as.array(match(blicc_ld$Fkq[Qindx], which(Findx)))
+  ld$Fkq[is.na(ld$Fkq)] <- 0
+  sums <- with(ld, tapply(prop_catch, Ti[Fkq>0], sum))
+  ld$prop_catch <- with(ld, prop_catch / sums[Ti[Fkq>0]]) # Normalise
+  
+  
+  #seq_along(Gindx)
+  ld$GSbase <- as.array(blicc_ld$GSbase[Gindx]) # resequence
+  mxn <- integer(0)
+  mxpar <- mxpars <- double(0)
+  
+  ld$GSmix1 <- integer(2*length(Gindx))
+  mix_1 <- 1L
+  mix_2 <- 1L
+  for (gi in seq(Gindx)) {
+    mgi <- (gi-1L)*2L + 1L
+    if (blicc_ld$GSmix1[mgi] > 0) {
+      mxindx <- blicc_ld$GSmix2[blicc_ld$GSmix1[gi]:blicc_ld$GSmix1[gi+1L]]
+      ld$GSmix1[mix_1] <- mix_2
+      mix_1 <- mix_1 + 1L
+      mix_2 <- mix_2 + length(mxindx) - 1L
+      ld$GSmix1[mix_1] <- mix_2
+      mix_1 <- mix_1 + 1L
+      mix_2 <- mix_2 + 1L
+      mxn <- c(mxn, match(mxindx, Sindx))
+      mxpar <- c(mxpar, blicc_ld$polSm[blicc_ld$NP+blicc_ld$GSmix1[mgi]:blicc_ld$GSmix1[mgi+1L]])
+      mxpars <- c(mxpars, blicc_ld$polSs[blicc_ld$NP+blicc_ld$GSmix1[mgi]:blicc_ld$GSmix1[mgi+1L]])
+    } else {
+      mix_1 <- mix_1 + 2L
+    }
+    
+  }
+  ld$GSmix2 <- mxn
+  ld$NM <- length(mxn)
+  ld$polFkm <- as.array(blicc_ld$polFkm[Findx])
+
+  npar <- Rsel_functions()$npar[ld$fSel]
+  spare <- spari <- integer(ld$NS)
+  np <- 1L
+  for (i in seq_along(ld$fSel)) {
+    spari[i] <- np
+    np <- np + npar[i]
+    spare[i] <- np - 1L
+  }
+  # Replace function list
+  ld$sp_i <- as.array(spari)    #start
+  ld$sp_e <- as.array(spare)    #end
+
+  ld$polSm <- c(blicc_ld$polSm[Pindx], mxpar)
+  ld$polSs <- c(blicc_ld$polSs[Pindx], mxpars)
+  
+  return(ld)    
+}
+
 #' Default start parameters centred on priors
 #'
 #' Provides a list of start parameters for the MCMC - defaults to zero values
@@ -814,7 +1029,7 @@ blicc_model_OK <- function(blicc_ld) {
   if (any(is.na(match(1:blicc_ld$NS, fref))))
     return("Error: A selectivity function is not referenced. \n")
   if (any(is.na(blicc_ld$polSm)))
-    return("Error: Selectivity priors not set. \n")
+    return("Warning: Selectivity priors are not set. \n")
 
   return("OK")
 }

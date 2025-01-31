@@ -4,7 +4,7 @@
 \alias{plot_selectivity}
 \title{Plot selectivity and 80\% credible interval, if available, by length.}
 \usage{
-plot_selectivity(blicc_rp, gear = NULL)
+plot_selectivity(blicc_rp, gear = "All")
 }
 \arguments{
 \item{blicc_rp}{A list of posterior draws, reference points with associated

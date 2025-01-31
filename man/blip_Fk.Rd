@@ -4,7 +4,7 @@
 \alias{blip_Fk}
 \title{Set \code{Fk} log-normal prior hyper-parameters in the data object}
 \usage{
-blip_Fk(blicc_ld, lFk = NA, lFks = NA, model_name = NULL)
+blip_Fk(blicc_ld, lFk = NULL, lFks = NULL, model_name = NULL)
 }
 \arguments{
 \item{blicc_ld}{A standard data list suitable for the model (see function
@@ -13,7 +13,7 @@ blip_Fk(blicc_ld, lFk = NA, lFks = NA, model_name = NULL)
 \item{lFk}{A vector containing the log-normal mean \code{Fk} for each gear
 having a non-negligible catch}
 
-\item{lFks}{A double containing the same lognormal sigma \code{Fk} for all gears}
+\item{lFks}{A double containing the same log-normal sigma \code{Fk} for all gears}
 
 \item{model_name}{A string for a replacement model name in the data object.
 Optional.}

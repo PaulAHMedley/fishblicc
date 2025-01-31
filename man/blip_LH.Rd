@@ -6,12 +6,12 @@
 \usage{
 blip_LH(
   blicc_ld,
-  a = NA,
-  b = NA,
-  L50 = NA,
-  L95 = NA,
-  ma_L = NA,
-  wt_L = NA,
+  a = NULL,
+  b = NULL,
+  L50 = NULL,
+  L95 = NULL,
+  ma_L = NULL,
+  wt_L = NULL,
   model_name = NULL,
   set_defaults = FALSE
 )

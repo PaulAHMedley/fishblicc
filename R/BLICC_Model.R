@@ -131,8 +131,8 @@ Rsel_dsnormal <- function(Sp, LMP) {
 #' @param Fk     Fishing mortality divided by the growth rate K for each gear
 #'   making a contribution
 #' @param FSel    A list of all the selectivities for each length bin
-#' @return A list of the population size in each length bin and a list of
-#'   fishing mortalities at length for each gear.
+#' @return A list of the population size in each length bin for each time period 
+#'   and a list of fishing mortalities at length for each gear / time period.
 #' @examples
 #' Sel <- Rselectivities(exp(eg_ld$polSm), eg_ld)
 #' S <- Rpop_F(100, 100/50, Mk=1.5, Fk=exp(eg_ld$polFkm),
@@ -140,18 +140,23 @@ Rsel_dsnormal <- function(Sp, LMP) {
 #' plot(y=S$NL, x=eg_ld$LMP, type="l")
 #' 
 Rpop_F <- function(Galpha, Gbeta, Mk, Fk, FSel, blicc_ld) {
-  Zki <- Mk * blicc_ld$M_L
-  for (gi in 1:blicc_ld$NG) {
-    if (blicc_ld$Fkg[gi] > 0) {
-      FSel[[gi]] <- FSel[[gi]] * Fk[blicc_ld$Fkg[gi]]  # Fishing mortality
-      Zki <- Zki + FSel[[gi]]                          # Total mortality
+  FFSel <- list()
+  N_L <- list()
+  Zki <- rep(list(Mk * blicc_ld$M_L), blicc_ld$NT)
+  for (qi in seq(blicc_ld$NQ)) {
+    if (blicc_ld$Fkq[qi] > 0) {
+      ti <- blicc_ld$Ti[qi]
+      gi <- blicc_ld$Gi[qi]
+      FFSel[[qi]] <- FSel[[gi]] * Fk[blicc_ld$Fkq[qi]]  # Fishing mortality
+      Zki[[ti]] <- Zki[[ti]] + FFSel[[qi]]
     }
   }
-
-  N_L <- with(blicc_ld,
-              Cpop_len(gl_nodes, gl_weights,
-                       LLB, Zki, Galpha, Gbeta) )
-  return(list(N_L=N_L, Fki=FSel))
+  
+  for (ti in seq(blicc_ld$NT))
+    N_L[[ti]] <- with(blicc_ld,
+                 Cpop_len(gl_nodes, gl_weights,
+                          LLB, Zki[[ti]], Galpha, Gbeta) )
+  return(list(N_L=N_L, Fki=FFSel))
 }
 
 
@@ -182,17 +187,13 @@ Rpop_F <- function(Galpha, Gbeta, Mk, Fk, FSel, blicc_ld) {
 #' plot(y=S, x=15:55, type="l")
 #' 
 Rpop_len <- function(node, wt, Len, Zki, Galpha, Gbeta)  {
-  zsum <- function(x, Lr, Z) {
-    # used to apply sequenced sum of mortality
-    return(sum(log(x + Lr) * Z))
-  }
   lgamma_Galpha <- lgamma(Galpha)
   nv <- length(node)
   LN <-  length(Len)
   surv <- double(LN)
   x_beta <- node / Gbeta
   log_x_beta <- log(x_beta)
-
+  
   ss <- log(node + Gbeta * Len[1]) * (Galpha - 1.0) -
     Gbeta * Len[1] - lgamma_Galpha
   surv[1] <- sum(exp(ss) * wt)
@@ -202,62 +203,19 @@ Rpop_len <- function(node, wt, Len, Zki, Galpha, Gbeta)  {
     log(node + Gbeta * Len[2]) * (Galpha - 1.0) -
     Gbeta * Len[2] - lgamma_Galpha
   surv[2] <- sum(exp(ss) * wt)
-
-  for (Li in 3:LN) {
-    Ln <- Len[Li]
-    Lrange <- Ln - Len[1:(Li - 1)]
-    Zii <- c(-Zki[1], Zki[1:(Li - 2)] - Zki[2:(Li - 1)])
-    v2 <- log_x_beta * Zki[Li - 1]
-    lim <- vapply(
-      x_beta,
-      zsum,
-      FUN.VALUE = 0,
-      Lr = Lrange,
-      Z = Zii,
-      USE.NAMES = FALSE
-    )
-    ss <- lim + v2 + log(node + Gbeta * Ln) * (Galpha - 1.0) -
-      Gbeta * Ln - lgamma_Galpha
-    surv[Li] <- sum(exp(ss) * wt)
-  }
-  pop <- c(surv[-LN] - surv[-1], surv[LN]) / Zki
-  return(pop)
-}
-
-#' Alternate to test for speed - ai corrected so may not work.... :-)
-#' 
-Rpop_len2 <- function(node, wt, Len, Zki, Galpha, Gbeta)  {
-  lgamma_Galpha <- lgamma(Galpha)
-  nv <- length(node)
-  LN <- length(Len)
-  surv <- double(LN)
-  x_beta <- node / Gbeta
-  log_x_beta <- log(x_beta)
-  
-  calc_ss <- function(L1, L2, Z1, Z2) {
-    ss <- (log(x_beta + L2 - L1) * Z1) +
-      log_x_beta * Z1 +
-      log(node + Gbeta * L2) * (Galpha - 1.0) -
-      Gbeta * L2 - lgamma_Galpha
-    return(sum(exp(ss) * wt))
-  }
-  
-  ss <- log(node + Gbeta * Len[1]) * (Galpha - 1.0) - Gbeta * Len[1] - lgamma_Galpha
-  surv[1] <- sum(exp(ss) * wt)
-  surv[2] <- calc_ss(Len[1], Len[2], -Zki[1], Zki[1])
   
   for (Li in 3:LN) {
     Ln <- Len[Li]
     Lrange <- Ln - Len[1:(Li - 1)]
     Zii <- c(-Zki[1], Zki[1:(Li - 2)] - Zki[2:(Li - 1)])
-    lim <- log_x_beta * Zki[Li - 1] + vapply(x_beta, function(x) sum(log(x + Lrange) * Zii), numeric(1))
+    lim <- log_x_beta * Zki[Li - 1] + 
+      vapply(x_beta, function(x) sum(log(x + Lrange) * Zii), numeric(1))
     ss <- lim + log(node + Gbeta * Ln) * (Galpha - 1.0) - Gbeta * Ln - lgamma_Galpha
     surv[Li] <- sum(exp(ss) * wt)
   }
   pop <- c(surv[-LN] - surv[-1], surv[LN]) / Zki
   return(pop)
 }
-
 
 
 #' Calculate the selectivities for each length bin for each gear
@@ -279,24 +237,24 @@ Rselectivities <- function(Sm, blicc_ld) {
   for (si in 1:blicc_ld$NS) {
     Indx <- with(blicc_ld, sp_i[si] : sp_e[si])
     #
-    # Need to be changed to C functions or a single C function
+    # Need to be changed to C functions or a single C function if possible
     #
     Ski[[si]] <- with(blicc_ld,
                       switch(fSel[si],
-                        Rsel_logistic(Sm[Indx], LMP),
-                        Rsel_normal(Sm[Indx], LMP),
-                        Rsel_ssnormal(Sm[Indx], LMP),
-                        Rsel_dsnormal(Sm[Indx], LMP)))
+                             Rsel_logistic(Sm[Indx], LMP),
+                             Rsel_normal(Sm[Indx], LMP),
+                             Rsel_ssnormal(Sm[Indx], LMP),
+                             Rsel_dsnormal(Sm[Indx], LMP)))
   }
-
-    for (gi in 1:blicc_ld$NG) {
-      GSki[[gi]] <- Ski[[blicc_ld$GSbase[gi]]]
-      gii <- 1L + (gi-1L)*2L
-      if (blicc_ld$GSmix1[gii] > 0) {
-        for (si in blicc_ld$GSmix1[gii]:blicc_ld$GSmix1[gii+1L])
-          GSki[[gi]] <- with(blicc_ld, GSki[[gi]] + Ski[[GSmix2[si]]] * Sm[NP+si])
-      }
+  
+  for (gi in seq(blicc_ld$NG)) {
+    GSki[[gi]] <- Ski[[blicc_ld$GSbase[gi]]]
+    gii <- 1L + (gi-1L)*2L
+    if (blicc_ld$GSmix1[gii] > 0) {
+      for (si in blicc_ld$GSmix1[gii]:blicc_ld$GSmix1[gii+1L])
+        GSki[[gi]] <- with(blicc_ld, GSki[[gi]] + Ski[[GSmix2[si]]] * Sm[NP+si])
     }
+  }
   return(GSki)
 }
 

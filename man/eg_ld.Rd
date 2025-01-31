@@ -8,18 +8,24 @@
 A list of 26 data vectors used in the BLICC model:
 \describe{
 \item{model_name}{Model and/or fit and/or species name}
+\item{NQ}{Number of length frequency data sets}
 \item{NG}{Number of gears}
 \item{NS}{Number of selectivity functions}
+\item{NT}{Number of time periods}
 \item{NF}{Number of fishing mortality estimates}
 \item{NB}{Number of bins in the length frequency}
 \item{NP}{Number of selectivity function parameters}
 \item{NM}{Number of mixture selectvity models}
+\item{fqname}{Length frequency data set names}
 \item{gname}{Fishing gear names}
+\item{tpname}{Time period names}
 \item{LLB}{Vector of length bin lower boundaries}
 \item{LMP}{Length bin mid-points, used for selectivity and plotting}
 \item{fq}{List of length frequency vectors, one for each gear}
+\item{Gi}{Integer vector linking length frequency data sets to gears}
+\item{Ti}{Integer vector linking length frequency data sets to time periods}
 \item{prop_catch}{Vector of proportional catch by gear of length NF}
-\item{Fkg}{Integer vector of index for gears link to fishing mortality}
+\item{Fkq}{Integer vector of length frequency data sets index linking to fishing mortality}
 \item{fSel}{Index of selectivity function to use for each selectvity model}
 \item{GSbase}{Index of based selectivity model for each gear}
 \item{GSmix1}{Index of start and end mixtures in GSmix2: 0 implies no mixture}

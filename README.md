@@ -27,7 +27,7 @@ For Windows, Rtools can be downloaded from
 <https://github.com/stan-dev/rstan/wiki/Configuring-C---Toolchain-for-Windows>
 for any issues with this).
 
-You can install the development version of fishblicc:
+You can install the current version of fishblicc:
 
 ``` r
 if (! require("remotes")) install.packages("remotes")
@@ -50,15 +50,20 @@ data that may have been collected over a short time period (e.g. a year)
 or to monitor status of many species that may take up a small proportion
 of the catches.
 
+Multiple time periods can be fitted for comparison. In this case,
+fishing mortality is estimated separately for each period, but other
+parameters such as growth, natural mortality and selectivity (by gear)
+remain the same.
+
 The method is implemented in R using Stan (mc-stan.org) to carry out the
 MCMC.
 
 In common with other such methods, there are significant assumptions
-that will not be met in practice, therefore the focus is robustness,
-trying to account for full uncertainty and looking for ways to reduce
-the impact of model structural errors or at least spot when such errors
-may invalidate the results. This is done through a flexible model
-structure that can account for alternative models for
+that will not be fully met in practice, therefore the focus is
+robustness, trying to account for full uncertainty and looking for ways
+to reduce the impact of model structural errors or at least spot when
+such errors may invalidate the results. This is done through a flexible
+model structure that can account for alternative models for
 mortality-at-length as well as alternative life history parameters and
 can be used in a range of sensitivity analyses.
 
@@ -164,17 +169,17 @@ dl <- blicc_dat(
 
 ## Fit the model to these data 
 slim <- blicc_mpd(dl)
-><> Chain 1: Initial log joint probability = -14122.9
+><> Chain 1: Initial log joint probability = -14101.5
 ><> Chain 1:     Iter      log prob        ||dx||      ||grad||       alpha      alpha0  # evals  Notes 
-><> Chain 1: Exception: neg_binomial_2_lpmf: Location parameter[1] is nan, but must be positive finite! (in 'string', line 263, column 6 to column 59)
-><> Exception: neg_binomial_2_lpmf: Location parameter[1] is nan, but must be positive finite! (in 'string', line 263, column 6 to column 59)
-><> Exception: neg_binomial_2_lpmf: Location parameter[1] is nan, but must be positive finite! (in 'string', line 263, column 6 to column 59)
-><> Exception: neg_binomial_2_lpmf: Location parameter[1] is nan, but must be positive finite! (in 'string', line 263, column 6 to column 59)
-><> Exception: neg_binomial_2_lpmf: Location parameter[1] is nan, but must be positive finite! (in 'string', line 263, column 6 to column 59)
+><> Chain 1: Exception: neg_binomial_2_lpmf: Location parameter[1] is nan, but must be positive finite! (in 'string', line 290, column 6 to column 59)
+><> Exception: neg_binomial_2_lpmf: Location parameter[1] is nan, but must be positive finite! (in 'string', line 290, column 6 to column 59)
+><> Exception: neg_binomial_2_lpmf: Location parameter[1] is nan, but must be positive finite! (in 'string', line 290, column 6 to column 59)
+><> Exception: neg_binomial_2_lpmf: Location parameter[1] is nan, but must be positive finite! (in 'string', line 290, column 6 to column 59)
+><> Exception: neg_binomial_2_lpmf: Location parameter[1] is nan, but must be positive finite! (in 'string', line 290, column 6 to column 59)
 ><> 
-><> Chain 1:      499      -535.644   0.000305269      0.522976           1           1      559   
+><> Chain 1:      499      -534.177    0.00168532        1.8609           1           1      563   
 ><> Chain 1:     Iter      log prob        ||dx||      ||grad||       alpha      alpha0  # evals  Notes 
-><> Chain 1:      726      -535.644   6.32268e-06    0.00814902       1.536      0.1536      802   
+><> Chain 1:      962      -534.172   2.03742e-06     0.0131157           1           1     1071   
 ><> Chain 1: Optimization terminated normally: 
 ><> Chain 1:   Convergence detected: relative gradient magnitude is below tolerance
 ## "slim <- blicc_fit(dl)" to run the full MCMC, but this takes a little time to run.
@@ -190,14 +195,23 @@ This produces the following objects:
   for priors used in the fit.
 
 - “slim” is a stanfit object and there are useful tools in the package
-  rstan which will allow you to examine the fit.
+  `rstan` which will allow you to examine the fit.
 
 - “rp_res” is a list containing the data object used to create it, and
-  two draws objects, `rp_df` for parameters and reference points and
-  `lx_df` for expected length frequencies, that can be used by the
-  packages `posterior` and `bayesplot` to examine results, and a vector
-  `vdir` giving the ‘direction’ of search for reference points only
-  relevant if there is more than one gear (see documentation).
+  three draws objects, `dr_df` for parameters, `lx_df` for expected
+  length frequencies and `rp_df` for reference points, that can be used
+  by the packages `posterior` and `bayesplot` to examine results, and
+  the scenario list containing information used to calculate the
+  reference points.
+
+The `scenario` list is required because of the possibilities of having
+more than one gear and different gears being operational in different
+time periods. The list indicates the time period and gears used, a
+vector `vdir` giving the ‘direction’ of search for reference points only
+relevant if there is more than one gear (see documentation) and a data
+list used for the reference point calculation in `rp_df`. In the example
+above, there is only one time period, so only that time period can be
+used for the reference points.
 
 The priors used by the model can be inspected and produced as a table
 (or plotted using `plot_prior`).
@@ -236,28 +250,28 @@ blicc_results(slim)
 ><> # A tibble: 19 × 3
 ><>    Parameter `Max. Posterior`        SE
 ><>    <chr>                <dbl>     <dbl>
-><>  1 Linf              42.4      1.39    
-><>  2 Galpha            97.1     24.3     
-><>  3 Mk                 2.00     0.197   
-><>  4 Fk[1]              0.123    0.0264  
-><>  5 Fk[2]              0.399    0.0996  
-><>  6 Fk[3]              1.06     0.231   
-><>  7 Sm[1]             13.7      0.583   
-><>  8 Sm[2]              0.0519   0.00732 
-><>  9 Sm[3]              0.00303  0.000703
-><> 10 Sm[4]             25.2      0.768   
-><> 11 Sm[5]              0.0230   0.00239 
-><> 12 Sm[6]              0.0115   0.00173 
-><> 13 Sm[7]             24.2      0.641   
-><> 14 Sm[8]              0.0250   0.00216 
-><> 15 Sm[9]              0.0101   0.00131 
-><> 16 NB_phi            18.0      3.95    
-><> 17 Gbeta              2.29     0.547   
-><> 18 SPR                0.340    0.0773  
-><> 19 lp__            -536.      NA
+><>  1 Linf              42.6      1.41    
+><>  2 Galpha            95.5     25.2     
+><>  3 Mk                 1.96     0.203   
+><>  4 Fk[1]              1.43     0.987   
+><>  5 Fk[2]              0.214    1.69    
+><>  6 Fk[3]              0.463    1.26    
+><>  7 Sm[1]             15.0      0.974   
+><>  8 Sm[2]              0.0422   0.00782 
+><>  9 Sm[3]              0.00298  0.000779
+><> 10 Sm[4]             25.5      0.732   
+><> 11 Sm[5]              0.0238   0.00229 
+><> 12 Sm[6]              0.0115   0.00184 
+><> 13 Sm[7]             24.6      0.702   
+><> 14 Sm[8]              0.0253   0.00208 
+><> 15 Sm[9]              0.0102   0.00137 
+><> 16 NB_phi            18.9      4.26    
+><> 17 Gbeta              2.24     0.564   
+><> 18 SPR[1]             0.194    0.0731  
+><> 19 lp__            -534.      NA
 ```
 
-There are a number of specialised plotting functions specific to length
+There are a number of specialized plotting functions specific to length
 frequency and yield-per-recruit analysis for convenience. This is a plot
 showing the observed and expected length frequency, with 80% credible
 interval for the observations (including the expected variation in the

@@ -17,14 +17,15 @@ function.}
 ggplot geom object for plotting
 }
 \description{
-The plot shows the SPR surface plotted against the fishing mortality (\code{Fk}) and
-the 50\% or maximum (location) selectivity, dependent on the selectivity functions of the
-reference gear. The current state of the stock is marked as a point and the
-SPR 40\% reference point is marked as a line. All values are calculated as
-means and uncertainty is not represented to maintain simplicity. The
-reference line is plotted if it exists within a reasonable range of the
-current estimated status. For multiple gears, the surface is calculated for a
-single reference gear.
+The plot shows the SPR surface plotted against the fishing mortality (\code{Fk})
+and the 50\% or maximum (location) selectivity, dependent on the selectivity
+functions of the reference gear. The current state of the stock is marked as
+a point and the SPR 40\% reference point is marked as a line. All values are
+calculated as means and uncertainty is not represented to maintain
+simplicity. The reference line is plotted if it exists within a reasonable
+range of the current estimated status. For multiple gears, the surface is
+calculated for a single reference gear. For multiple time series, the plot is
+for the time period used to estimate reference points (see \link{blicc_ref_pts}).
 }
 \examples{
 plot_SPR_contour(eg_rp)

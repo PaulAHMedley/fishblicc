@@ -146,6 +146,56 @@ parse_gear <- function(Gear, blicc_ld) {
   }
 }
 
+#' Parse the time period parameter, converting to an integer
+#'
+#' The time_period parameter is converted to an integer index of the periods. Exact period
+#' names are also accepted.
+#'
+#' @inheritParams blicc_mpd
+#' @param Period  A vector of 1 or more numbers or strings representing valid
+#'   periods in the model
+#' @return Integer period index (or stops with error message)
+#' @noRd
+#' 
+parse_period <- function(Period, blicc_ld) {
+  if (blicc_ld$NT == 1) {
+    return(1L)
+  } else {
+    if (any(is.na(Period))) {
+      stop(
+        paste0(
+          "Error: Periods must be specified as 'All', or exact matches for period names or integers between 1 and ",
+          as.character(blicc_ld$NT)
+        )
+      )
+    } else {
+      if (is.character(Period[1])) {
+        if (Period[1] == "All")
+          Period <- 1:blicc_ld$NT
+        else {
+          Period <- match(Period, blicc_ld$tpname)
+          if (any(is.na(Period))) {
+            stop(
+              paste0(
+                "Error: Periods must be specified as 'All', or exact matches for period names or integers between 1 and ",
+                as.character(blicc_ld$NT)
+              )
+            )
+          }
+        }
+      }
+      Period <- as.integer(unique(Period))
+      if (!all(dplyr::between(Period, 1, blicc_ld$NT))) {
+        stop(paste0(
+          "Error: Specified periods must be between 1 and ",
+          as.character(blicc_ld$NT)
+        ))
+      }
+      return(Period)
+    }
+  }
+}
+
 
 #' Get indices for all referenced selectivity functions for the specified gears
 #'

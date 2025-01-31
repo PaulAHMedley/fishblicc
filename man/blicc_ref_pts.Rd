@@ -4,13 +4,25 @@
 \alias{blicc_ref_pts}
 \title{Generate posterior draws and standard reference points}
 \usage{
-blicc_ref_pts(slimf, blicc_ld, vdir = NULL, a = NA, b = NA, L50 = NA, L95 = NA)
+blicc_ref_pts(
+  slimf,
+  blicc_ld,
+  time_period = NULL,
+  vdir = NULL,
+  a = NA,
+  b = NA,
+  L50 = NA,
+  L95 = NA
+)
 }
 \arguments{
 \item{slimf}{An object from the \link{blicc_fit} or \link{blicc_mpd} functions.}
 
 \item{blicc_ld}{A standard data list suitable for the model (see function
 \link{blicc_dat})}
+
+\item{time_period}{Specifies the time period used for reference point
+scenario. If not specified, the default is the final time period.}
 
 \item{vdir}{A search direction vector with maximum value 1 and minimum 0
 applied to changes across gears. Optional.}
@@ -31,40 +43,52 @@ than Linf. A small increment is added to L50 if it is not provided.
 Optional.}
 }
 \value{
-A list of 1) the search direction vector 2) posterior draws or mpd
-point estimates of important parameters and per-recruit reference points 3)
-observed-expected length frequencies, 4) \code{blicc_ld} data object used.
+A list of 1) vdir: the direction vector 2) dr_df: posterior draws or
+mpd point estimates of important parameters 3) rp_df: per-recruit reference
+points 4) lx_df: observed-expected length frequencies, 5) ld: \code{blicc_ld}
+data object used.
 }
 \description{
 The function returns a list consisting of the search direction vector, a
 tibble of draws from the posterior MCMC stanfit (or the mpd estimate)
-including SPR 20\%, 30\% and 40\% reference points, expected number in each
-length bin and the data object used to generate these.  The tibble of draws
-is suitable for use in the posterior and bayesplot packages and can be used
-in various functions to show results. Note that the function can take a
-little time to run and may be moderately large, depending on the number of
-draws. Some reference points may not exist (indicated by \code{NA}).
+including SPR 20\% and 40\% reference points, expected number in each length
+bin and the data object used to generate these. The tibble of draws is
+suitable for use in the posterior and bayesplot packages and can be used in
+various functions to show results. Note that the function can take a little
+time to run and may be moderately large, depending on the number of draws.
+Some reference points may not exist (indicated by \code{NA}).
 }
 \details{
-Reference points are found where possible for the parameter draw
-from the MCMC. The reference points are found along a line representing the
-relative impact across gears. The default is to apply the same adjustments
+The reference points calculated are F40 and F20 for 40\% and 20\% SPR
+respectively, and changes in the selectivity location parameter to achieve
+either SPR 40\% (S40) or maximum yield based on yield-per-recruit (SMY).
+
+Reference points are calculated for a particular scenario, represented by a
+time period. By default, this time period is the last in the data set,
+although the period can be specified. This is necessary because different
+time periods can have different gears operating, which affects fishing
+mortality at length and therefore the fishing mortality reference points.
+This has no effect if there is only one time period.
+
+Reference points are found where possible for the parameter draw from the
+MCMC. The reference points are found along a line representing the relative
+impact across gears. The default is to apply the same adjustments
 proportionately to every gear that has a fishing mortality, but alternative
 scenarios can be defined. For example, for two gears the default is
-\code{vdir=c(1, 1)}. if there are two gears, and only the first will be
+\code{vdir=c(1, 1)}. If there are two gears, and only the first will be
 adjusted, then the direction would be \code{vdir=c(1, 0)}. It is possible to
-provide a vector such as \code{vdir=c(1, 0.5)} to represent only a 50\% reduction
-in the second gear compared to the first, for example. This will only be
+provide a vector such as \code{vdir=c(1, 0.5)} to represent only a 50\% change in
+the second gear compared to the first, for example. This will only be
 applied to the fishing mortality. The selectivity changes will continue to
 use the vector as a dummy variable, but the quantity will be ignored and
 all \code{vdir} with non-zero values for gears will be treated as having equal
-displacement; so for example a selectivity evaluation for
-\code{vdir = c(1.0, 0.5)} is equivalent to \code{vdir = c(1, 1)}.
+displacement; so for example a selectivity evaluation for \code{vdir = c(1.0, 0.5)} is equivalent to \code{vdir = c(1, 1)}.
 
 It is likely that proper simulation projections would be required for more
 complex cases where gears are not being simply excluded from management
 action. Unless there is a specific need, the best option is to leave it as
-the default \code{NULL} so the reference points are indicative and consistent.
+the default \code{vdir=NULL} so the reference points are indicative and
+consistent.
 
 Where reference points do not exist an \code{NA} is returned. It is quite
 possible reference points do not exist in many cases due to the effects of

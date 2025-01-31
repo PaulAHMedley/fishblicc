@@ -15,20 +15,10 @@ execution:
   warning: false
 ---
 
-```{r setup }
-#| include: false
-library("here")
-library("statmod")
-library("tibble")
-library("dplyr")
-library("tidyr")
-library("ggplot2")
-library("cowplot")
-library("ggExtra")  # Marginal histogram
-library("fishblicc")  # Marginal histogram
-theme_set(theme_cowplot())
-options(dplyr.summarise.inform=FALSE)
-```
+
+
+
+
 
 # Introduction
 
@@ -70,7 +60,11 @@ This model is for the individual growth variation, not the standard error of the
 
 With this model, the growth variability increases as the fish ages and for a 10% CV (alpha=100), the length distribution among fish the same age will be similar to the normal distribution.  
 
-```{r GrowthModel1 }
+
+
+::: {.cell}
+
+```{.r .cell-code}
 Linf <- rgamma(400, shape = 100, rate = 100/60)
 
 growth <- sapply(1:40, FUN=function(t) {Linf*(1-exp(-0.2*t))}) 
@@ -86,11 +80,11 @@ growth <- growth |>
 FL <- rbind(tibble(fish=1:length(Linf), Length = Linf*(1-exp(-0.2*5)), age=5, gp="5"),
             tibble(fish=1:length(Linf), Length=Linf, age=40, gp="40"))
 ```
+:::
 
+::: {.cell}
 
-```{r }
-#| label: fig-len_at_age
-#| fig-cap: "Illustration of variable length-at-age with Gamma distribution asymptotic length."
+```{.r .cell-code}
 p1 <- ggplot(growth, aes(x=age, y=L, group=fish, fill=gp)) +
   geom_line(alpha=0.05, show.legend=F) +
   geom_point(data=FL, aes(x=age, y=Length, colour=gp, fill=gp), alpha=0.1, show.legend=F) +
@@ -99,6 +93,13 @@ p1 <- ggplot(growth, aes(x=age, y=L, group=fish, fill=gp)) +
 
 ggMarginal(p1, data=FL, x="age", y="Length", type="histogram", margins="y", groupColour=T, groupFill=T) 
 ```
+
+::: {.cell-output-display}
+![Illustration of variable length-at-age with Gamma distribution asymptotic length.](fishblicc_Model_Description_files/figure-html/fig-len_at_age-1.png){#fig-len_at_age width=672}
+:::
+:::
+
+
 
 ## Piece-wise Mortality using Transition Times  
 
@@ -123,9 +124,11 @@ $$
 As the length increases, the time difference between sequential length intervals also increases due to the growth function.  
 
 
-```{r }
-#| label: fig-length_interval
-#| fig-cap: "Illustration of equal length intervals having increasing time for growing through the interval."
+
+
+::: {.cell}
+
+```{.r .cell-code}
 Linf <- 62
 TRange <- (1:10)*0.5
 df1 <- tibble(
@@ -143,6 +146,13 @@ ggplot(df2, aes(x=Time, y=Length, group=id)) +
   geom_line(colour="grey") +
   geom_line(data=df1, aes(x=Time, y=Length))
 ```
+
+::: {.cell-output-display}
+![Illustration of equal length intervals having increasing time for growing through the interval.](fishblicc_Model_Description_files/figure-html/fig-length_interval-1.png){#fig-length_interval width=672}
+:::
+:::
+
+
 
 For ease of reference, the subscript $k$ is dropped for the mortality parameter, but note that time is effectively measured in units of the von Bertalanffy growth rate parameter $k$.  
 
@@ -247,7 +257,11 @@ A critical problem with the model is the assumption that the fish are all taken 
 
 Some example selectivity functions and levels of exploitation effects on length compositions are presented below. This is based on an implementation of the model in R.  
 
-```{r CalculationFunctions, eval=T}
+
+
+::: {.cell}
+
+```{.r .cell-code}
 Li_range <- seq(4, 28, by=1)
 nv <- 110
 par <- list(alpha=100, Linf=20, Mk=1.5, Fk=1.5, Smax=10, Ss1=0.25, Ss2=0.0, Len=Li_range)
@@ -303,10 +317,11 @@ sgl <- statmod::gauss.quad(nv, "laguerre", alpha=0)  # Only needs to be calculat
 par$nodes <- sgl$nodes
 par$weights <- sgl$weights
 ```
+:::
 
+::: {.cell}
 
-```{r }
-
+```{.r .cell-code}
 res <- tibble()
 par$Ss2 <- 0    # Not Domed
 par$Mk <- 0.5   # Low mortality compared to growth
@@ -324,42 +339,58 @@ for (Fk in c(0.01, 1.0, 1.5, 3.0)) {
 res <- res |>
   mutate(Fk = factor(Fk))
 ```
+:::
 
+::: {.cell}
 
-```{r }
-#| label: fig-mort_effects_selectivity
-#| fig-cap: "Mortality effects: Selectivity"
+```{.r .cell-code}
 ggplot(res, aes(x=Li, y=sl, colour=Fk)) +
   geom_line() +
   labs(y="Selectivity", x="Length")
 ```
 
+::: {.cell-output-display}
+![Mortality effects: Selectivity](fishblicc_Model_Description_files/figure-html/fig-mort_effects_selectivity-1.png){#fig-mort_effects_selectivity width=672}
+:::
+:::
 
-```{r }
-#| label: fig-mort_effects_popsize
-#| fig-cap: "Mortality effects: Population size at length"
+::: {.cell}
+
+```{.r .cell-code}
 ggplot(res, aes(x=Li, y=pp, colour=Fk)) +
   geom_line() +
   labs(y="Population", x="Length")
 ```
 
+::: {.cell-output-display}
+![Mortality effects: Population size at length](fishblicc_Model_Description_files/figure-html/fig-mort_effects_popsize-1.png){#fig-mort_effects_popsize width=672}
+:::
+:::
 
-```{r }
-#| label: fig-mort_effects_catch_at_length
-#| fig-cap: "Mortality effects: Catch at length"
+::: {.cell}
+
+```{.r .cell-code}
 ggplot(res, aes(x=Li, y=ca, fill=Fk)) +
   geom_col(position="dodge") +
   labs(y="Catch", x="Length")
 ```
 
+::: {.cell-output-display}
+![Mortality effects: Catch at length](fishblicc_Model_Description_files/figure-html/fig-mort_effects_catch_at_length-1.png){#fig-mort_effects_catch_at_length width=672}
+:::
+:::
+
+
+
 As shown above, firstly, the general effect of mortality is to change the abundance of large, animals in the population and in the catch.  Generally, when natural mortality is less than the growth rate, ($M_k < 1.0$), it is possible to have a mode around the asymptotic mean length ($L_\infty$). For most fish populations this is unlikely where $M_k$ is usually expected to be around 1.5 (Kenchington 2014).  
 
 Dome-shaped selectivity allows fish to escape mortality as they grow. This not only affects the population length composition, and also the abundance in the catches. While the abundance of larger fish may increase in the population, the selectivity may still prevent them appearing in the catch.  
 
-```{r }
-#| label: fig-dome_effects_sel
-#| fig-cap: "Dome selectivity effects: Selectivity"
 
+
+::: {.cell}
+
+```{.r .cell-code}
 par$Mk <- 1.5   # Normal mortality compared to growth
 res <- tibble()
 for (Ss2 in c(0.0, 0.01, 0.05, 1.0)) {
@@ -381,29 +412,46 @@ ggplot(res, aes(x=Li, y=sl, colour=Domed)) +
   labs(y="Selectivity", x="Length")
 ```
 
+::: {.cell-output-display}
+![Dome selectivity effects: Selectivity](fishblicc_Model_Description_files/figure-html/fig-dome_effects_sel-1.png){#fig-dome_effects_sel width=672}
+:::
+:::
 
-```{r }
-#| label: fig-dome_effects_popsize
-#| fig-cap: "Dome selectivity effects: Population size at length"
+::: {.cell}
+
+```{.r .cell-code}
 ggplot(res, aes(x=Li, y=pp, colour=Domed)) +
   geom_line() +
   labs(y="Population", x="Length")
 ```
 
+::: {.cell-output-display}
+![Dome selectivity effects: Population size at length](fishblicc_Model_Description_files/figure-html/fig-dome_effects_popsize-1.png){#fig-dome_effects_popsize width=672}
+:::
+:::
 
-```{r }
-#| label: fig-dome_effects_catch
-#| fig-cap: "Dome selectivity effects: Catch at length"
+::: {.cell}
+
+```{.r .cell-code}
 ggplot(res, aes(x=Li, y=ca, fill=Domed)) +
   geom_col(position="dodge") +
   labs(y="Catch", x="Length")
 ```
 
+::: {.cell-output-display}
+![Dome selectivity effects: Catch at length](fishblicc_Model_Description_files/figure-html/fig-dome_effects_catch-1.png){#fig-dome_effects_catch width=672}
+:::
+:::
+
+
+
 Finally, the left side steepness of the selectivity can affect length composition and the presence of small fish. Methods that cannot estimate selectivity may need to exclude these data. However, estimating selectivity may be important particularly if, for example, improving selectivity may be an management objective so monitoring changes becomes important.  
 
-```{r }
-#| label: fig-lsteep_effects_select
-#| fig-cap: "Selectivity left-steepness effects: Selectivity"
+
+
+::: {.cell}
+
+```{.r .cell-code}
 res <- tibble()
 par$Ss2 <- 0.01
 for (Ss1 in c(0.05, 0.25, 1.0)) {
@@ -424,23 +472,38 @@ ggplot(res, aes(x=Li, y=sl, colour=Steep)) +
   labs(y="Selectivity", x="Length")
 ```
 
+::: {.cell-output-display}
+![Selectivity left-steepness effects: Selectivity](fishblicc_Model_Description_files/figure-html/fig-lsteep_effects_select-1.png){#fig-lsteep_effects_select width=672}
+:::
+:::
 
-```{r }
-#| label: fig-lsteep_effects_popsize
-#| fig-cap: "Selectivity left-steepness effects: Population size at length"
+::: {.cell}
+
+```{.r .cell-code}
 ggplot(res, aes(x=Li, y=pp, colour=Steep)) +
   geom_line() +
   labs(y="Population", x="Length")
 ```
 
+::: {.cell-output-display}
+![Selectivity left-steepness effects: Population size at length](fishblicc_Model_Description_files/figure-html/fig-lsteep_effects_popsize-1.png){#fig-lsteep_effects_popsize width=672}
+:::
+:::
 
-```{r }
-#| label: fig-lsteep_effects_catch
-#| fig-cap: "Selectivity left-steepness effects: Catch at length"
+::: {.cell}
+
+```{.r .cell-code}
 ggplot(res, aes(x=Li, y=ca, fill=Steep)) +
   geom_col(position="dodge") +
   labs(y="Catch", x="Length")
 ```
+
+::: {.cell-output-display}
+![Selectivity left-steepness effects: Catch at length](fishblicc_Model_Description_files/figure-html/fig-lsteep_effects_catch-1.png){#fig-lsteep_effects_catch width=672}
+:::
+:::
+
+
 
 
 # Appendix: Practical Implementation of the Length Integral  

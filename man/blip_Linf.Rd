@@ -4,7 +4,7 @@
 \alias{blip_Linf}
 \title{Set \code{Linf} prior parameters in the data object}
 \usage{
-blip_Linf(blicc_ld, Linf, model_name = NA)
+blip_Linf(blicc_ld, Linf, model_name = NULL)
 }
 \arguments{
 \item{blicc_ld}{A standard data list suitable for the model (see function

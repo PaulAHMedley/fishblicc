@@ -28,21 +28,22 @@ For Windows, Rtools can be downloaded from "https://cran.r-project.org/bin/windo
 
 (also see https://github.com/stan-dev/rstan/wiki/Configuring-C---Toolchain-for-Windows for any issues with this).  
 
-You can install the development version of fishblicc:
+You can install the current version of fishblicc:
 
 ``` r
 if (! require("remotes")) install.packages("remotes")
 remotes::install_github("PaulAHMedley/fishblicc")
 ```
 
-
 ## Model Description
 
 This is the Bayesian Length Interval Catch Curve to estimate mortality from length frequency samples that form a snapshot of a fishery. This is explicitly a "data-limited" method designed to be used as a risk assessment approach rather than provide definitive information on stock status. The model does not require a data time series, but it assumes that the data are a snapshot of the catch length composition from a fishery in a stationary state. The model can account for multiple gears with different selectivities and has a flexible approach to estimating selectivity, including dome-shaped functions and functions with multiple modes. It is suitable for end-of-project evaluation of length frequency data that may have been collected over a short time period (e.g. a year) or to monitor status of many species that may take up a small proportion of the catches.  
 
+Multiple time periods can be fitted for comparison. In this case, fishing mortality is estimated separately for each period, but other parameters such as growth, natural mortality and selectivity (by gear) remain the same. 
+
 The method is implemented in R using Stan (mc-stan.org) to carry out the MCMC.  
 
-In common with other such methods, there are significant assumptions that will not be met in practice, therefore the focus is robustness, trying to account for full uncertainty and looking for ways to reduce the impact of model structural errors or at least spot when such errors may invalidate the results. This is done through a flexible model structure that can account for alternative models for mortality-at-length as well as alternative life history parameters and can be used in a range of sensitivity analyses.  
+In common with other such methods, there are significant assumptions that will not be fully met in practice, therefore the focus is robustness, trying to account for full uncertainty and looking for ways to reduce the impact of model structural errors or at least spot when such errors may invalidate the results. This is done through a flexible model structure that can account for alternative models for mortality-at-length as well as alternative life history parameters and can be used in a range of sensitivity analyses.  
 
 The method can be used to evaluate stock status based on the spawning potential ratio (SPR). In general, this uses the ratio of large (older, mature) fish in a sample compared to small (immature young) fish. If the ratio is small compared to what might be expected in a sample from an unfished population, the population will be at high risk of overexploitation.  
 
@@ -118,9 +119,11 @@ This produces the following objects:
 
  - "dl" is the data list containing the length frequency and information for priors used in the fit.  
  
- - "slim" is a stanfit object and there are useful tools in the package rstan which will allow you to examine the fit.  
+ - "slim" is a stanfit object and there are useful tools in the package `rstan` which will allow you to examine the fit.  
  
- - "rp_res" is a list containing the data object used to create it, and two draws objects, `rp_df` for parameters and reference points and `lx_df` for expected length frequencies, that can be used by the packages `posterior` and `bayesplot` to examine results, and a vector `vdir` giving the 'direction' of search for reference points only relevant if there is more than one gear (see documentation).  
+ - "rp_res" is a list containing the data object used to create it, and three draws objects, `dr_df` for parameters, `lx_df` for expected length frequencies and `rp_df` for reference points, that can be used by the packages `posterior` and `bayesplot` to examine results, and the scenario list containing information used to calculate the reference points.
+ 
+The `scenario` list is required because of the possibilities of having more than one gear and different gears being operational in different time periods. The list indicates the time period and gears used, a vector `vdir` giving the 'direction' of search for reference points only relevant if there is more than one gear (see documentation) and a data list used for the reference point calculation in `rp_df`. In the example above, there is only one time period, so only that time period can be used for the reference points. 
 
 The priors used by the model can be inspected and produced as a table (or plotted using `plot_prior`).  
 
@@ -134,7 +137,7 @@ The fit results can be inspected.
 blicc_results(slim)
 ```
 
-There are a number of specialised plotting functions specific to length frequency and yield-per-recruit analysis for convenience. This is a plot showing the observed and expected length frequency, with 80% credible interval for the observations (including the expected variation in the data).  
+There are a number of specialized plotting functions specific to length frequency and yield-per-recruit analysis for convenience. This is a plot showing the observed and expected length frequency, with 80% credible interval for the observations (including the expected variation in the data).  
 
 ```{r fig.cap = "Figure: Posterior expected frequency"}
 plot_posterior(rp_res, gear=1:3) #Plot the results to check the model fit
