@@ -8,8 +8,8 @@
 #' The function calculates the spawning potential ratio (SPR) based on the
 #' provided parameter set. The SPR is calculated as a ratio between the spawning
 #' biomass per recruit for a particular fishing mortality divided by the
-#' spawning biomass per recruit with no fishing. Works with multiple time 
-#' periods.
+#' spawning biomass per recruit with no fishing. Works with multiple gears and
+#' time periods.
 #'
 #' @inheritParams blicc_get_expected
 #' @param Gbeta The Gamma distribution parameter for the growth model
@@ -35,6 +35,36 @@ Calc_SPR <-
     SPR0 <- RSPR_0(Galpha, Gbeta, Mk, blicc_ld) # Unexploited SPR
     return(SPR/SPR0)
   }
+
+
+#' Calculate the YPR for the fishing mortalities and selectivities
+#'
+#' The function calculates the yield per recruit (YPR) based on the provided
+#' parameter set. The YPR is calculated as a sum of catch-at-length multiplied
+#' by the weight at length. Works with multiple gears and time periods.
+#'
+#' @inheritParams Calc_SPR
+#' @return The yield per recruit for each gear/time period
+#' @noRd
+#' 
+Calc_YPR <-
+  function(Galpha,
+           Gbeta,
+           Mk,
+           Fk,
+           Sm,
+           blicc_ld) {
+    YPR <- double(blicc_ld$NQ)
+    Sel <- Rselectivities(Sm, blicc_ld)
+    Pop <- Rpop_F(Galpha, Gbeta, Mk, Fk, Sel, blicc_ld)
+    for (qi in seq(blicc_ld$NQ)) {
+      if (blicc_ld$Fkq[qi] > 0) {
+        YPR[qi] <- with(blicc_ld, sum(Pop$N_L[[Ti[qi]]] * Pop$Fki[[Gi[qi]]] * wt_L)) # Catch weight
+      }  
+    }
+    return(YPR)
+  }
+
 
 #' Calculate the relative biomass (depletion)
 #'

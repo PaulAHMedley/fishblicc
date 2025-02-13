@@ -7,6 +7,9 @@
 blip_main_sel(blicc_ld, gear, sel_N)
 }
 \arguments{
+\item{blicc_ld}{A standard data list suitable for the model (see function
+\link{blicc_dat})}
+
 \item{gear}{Single integer or exact name indexing one gear}
 
 \item{sel_N}{Index for the new main selectivity component with weight=1.}

@@ -494,6 +494,7 @@ blicc_dat <-
     # Parse Catches
     if (Ngear==1) {
       catch_prop <- rep(1, Nfq)
+      Ffq <- seq(Nfq)
     } else {
       if (!is.vector(Catch) | length(Catch) != Nfq | any(Catch<0) | !any(Catch>0)) {
         stop("Error: Relative catches, including zeros where negligible, must be provided for each length frequency. \n")
@@ -501,18 +502,17 @@ blicc_dat <-
       sums <- tapply(Catch, period_freq, sum)
       catch_prop <- Catch[Catch > 0] / sums[period_freq[Catch > 0]] # Normalise
       names(catch_prop) <- NULL
-    }
-    
-    # Create the F index based on catches
-    Ffq <- integer(Nfq)
-    fi <- 1L
-    for (qi in 1:Nfq) {
-      if (catch_prop[qi] > 0) {
-        Ffq[qi] <- fi
-        fi <- fi + 1L
+      # Create the F index based on catches
+      Ffq <- integer(Nfq)
+      fi <- 1L
+      for (qi in 1:Nfq) {
+        if (Catch[qi] > 0) {
+          Ffq[qi] <- fi
+          fi <- fi + 1L
+        }
       }
     }
-
+    
     # Frequency data names
     if (is.null(freq_names)) {
       freq_names <- dplyr::case_when(

@@ -601,7 +601,7 @@ blip_normalize_mix <- function(blicc_ld) {
 #' mixture weights are adjusted accordingly. 
 #'
 #' @export
-#' @param gear Single integer or exact name indexing one gear
+#' @inheritParams blip_mix
 #' @param sel_N Index for the new main selectivity component with weight=1.
 #' @return The data object `blicc_ld` but with the new main selectivity
 #' 

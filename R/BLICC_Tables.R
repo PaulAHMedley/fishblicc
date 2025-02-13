@@ -93,8 +93,9 @@ blicc_prior <- function(blicc_ld) {
 #' blicc_results(eg_rp)
 #' 
 blicc_results <- function(blicc_res) {
-  Fk=Linf=Parameter=Rhat=Sm=Value=lp__=median=mpd=n_eff=par=sd=se=slim=NULL
-  `2.5%` = `97.5%` = NULL
+  Fk = Linf = Parameter = Rhat = Sm = Value = lp__ = median = mpd = NULL
+  n_eff = par = sd = se = slim = NULL
+  `2.5%` = `97.5%` = SPR = YPR = B_B0 = NULL
   
   if (class(blicc_res)[1]=="stanfit") {
     NF <- blicc_res@par_dims$nFk
@@ -132,13 +133,17 @@ blicc_results <- function(blicc_res) {
     }
     suppressWarnings(
       res <- blicc_res$dr_df |>
-        dplyr::select(Linf:lp__, SPR) |>
+        dplyr::select(Linf:lp__, SPR, B_B0, YPR) |>
         tidyr::unnest_wider(col=Fk, names_sep="[") |>
         dplyr::rename_with(~ paste0(.x, "]"), tidyselect::starts_with("Fk")) |>
         tidyr::unnest_wider(col=Sm, names_sep="[") |>
         dplyr::rename_with(~ paste0(.x, "]"), tidyselect::starts_with("Sm")) |>
         tidyr::unnest_wider(col=SPR, names_sep="[") |>
-        dplyr::rename_with(~ paste0(.x, "]"), tidyselect::starts_with("SPR"))
+        dplyr::rename_with(~ paste0(.x, "]"), tidyselect::starts_with("SPR")) |>
+        tidyr::unnest_wider(col=YPR, names_sep="[") |>
+        dplyr::rename_with(~ paste0(.x, "]"), tidyselect::starts_with("YPR")) |>
+        tidyr::unnest_wider(col=B_B0, names_sep="[") |>
+        dplyr::rename_with(~ paste0(.x, "]"), tidyselect::starts_with("B_B0"))
     )
     p_order <- names(res)
     res <- res |>

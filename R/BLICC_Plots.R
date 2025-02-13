@@ -22,7 +22,7 @@
 #' plot_prior(eg_ld)
 #' 
 plot_prior <- function(blicc_ld, gear = "All", time_period = "All") {
-  Gear=LMP=fq=NULL
+  Gear = LMP = fq = Name = NULL
 
   gear <- parse_gear(gear, blicc_ld)
   fq_used <- which(blicc_ld$Gi %in% gear)
@@ -355,7 +355,7 @@ plot_selectivity <- function(blicc_rp, gear = "All") {
 #' plot_SPR_density(eg_rp)
 #' 
 plot_SPR_density <- function(blicc_rp) {
-  SPR = NULL
+  SPR = .draw = Period = NULL
   if (nrow(blicc_rp$dr_df)/blicc_rp$ld$NT <= 500) {
     stop("To obtain a density, you will need to obtain sufficient values (>500) from MCMC.")
   }
@@ -529,16 +529,20 @@ plot_efq <- function(blicc_rp, gear = NULL) {
   efq_m = dat_lo = dat_hi = lab = x = y = NULL
 
   blicc_ld <- blicc_rp$scenario$time_period_ld
-#  blicc_lx <- blicc_rp$lx_df
+  svdir <-blicc_rp$scenario$vdir
+  #  blicc_lx <- blicc_rp$lx_df
 
-  if (is.null(gear))
-    gear_i <- which.max(blicc_ld$prop_catch)
-  else {
+  if (is.null(gear)) {
+    elig_gears <- seq(blicc_ld$NG)[svdir>0]
+    gear_i <- elig_gears[which.max(blicc_ld$prop_catch[svdir>0])]
+  } else {
     gear_i = parse_gear(gear, blicc_rp$ld)[1]
     if (! (gear_i %in% blicc_rp$scenario$gears))
       stop(paste("Error: The specified gear needs to be one of the following in the relevant time period:",
                  paste(blicc_rp$ld$gname[blicc_rp$scenario$gears], collapse=" ")))
     gear_i <- match(gear_i, blicc_rp$scenario$gears)  # translate to scenario
+    if (svdir[gear_i] <= 0) 
+      stop("Error: The specified gear management change (vdir) must be greater than zero.")
   }
   
   gear2plot <- blicc_ld$gname[gear_i]
@@ -690,16 +694,20 @@ plot_SPR_contour <- function(blicc_rp, gear = NULL) {
 
   blicc_ld <- blicc_rp$scenario$time_period_ld
   rp_df <- blicc_rp$rp_df
-
+  svdir <-blicc_rp$scenario$vdir
+  
   # If no reference gear defined, use gear with highest fishing
-  if (is.null(gear))
-    gear_i <- which.max(blicc_ld$prop_catch)
-  else {
+  if (is.null(gear)) {
+    elig_gears <- seq(blicc_ld$NG)[svdir>0]
+    gear_i <- elig_gears[which.max(blicc_ld$prop_catch[svdir>0])]
+  } else {
     gear_i = parse_gear(gear, blicc_rp$ld)[1]
     if (! (gear_i %in% blicc_rp$scenario$gears))
       stop(paste("Error: The specified gear needs to be one of the following in the relevant time period:",
                  paste(blicc_rp$ld$gname[blicc_rp$scenario$gears], collapse=" ")))
     gear_i <- match(gear_i, blicc_rp$scenario$gears)  # translate to scenario
+    if (svdir[gear_i] <= 0) 
+      stop("Error: The specified gear management change (vdir) must be greater than zero.")
   }
   
   gear2plot <- blicc_ld$gname[gear_i]
@@ -753,7 +761,6 @@ plot_SPR_contour <- function(blicc_rp, gear = NULL) {
   mSmx <- seq(min(blicc_ld$LLB - 1), Linf,
               length.out = GridN)
   mFk <- seq(0, MaxF, length.out = GridN)
-  svdir <-blicc_rp$scenario$vdir
   dL <- (mSmx / Gear_Smx[gear_i] - 1) / svdir[gear_i]
 
   vSm <- Sm
@@ -862,16 +869,20 @@ plot_YPR_contour <- function(blicc_rp, gear = NULL) {
 
   blicc_ld <- blicc_rp$scenario$time_period_ld
   rp_df <- blicc_rp$rp_df
+  svdir <-blicc_rp$scenario$vdir
   
   # If no reference gear defined, use gear with highest fishing
   if (is.null(gear)) {
-    gear_i <- which.max(blicc_ld$prop_catch)
+    elig_gears <- seq(blicc_ld$NG)[svdir>0]
+    gear_i <- elig_gears[which.max(blicc_ld$prop_catch[svdir>0])]
   } else {
     gear_i = parse_gear(gear, blicc_rp$ld)[1]
     if (! (gear_i %in% blicc_rp$scenario$gears))
       stop(paste("Error: The specified gear needs to be one of the following in the relevant time period:",
-                 paste(blicc_rp$ld$gname[blicc_rp$scenario$gears], collapse=" ")))
+           paste(blicc_rp$ld$gname[blicc_rp$scenario$gears], collapse=" ")))
     gear_i <- match(gear_i, blicc_rp$scenario$gears)  # translate to scenario
+    if (svdir[gear_i] <= 0) 
+      stop("Error: The specified gear management change (vdir) must be greater than zero.")
   }
   
   gear2plot <- blicc_ld$gname[gear_i]

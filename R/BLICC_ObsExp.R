@@ -16,7 +16,12 @@
 #'
 #' @details The reference points calculated are F40 and F20 for 40% and 20% SPR
 #'   respectively, and changes in the selectivity location parameter to achieve
-#'   either SPR 40% (S40) or maximum yield based on yield-per-recruit (SMY).
+#'   either SPR 40% (S40) or maximum yield based on yield-per-recruit (SMY). As
+#'   well as reference points, the function recalculates the SPR if the
+#'   length-weight or maturity parameters are provided. In addition, the
+#'   exploitable biomass as a proportion of the unexploited biomass (B_B0) for
+#'   each time period and the YPR for each data frequency are calculated for
+#'   each parameter draw.
 #'
 #'   Reference points are calculated for a particular scenario, represented by a
 #'   time period. By default, this time period is the last in the data set,
@@ -84,7 +89,7 @@ blicc_ref_pts <-
            L50 = NA,
            L95 = NA) {
     Linf = Galpha = Mk = Fk = Sm = mpd = par = .draw = name2 = se = NULL
-    Gbeta = NULL
+    Gbeta = SPR = lp__ = B_B0 = NULL
 
     if (is.null(time_period)) {
       time_period <- blicc_ld$NT
@@ -229,13 +234,21 @@ blicc_ref_pts <-
     }
 
     dr_df <- dr_df |>
-      dplyr::mutate(B_B0 = purrr::pmap(
-        list(Galpha, Gbeta, Mk, Fk, Sm),
-        Calc_BB0,
-        blicc_ld = blicc_ld,
-        .progress = "B_B0"
+      dplyr::mutate(
+        B_B0 = purrr::pmap(
+          list(Galpha, Gbeta, Mk, Fk, Sm),
+          Calc_BB0,
+          blicc_ld = blicc_ld,
+          .progress = "B_B0"
+        ),
+        YPR = purrr::pmap(
+          list(Galpha, Gbeta, Mk, Fk, Sm),
+          Calc_YPR,
+          blicc_ld = blicc_ld,
+          .progress = "YPR"
       )) |>
       dplyr::select(Linf:lp__, SPR, B_B0, dplyr::everything())
+    
     lx_df <- blicc_expect_len(dr_df, blicc_ld)
     
     # For reference points, we only estimate for the reference time_period scenario    

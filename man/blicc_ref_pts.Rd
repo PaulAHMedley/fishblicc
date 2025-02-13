@@ -61,7 +61,12 @@ Some reference points may not exist (indicated by \code{NA}).
 \details{
 The reference points calculated are F40 and F20 for 40\% and 20\% SPR
 respectively, and changes in the selectivity location parameter to achieve
-either SPR 40\% (S40) or maximum yield based on yield-per-recruit (SMY).
+either SPR 40\% (S40) or maximum yield based on yield-per-recruit (SMY). As
+well as reference points, the function recalculates the SPR if the
+length-weight or maturity parameters are provided. In addition, the
+exploitable biomass as a proportion of the unexploited biomass (B_B0) for
+each time period and the YPR for each data frequency are calculated for
+each parameter draw.
 
 Reference points are calculated for a particular scenario, represented by a
 time period. By default, this time period is the last in the data set,
