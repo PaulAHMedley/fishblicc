@@ -1,6 +1,6 @@
 Package: fishblicc
 Title: Bayesian Length Interval Catch Curve
-Version: 0.9.9
+Version: 0.9.9.1
 Authors@R: 
     person("Paul A.H.", "Medley", , "paulahmedley@gmail.com", role = c("aut", "cre"))
 Description: The package provides functions for fitting a catch curve to

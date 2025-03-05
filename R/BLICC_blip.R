@@ -251,7 +251,7 @@ blip_LH <-
         a <- 1.0
       }
       if (is.null(b))
-        if (set_defaults) b <- 3.0
+        { if (set_defaults) b <- 3.0 }
       else if (! is.na(b)) {
         if (b <= 2 | b > 4) 
           stop("Error: Length-weight exponent (b) must be greater than 2 and less than 4. \n")

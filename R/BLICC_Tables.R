@@ -4,15 +4,16 @@
 # ><> <>< ><> <>< ><> <>< ><> <>< ><> <>< ><> <>< ><> <><
 
 # To Do
-# Function returning parameter names for tables
-# Function table of reference point estimates
+# parameter names for tables
+# table of reference point estimates
+# mixture weights in prior table
 
 
 #' Return a tibble containing a summary of the fishblicc priors being applied
 #'
 #' This function provides a summary of the priors contained in a fishblicc data
-#' object in a tibble. This can be used to inspect the model's assumptions or to
-#' create a table in a report. (Weights have not been included yet).
+#' list in a tibble. This can be used to inspect the model's assumptions or to
+#' create a table in a report. (Mixture weights have not been included yet).
 #'
 #' @export
 #' @inheritParams blicc_mpd
@@ -43,15 +44,22 @@ blicc_prior <- function(blicc_ld) {
   gear_names <- c(gear_names, blicc_ld$fqname[blicc_ld$Fkq>0])
   function_type <- c(function_type, rep("Lognormal", blicc_ld$NF))
   par_names <- c(par_names, rep("Fk", blicc_ld$NF))
-
+  
+  if (blicc_ld$NM > 0 | blicc_ld$NS != blicc_ld$NG)
+    sel_comp <- paste("Sel", as.character(1:blicc_ld$NS))
+  else
+    sel_comp <- blicc_ld$gname
+  
+  
   sel_par <- vector()
   for (i in 1:blicc_ld$NS) {
     npar <- sel_fun$npar[blicc_ld$fSel[i]]-1
     par_names <- c(par_names, sel_fun$par_names[[blicc_ld$fSel[i]]])
     
+    
     gear_names <- c(gear_names,
-                    #blicc_ld$gname[i],
-                    rep(NA, npar+1))
+                    rep(sel_comp[i], npar+1))
+    
     function_type <- c(function_type,
                        "Lognormal",
                        rep(NA, npar))
