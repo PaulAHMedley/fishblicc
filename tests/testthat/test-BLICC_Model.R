@@ -26,6 +26,6 @@ test_that("Population function", {
 
 test_that("RSPR_0 function", {
   expect_equal(
-    abs(RSPR_0(Galpha=100, Gbeta=100/50, Mk=1.5, blicc_ld=eg_ld) - 1.0485595285719317982),
+    abs(RSPR_0(Galpha=100, Gbeta=100/50, Mk=1.5, blicc_ld=gillnet_ld) - 1.11297945726999),
     0, tolerance=1.0e-8)
 })

@@ -1,13 +1,16 @@
-library("tibble")
-suppressWarnings(
+
+
+test_that("Mpd produces tibble for 1 gear",{
   ld1 <- blicc_dat(model_name = "Test Graphs",
-                  LLB = 25:40,
-                  fq=c(0,1,2,26,72,66,40,36,31,25,19,12,10,8,2,0),
-                  sel_fun=4L,
-                  gear_names = "Otter Trawl",
-                  Linf=c(35, 3))
-)
-suppressWarnings(
+                   LLB = 25:40,
+                   fq=c(0,1,2,26,72,66,40,36,31,25,19,12,10,8,2,0),
+                   sel_fun=4L,
+                   gear_names = "Otter Trawl",
+                   Linf=c(35, 3))
+  expect_true(tibble::is_tibble(blicc_mpd(ld1)))
+})
+
+test_that("Mpd produces tibble for 2 gears ",{
   ld2 <- blicc_dat(model_name = "Test Graphs",
                    LLB = 25:40,
                    fq=list(c(0,1,2,26,72,66,40,36,31,25,19,12,10,8,2,0),
@@ -16,12 +19,5 @@ suppressWarnings(
                    sel_fun = c(4L, 4L),
                    gear_names = c("Otter Trawl", "Handline"),
                    Linf=c(35, 3))
-)
-
-
-test_that("Mpd produces tibble for 1 gear",{
-  expect_true(is_tibble(blicc_mpd(ld1)))
-})
-test_that("Mpd produces tibble for 2 gears ",{
-  expect_true(is_tibble(blicc_mpd(ld2)))
+  expect_true(tibble::is_tibble(blicc_mpd(ld2)))
 })

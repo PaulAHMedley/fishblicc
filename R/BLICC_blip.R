@@ -22,7 +22,7 @@
 #'   Optional.
 #' @return The data object blicc_ld but with the prior for `Linf` changed.
 #' @examples
-#' new_ld <- blip_Linf(eg_ld, c(30,2), model_name="Sensitivity")
+#' new_ld <- blip_Linf(gillnet_ld, c(60,2), model_name="Sensitivity")
 #' 
 blip_Linf <- function(blicc_ld,
                       Linf,
@@ -66,7 +66,7 @@ blip_Linf <- function(blicc_ld,
 #'   prior log-normal.
 #' @return The data object blicc_ld but with the prior for Galpha changed.
 #' @examples
-#' new_ld <- blip_Galpha(eg_ld, lGalpha=c(log(1/0.05^2), 0.1))
+#' new_ld <- blip_Galpha(gillnet_ld, lGalpha=c(log(1/0.05^2), 0.1))
 #' 
 blip_Galpha <- function(blicc_ld,
                         lGalpha) {
@@ -109,7 +109,7 @@ blip_Galpha <- function(blicc_ld,
 #' @return The supplied data object blicc_ld but with the prior and function for
 #'   Mk changed.
 #' @examples
-#' new_ld <- blip_Mk(eg_ld, lMk=c(log(1.9), NA), ref_length=25)
+#' new_ld <- blip_Mk(gillnet_ld, lMk=c(log(1.7), NA), ref_length=25)
 #' 
 blip_Mk <- function(blicc_ld,
                     lMk = c(NA_real_, NA_real_),
@@ -166,7 +166,7 @@ blip_Mk <- function(blicc_ld,
 #' @param lFks  A double containing the same log-normal sigma `Fk` for all gears
 #' @return The data object `blicc_ld` with the prior for `Fk` changed.
 #' @examples
-#' new_ld <- blip_Fk(eg_ld, lFk=log(1.9), lFks=1.5)
+#' new_ld <- blip_Fk(gillnet_ld, lFk=log(1.9), lFks=1.5)
 #' 
 blip_Fk <- function(blicc_ld,
                     lFk  = NULL,
@@ -207,7 +207,7 @@ blip_Fk <- function(blicc_ld,
 #'   are `NA`. Leaves them alone if `FALSE`.
 #' @return The data object blicc_ld with the new life-history parameters
 #' @examples
-#' new_ld <- blip_LH(eg_ld, a=1.2e-5, b=2.95, model_name="Alternative LW")
+#' new_ld <- blip_LH(gillnet_ld, a=1.2e-4, b=3, model_name="Alternative LW")
 #' 
 blip_LH <-
   function(blicc_ld,
@@ -250,9 +250,9 @@ blip_LH <-
         warning("No weight-at-length information provided - the weight units will be incorrect. \n")
         a <- 1.0
       }
-      if (is.null(b))
-        { if (set_defaults) b <- 3.0 }
-      else if (! is.na(b)) {
+      if (is.null(b)) {
+        if (set_defaults) b <- 3.0 
+      } else if (! is.na(b)) {
         if (b <= 2 | b > 4) 
           stop("Error: Length-weight exponent (b) must be greater than 2 and less than 4. \n")
       }
@@ -324,7 +324,7 @@ blip_LH <-
 #'@inheritParams blicc_selfun
 #'@return The data object blicc_ld but with the new selectivity priors
 #' @examples
-#'new_ld <- blip_sel_auto(eg_ld)
+#'new_ld <- blip_sel_auto(gillnet_ld)
 #'
 blip_sel_auto <- function(blicc_ld,
                           sel_indx = NULL) {
@@ -366,8 +366,9 @@ blip_sel_auto <- function(blicc_ld,
       )
     else {
       
-      qi <- which(blicc_ld$Gi==gi) # Choose single frequency for this gear
-      pfq <- blicc_ld$fq[[qi[1]]] * mort_corr  # adjust data for mortality
+      qi <- which(blicc_ld$Gi==gi) # combine frequencies for this gear
+      fq <- Reduce(`+`, blicc_ld$fq[qi])
+      pfq <- fq * mort_corr  # adjust data for mortality
       pfq <- pfq / sum(pfq)                 # normalise
       cfq <- cumsum(pfq)                    # cumulative sum
       i10 <-
@@ -439,7 +440,7 @@ blip_sel_auto <- function(blicc_ld,
 #'  for the specified selectivity function. Optional.
 #'@return The data object `blicc_ld` but with the new selectivity priors set
 #'@examples
-#'new_ld <- blip_sel(eg_ld, sel_indx = 1, loc = 10, lslope = -0.8)
+#'new_ld <- blip_sel(gillnet_ld, sel_indx = 1, loc = 30, lslope = -2.8)
 #'
 blip_sel <- function(blicc_ld,
                      sel_indx,
@@ -644,7 +645,10 @@ blip_main_sel <- function(blicc_ld,
 #'
 #' The `NB_phi` log-normal prior is updated with a mean (mu) and standard
 #' deviation (sigma). NB_phi controls the negative binomial over-dispersion
-#' compared to the Poisson distribution.
+#' compared to the Poisson distribution. It is sometimes useful to reduce the
+#' NB_phi lognormal standard deviation hyper-parameter below the 0.5 default to
+#' avoid variation in the data being interpreted as observation error when it
+#' can be explained better by the model.
 #'
 #' The variance for the negative binomial is ` Var = mu + mu^2 / NB_phi`
 #' compared to `Var = mu` for the Poisson distribution.
@@ -654,15 +658,38 @@ blip_main_sel <- function(blicc_ld,
 #' @param lNBphi  A numeric vector of double containing the mu and sigma for the
 #'   prior log-normal.
 #' @return The data object blicc_ld but with the prior for `NBphi` changed.
-#'@examples
-#'new_ld <- blip_NBphi(eg_ld, lNBphi = c(log(100), 0.05))
-#'
+#' @examples
+#' new_ld <- blip_NBphi(gillnet_ld, lNBphi = c(log(100), 0.05))
+#' 
 blip_NBphi <- function(blicc_ld,
                        lNBphi) {
   if (!is.numeric(lNBphi) & length(lNBphi)==2)
     stop("Error: lNBphi must be numeric vector of the c(mu,sd) for the NB_phi lognormal prior. \n")
   blicc_ld$polNB_phim <- lNBphi[1]
   blicc_ld$polNB_phis <- lNBphi[2]
+  return(blicc_ld)
+}
+
+
+#' Set the relative catch log-normal likelihood standard deviation
+#'
+#' The relative catches for multigear fisheries are fitted using a lognormal. The
+#' default is set at around 5%, but lower values may be necessary to ensure the
+#' catches are fitted particularly when large number of length observations are
+#' used. Has no effect in single gear fisheries.
+#'
+#' @export
+#' @inheritParams blip_Linf
+#' @param sigma  The standard deviation for the lognormal likelihood
+#' @return The data object blicc_ld but with the value for `polCs` changed.
+#' @examples
+#' new_ld <- blip_catchLN(trgl_ld, sigma = 0.01)
+#'
+blip_catchLN <- function(blicc_ld,
+                         sigma) {
+  if (!is.numeric(sigma) | length(sigma)>1 | any(sigma <= 0))
+    stop("Error: sigma must be a single positive numeric value. \n")
+  blicc_ld$polCs <- sigma
   return(blicc_ld)
 }
 

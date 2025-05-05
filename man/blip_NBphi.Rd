@@ -19,13 +19,16 @@ The data object blicc_ld but with the prior for \code{NBphi} changed.
 \description{
 The \code{NB_phi} log-normal prior is updated with a mean (mu) and standard
 deviation (sigma). NB_phi controls the negative binomial over-dispersion
-compared to the Poisson distribution.
+compared to the Poisson distribution. It is sometimes useful to reduce the
+NB_phi lognormal standard deviation hyper-parameter below the 0.5 default to
+avoid variation in the data being interpreted as observation error when it
+can be explained better by the model.
 }
 \details{
 The variance for the negative binomial is \code{ Var = mu + mu^2 / NB_phi}
 compared to \code{Var = mu} for the Poisson distribution.
 }
 \examples{
-new_ld <- blip_NBphi(eg_ld, lNBphi = c(log(100), 0.05))
+new_ld <- blip_NBphi(gillnet_ld, lNBphi = c(log(100), 0.05))
 
 }

@@ -39,9 +39,9 @@ function returns the expected population size in each length bin, and the
 fishing mortalities.
 }
 \examples{
-Sel <- Rselectivities(exp(eg_ld$polSm), eg_ld)
-S <- Rpop_F(100, 100/50, Mk=1.5, Fk=exp(eg_ld$polFkm),
-            FSel=Sel, blicc_ld=eg_ld)
-plot(y=S$NL, x=eg_ld$LMP, type="l")
+Sel <- Rselectivities(exp(trgl_ld$polSm), trgl_ld)
+S <- Rpop_F(100, 100/50, Mk=1.5, Fk=exp(trgl_ld$polFkm),
+            FSel=Sel, blicc_ld=trgl_ld)
+plot(y=S$N_L[[1]], x=trgl_ld$LMP, type="l")
 
 }

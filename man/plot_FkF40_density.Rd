@@ -19,6 +19,6 @@ This plot requires the MCMC to have been run. The plot is for the time period
 for which the reference points were calculated (see \link{blicc_ref_pts}).
 }
 \examples{
-plot_FkF40_density(eg_rp)
+plot_FkF40_density(trgl_rp)
 
 }

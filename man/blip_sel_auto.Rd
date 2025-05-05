@@ -37,6 +37,6 @@ it cannot easily be determined from the data what a suitable hypothesis might
 be.
 }
 \examples{
-new_ld <- blip_sel_auto(eg_ld)
+new_ld <- blip_sel_auto(gillnet_ld)
 
 }

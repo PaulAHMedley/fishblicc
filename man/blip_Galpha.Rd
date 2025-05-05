@@ -27,6 +27,6 @@ range are not recommended. A 30\% CV makes length very uninformative on age.
 probability density. The default in \link{blicc_dat} is CV=10\%: \code{lGa1pha = c(log(1 / 0.1 ^ 2), 0.25)}.
 }
 \examples{
-new_ld <- blip_Galpha(eg_ld, lGalpha=c(log(1/0.05^2), 0.1))
+new_ld <- blip_Galpha(gillnet_ld, lGalpha=c(log(1/0.05^2), 0.1))
 
 }

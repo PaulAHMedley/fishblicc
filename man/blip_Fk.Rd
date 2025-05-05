@@ -37,6 +37,6 @@ estimated for it, and the gear's \code{Fk} prior is skipped as it is fixed at
 zero.
 }
 \examples{
-new_ld <- blip_Fk(eg_ld, lFk=log(1.9), lFks=1.5)
+new_ld <- blip_Fk(gillnet_ld, lFk=log(1.9), lFks=1.5)
 
 }

@@ -103,6 +103,7 @@ parameter. Start points far from the mpd point may take significantly
 longer to converge.
 }
 \examples{
-stf <- blicc_fit(eg_ld, ntarget=100, nwarmup=200, nchain=1) #Quick test
-
+\dontrun{
+slim <- blicc_fit(gillnet_ld, ntarget=100, nwarmup=200, nchain=1) #Quick test
+}
 }

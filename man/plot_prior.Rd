@@ -26,6 +26,6 @@ parameter settings are consistent with observations. The prior means are also
 used as the start point for the \link{blicc_mpd} fits.
 }
 \examples{
-plot_prior(eg_ld)
+plot_prior(gillnet_ld)
 
 }

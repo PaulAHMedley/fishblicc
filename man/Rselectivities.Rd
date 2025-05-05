@@ -21,6 +21,6 @@ The function calculates the selectivities for each gear based on the relevant
 selectivity functions and their parameters.
 }
 \examples{
-S <- Rselectivities(exp(eg_ld$polSm), eg_ld)
-plot(y=S[[1]], x=eg_ld$LMP, type="l")
+S <- Rselectivities(exp(gillnet_ld$polSm), gillnet_ld)
+plot(y=S[[1]], x=gillnet_ld$LMP, type="l")
 }

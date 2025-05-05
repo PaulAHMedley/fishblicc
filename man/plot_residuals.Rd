@@ -31,6 +31,6 @@ If you want to alter the graph, the group names are \code{Sgroup} for the
 selectivities and \code{Lgroup} for the lengths.
 }
 \examples{
-plot_residuals(eg_rp)
+plot_residuals(trgl_rp)
 
 }

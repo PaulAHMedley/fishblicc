@@ -20,6 +20,6 @@ bayesplot and posterior can extract information from the stanfit object and
 the \link{blicc_ref_pts} \code{rp_df} 'draws' object in more detailed form.
 }
 \examples{
-blicc_results(eg_rp)
+blicc_results(trgl_slim)
 
 }

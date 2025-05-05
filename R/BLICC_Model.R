@@ -134,10 +134,10 @@ Rsel_dsnormal <- function(Sp, LMP) {
 #' @return A list of the population size in each length bin for each time period 
 #'   and a list of fishing mortalities at length for each gear / time period.
 #' @examples
-#' Sel <- Rselectivities(exp(eg_ld$polSm), eg_ld)
-#' S <- Rpop_F(100, 100/50, Mk=1.5, Fk=exp(eg_ld$polFkm),
-#'             FSel=Sel, blicc_ld=eg_ld)
-#' plot(y=S$NL, x=eg_ld$LMP, type="l")
+#' Sel <- Rselectivities(exp(trgl_ld$polSm), trgl_ld)
+#' S <- Rpop_F(100, 100/50, Mk=1.5, Fk=exp(trgl_ld$polFkm),
+#'             FSel=Sel, blicc_ld=trgl_ld)
+#' plot(y=S$N_L[[1]], x=trgl_ld$LMP, type="l")
 #' 
 Rpop_F <- function(Galpha, Gbeta, Mk, Fk, FSel, blicc_ld) {
   FFSel <- list()
@@ -229,8 +229,8 @@ Rpop_len <- function(node, wt, Len, Zki, Galpha, Gbeta)  {
 #'   including mixture weights at the end of the vector
 #' @return Selectivities as a list of vectors one for each gear's length bin.
 #' @examples
-#' S <- Rselectivities(exp(eg_ld$polSm), eg_ld)
-#' plot(y=S[[1]], x=eg_ld$LMP, type="l")
+#' S <- Rselectivities(exp(gillnet_ld$polSm), gillnet_ld)
+#' plot(y=S[[1]], x=gillnet_ld$LMP, type="l")
 Rselectivities <- function(Sm, blicc_ld) {
   Ski <- list()
   GSki <- list()
@@ -267,7 +267,7 @@ Rselectivities <- function(Sm, blicc_ld) {
 #' @inheritParams Rpop_F
 #' @return The spawning potential (a double) when F=0.
 #' @examples
-#' RSPR_0(Galpha=100, Gbeta=100/50, Mk=1.5, blicc_ld=eg_ld)
+#' RSPR_0(Galpha=100, Gbeta=100/50, Mk=1.5, blicc_ld=gillnet_ld)
 #'
 RSPR_0 <- function(Galpha, Gbeta, Mk, blicc_ld) {
   Zki <- Mk * blicc_ld$M_L

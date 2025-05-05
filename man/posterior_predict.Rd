@@ -27,6 +27,6 @@ might be expected if the model is correct, can be used in the posterior
 and \code{bayesplot} packages for evaluation.
 }
 \examples{
-yrep <- posterior_predict(blicc_rp = eg_rp, gear=1, time_period = 1, draws=100)
+yrep <- posterior_predict(blicc_rp = trgl_rp, gear=1, time_period = 1, draws=100)
 
 }

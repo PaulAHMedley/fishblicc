@@ -56,6 +56,6 @@ length bin mid-points. The models for the calculation are the standard
 length-weight (\code{W=aL^b}) and logistic model for the maturity-at-length: (\code{Lm = 1/(1+exp(Ls*(L-L50)))}).
 }
 \examples{
-new_ld <- blip_LH(eg_ld, a=1.2e-5, b=2.95, model_name="Alternative LW")
+new_ld <- blip_LH(gillnet_ld, a=1.2e-4, b=3, model_name="Alternative LW")
 
 }

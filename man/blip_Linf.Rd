@@ -29,6 +29,6 @@ The \code{Linf} defines the gamma growth probability density function mean, so i
 is the mean asymptotic length of the population.
 }
 \examples{
-new_ld <- blip_Linf(eg_ld, c(30,2), model_name="Sensitivity")
+new_ld <- blip_Linf(gillnet_ld, c(60,2), model_name="Sensitivity")
 
 }

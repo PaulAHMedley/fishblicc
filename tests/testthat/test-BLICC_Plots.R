@@ -29,7 +29,7 @@ test_that("Plot mpd expected frequency exist",{
 })
 
 test_that("Plot mcmc expected frequency exist",{
-  p <- plot_posterior(eg_rp)
+  p <- plot_posterior(trgl_rp)
   expect_true(ggplot2::is.ggplot(p))
 })
 
@@ -41,7 +41,7 @@ test_that("Plot mpd residuals exist",{
 })
 
 test_that("Plot mcmc residuals exist",{
-  p <- plot_residuals(eg_rp)
+  p <- plot_residuals(trgl_rp)
   expect_true(ggplot2::is.ggplot(p))
 })
 
@@ -54,7 +54,7 @@ test_that("Plot mpd selectivity exists",{
 
 
 test_that("Plot mcmc selectivity exists",{
-  p <- plot_selectivity(eg_rp)
+  p <- plot_selectivity(trgl_rp)
   expect_true(ggplot2::is.ggplot(p))
 })
 
@@ -64,7 +64,7 @@ test_that("Plot mpd SPR density rejected",{
 })
 
 test_that("Plot mcmc SPR density exists",{
-  p <- plot_SPR_density(eg_rp)
+  p <- plot_SPR_density(trgl_rp)
   expect_true(ggplot2::is.ggplot(p))
 })
 
@@ -75,7 +75,7 @@ test_that("Plot mpd FkF40 density rejected",{
 })
 
 test_that("Plot mcmc FkF40 density exists",{
-  p <- plot_FkF40_density(eg_rp)
+  p <- plot_FkF40_density(trgl_rp)
   expect_true(ggplot2::is.ggplot(p))
 })
 
@@ -87,7 +87,7 @@ test_that("Plot mpd expected frequencies for F reference points exists",{
 })
 
 test_that("Plot mcmc expected frequencies for F reference points exists",{
-  p <- plot_efq(eg_rp)
+  p <- plot_efq(trgl_rp)
   expect_true(ggplot2::is.ggplot(p))
 })
 
@@ -111,7 +111,7 @@ test_that("Plot mpd SPR contour plot exists",{
 })
 
 test_that("Plot mcmc SPR contour plot exists",{
-  p <- plot_SPR_contour(eg_rp)
+  p <- plot_SPR_contour(trgl_rp)
   expect_true(ggplot2::is.ggplot(p))
 })
 
@@ -124,7 +124,7 @@ test_that("Plot mpd YPR contour plot exists",{
 
 
 test_that("Plot mcmc YPR contour plot exists",{
-  p <- plot_YPR_contour(eg_rp)
+  p <- plot_YPR_contour(trgl_rp)
   expect_true(ggplot2::is.ggplot(p))
 })
 

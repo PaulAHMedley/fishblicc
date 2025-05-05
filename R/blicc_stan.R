@@ -41,7 +41,7 @@
 #'   [blicc_dat])
 #' @return A tibble of parameter estimates (mpd) with standard errors.
 #' @examples
-#' mpd_fit <- blicc_mpd(eg_ld)
+#' mpd_fit <- blicc_mpd(gillnet_ld)
 #' 
 blicc_mpd <- function(blicc_ld) {
   # Find the posterior mode
@@ -176,8 +176,9 @@ blicc_mpd <- function(blicc_ld) {
 #' @param  ...         Other arguments passed to `rstan::sampling()`.
 #' @return An object of class stanfit returned by `rstan::sampling()`
 #' @examples
-#' stf <- blicc_fit(eg_ld, ntarget=100, nwarmup=200, nchain=1) #Quick test
-#' 
+#' \dontrun{
+#' slim <- blicc_fit(gillnet_ld, ntarget=100, nwarmup=200, nchain=1) #Quick test
+#' }
 blicc_fit <- function(blicc_ld,
                       ntarget = 2000,
                       nwarmup = 1000,
@@ -497,7 +498,7 @@ blicc_dat <-
       Ffq <- seq(Nfq)
     } else {
       if (!is.vector(Catch) | length(Catch) != Nfq | any(Catch<0) | !any(Catch>0)) {
-        stop("Error: Relative catches, including zeros where negligible, must be provided for each length frequency. \n")
+        stop("Error: Relative catches `Catch`, including zeros where negligible, must be provided for each length frequency. \n")
       }
       sums <- tapply(Catch, period_freq, sum)
       catch_prop <- Catch[Catch > 0] / sums[period_freq[Catch > 0]] # Normalise
@@ -591,7 +592,7 @@ blicc_dat <-
     # Medium level of overdispersion
     dl <- blip_NBphi(dl, c(log(100), 0.5))
     #  Catch: sigma for lognormal
-    dl$polCs <- 0.1
+    dl$polCs <- 0.10
 
     dl <- blip_sel_auto(dl)
     
@@ -671,7 +672,7 @@ blicc_dat <-
 #'   changed. If not provided, all functions will be replaced.
 #' @return The data object `blicc_ld` with the new selectivities
 #' @examples
-#' new_ld <- blicc_selfun(eg_ld, sel_fun="logistic", model_name = "Logistic Selectivity")
+#' new_ld <- blicc_selfun(gillnet_ld, sel_fun="logistic", model_name = "Logistic Selectivity")
 #'
 blicc_selfun <-
   function(blicc_ld,

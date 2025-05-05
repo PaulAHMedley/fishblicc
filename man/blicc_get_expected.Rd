@@ -39,7 +39,7 @@ parameters are point estimates. A standard data list provides the
 model dimensions as produced by the function \link{blicc_dat}.
 }
 \examples{
-blicc_get_expected(Linf = 32, Galpha = 100, Mk = 1.5, Fk = 1.5,
-                   Sm = c(24, 0.1, 0.001), blicc_ld = eg_ld)
+blicc_get_expected(Linf = 62, Galpha = 100, Mk = 1.5, Fk = 1.5,
+                   Sm = c(24, 0.1), blicc_ld = gillnet_ld)
 
 }

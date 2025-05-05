@@ -19,7 +19,7 @@
 #' @return ggplot geom object plotting observed and the prior's expected
 #'   frequency, separated by gear.
 #' @examples
-#' plot_prior(eg_ld)
+#' plot_prior(gillnet_ld)
 #' 
 plot_prior <- function(blicc_ld, gear = "All", time_period = "All") {
   Gear = LMP = fq = Name = NULL
@@ -78,12 +78,10 @@ plot_prior <- function(blicc_ld, gear = "All", time_period = "All") {
 #'
 #' @export
 #' @inheritParams plot_prior
-#' @param blicc_rp  A list of posterior draws, reference points with associated
-#'   direction, the data object and expected lengths from [blicc_ref_pts]
-#'   function.
+#' @inheritParams blicc_expected_catches
 #' @return ggplot geom object plotting observed and expected frequency
 #' @examples
-#' plot_posterior(eg_rp)
+#' plot_posterior(trgl_rp)
 #' 
 plot_posterior <-
   function(blicc_rp, gear = "All", time_period = "All") {
@@ -204,7 +202,7 @@ plot_posterior <-
 #' @inheritParams plot_posterior
 #' @return ggplot geom object plotting standardised residuals
 #' @examples
-#' plot_residuals(eg_rp)
+#' plot_residuals(trgl_rp)
 #' 
 plot_residuals <- function(blicc_rp, gear = "All", time_period = "All") {
   .draw = NB_phi = Qgroup = Lgroup = efq = ofq = LMP = std_res = NULL
@@ -298,7 +296,7 @@ plot_residuals <- function(blicc_rp, gear = "All", time_period = "All") {
 #' @inheritParams plot_posterior
 #' @return ggplot geom object for plotting
 #' @examples
-#' plot_selectivity(eg_rp)
+#' plot_selectivity(trgl_rp)
 #' 
 plot_selectivity <- function(blicc_rp, gear = "All") {
   Lgroup = sel = LMP = sel_10 = sel_90 = sel_m = Qgroup = NULL
@@ -352,7 +350,7 @@ plot_selectivity <- function(blicc_rp, gear = "All") {
 #' @inheritParams plot_posterior
 #' @return ggplot geom object for plotting
 #' @examples
-#' plot_SPR_density(eg_rp)
+#' plot_SPR_density(trgl_rp)
 #' 
 plot_SPR_density <- function(blicc_rp) {
   SPR = .draw = Period = NULL
@@ -396,7 +394,7 @@ plot_SPR_density <- function(blicc_rp) {
 #' @inheritParams plot_posterior
 #' @return ggplot geom object for plotting
 #' @examples
-#' plot_FkF40_density(eg_rp)
+#' plot_FkF40_density(trgl_rp)
 #'
 plot_FkF40_density <- function(blicc_rp) {
   Fk = F40 = `Fk/F40` = id = NULL 
@@ -519,7 +517,7 @@ plot_FkF40_density <- function(blicc_rp) {
 #' @return ggplot geom object for plotting expected length frequencies by SPR
 #'   level
 #' @examples
-#' plot_efq(eg_rp)
+#' plot_efq(trgl_rp)
 #' 
 plot_efq <- function(blicc_rp, gear = NULL) {
   Linf = Galpha = Mk = Fk = Sm = NB_phi = Sgroup = NULL
@@ -676,7 +674,7 @@ plot_efq <- function(blicc_rp, gear = NULL) {
 #' @inheritParams plot_posterior
 #' @return ggplot geom object for plotting
 #' @examples
-#' plot_SPR_contour(eg_rp)
+#' plot_SPR_contour(trgl_rp)
 #' 
 plot_SPR_contour <- function(blicc_rp, gear = NULL) {
   Smx_rp = spr = Lcur = Fcur = `..level..` = NULL  #R CMD Notes
@@ -845,7 +843,7 @@ plot_SPR_contour <- function(blicc_rp, gear = NULL) {
 #' @inheritParams plot_posterior
 #' @return ggplot geom object for plotting
 #' @examples
-#' plot_YPR_contour(eg_rp)
+#' plot_YPR_contour(trgl_rp)
 #' 
 plot_YPR_contour <- function(blicc_rp, gear = NULL) {
   Smx_rp = ypr = F0.1 = Lcur = Fcur = `..level..` = NULL  # R CMD Notes

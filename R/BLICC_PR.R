@@ -402,7 +402,7 @@ fSPR <- function(Galpha, Gbeta, Mk, Fk, Rsel, blicc_ld) {
 #' Optimum length with maximum yield
 #'
 #' Used to find the maximum YPR (at optimum exploitation length) subject to a
-#' SPR constraint. NOT USED
+#' SPR constraint. NOT CURRENTLY USED
 #'
 #' @inheritParams fYPR
 #' @param tarSPR  Target Spawner Potential Ratio
@@ -417,3 +417,44 @@ maxYPR <- function(Galpha, Gbeta, Mk, tarSPR, blicc_ld) {
   return(sum(Pwt_L))
 }
 
+
+#' Calculates the impact on YPR and SPR of sequentially removing each gear
+#'
+#' Used to calculate the impact each gear has on other gears and the SPR. Only
+#' works for a single period. 
+#'
+#' @inheritParams FSPR_solve
+#' @param curValues vector of YPR for the relevant gears and SPR for the current 
+#'   fit 
+#' @return A tibble of columns the variable (gear YPR & the SPR) for the removal 
+#'   of each gear
+#' @noRd
+#' 
+fPRImpact <-
+  function(Linf,
+           Galpha,
+           Mk,
+           Fk,
+           Sm,
+           curValues,
+           blicc_ld) {
+    Gbeta <- Galpha / Linf
+    Rsel <- Rselectivities(Sm, blicc_ld)
+    SPR0 <- RSPR_0(Galpha, Gbeta, Mk, blicc_ld) # Unexploited SPR
+    
+    dPR <- list()
+    for (i in seq(blicc_ld$NG)) {
+      dFk <- Fk
+      dFk[i] <- 0
+      pop <- Rpop_F(Galpha, Gbeta, Mk, dFk, Rsel, blicc_ld)
+      Pop_N_L <- unlist(pop$N_L)
+      dPR[[i]] <- c(sapply(pop$Fki, \(x) sum(x*Pop_N_L*blicc_ld$wt_L )),
+                    sum(Pop_N_L * blicc_ld$ma_L) / SPR0) - curValues
+    }
+    names(dPR) <- paste("Remove", blicc_ld$gname)
+    
+    PR_df <- dplyr::as_tibble(dPR)
+    PR_df$Variable <- c(paste(blicc_ld$gname, "YPR"), "SPR")
+    
+    return(PR_df |> dplyr::select(Variable, dplyr::everything()))
+  }

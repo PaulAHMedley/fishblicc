@@ -69,13 +69,14 @@
 #'   scenario. If not specified, the default is the final time period.
 #' @param vdir  A search direction vector with maximum value 1 and minimum 0
 #'   applied to changes across gears. Optional.
-#' @return A list of 1) vdir: the direction vector 2) dr_df: posterior draws or
-#'   mpd point estimates of important parameters 3) rp_df: per-recruit reference
-#'   points 4) lx_df: observed-expected length frequencies, 5) ld: `blicc_ld`
-#'   data object used.
+#' @return A list of 1) dr_df: posterior draws or mpd point estimates of
+#'   important parameters 2) lx_df: observed-expected length frequencies, 3) ld:
+#'   `blicc_ld` data list used. 4) scenario used: includes a direction vector
+#'   and subsets of the data and parameters sufficient to calculate rp_df 5)
+#'   rp_df: per-recruit reference points
 #' @examples
 #' \dontrun{
-#' res_rp <- blicc_ref_pts(eg_slim, eg_ld)
+#' res_rp <- blicc_ref_pts(trgl_slim, trgl_ld)
 #' summary(res_rp$rp_df)
 #' }
 #' 
@@ -247,7 +248,7 @@ blicc_ref_pts <-
           blicc_ld = blicc_ld,
           .progress = "YPR"
       )) |>
-      dplyr::select(Linf:lp__, SPR, B_B0, dplyr::everything())
+      dplyr::select(Linf:lp__, SPR, B_B0, YPR, dplyr::everything())
     
     lx_df <- blicc_expect_len(dr_df, blicc_ld)
     
@@ -267,7 +268,7 @@ blicc_ref_pts <-
 
     # subset dr_df for the tp_ld data
     rp_df <- dr_df |>
-      dplyr::select(-SPR, -B_B0, -lp__) |>
+      dplyr::select(-lp__, -SPR, -B_B0, -YPR) |>
       dplyr::mutate(
         Fk = purrr::pmap(
           list(Fk),
@@ -353,6 +354,56 @@ blicc_ref_pts <-
   }
 
 
+#' Generate expected proportional catch numbers for each gear.
+#'
+#' The function returns a tibble of the expected relative catch number for each
+#' gear for the provided parameters. The gear values add up to 1, so for single
+#' gear fisheries, this is will return 1; therefore this is only useful in
+#' multi-gear fisheries.
+#'
+#' As well as the expected catch, the fit residuals are returned as a
+#' diagnostic. For the mpd fit, the function returns a tibble with the number of
+#' rows equal to the number of gears. For the MCMC fit, it returns the number of
+#' MCMC iterations multiplied by the number of gears.
+#'
+#' @export
+#' @param blicc_rp  A list of posterior draws, reference points with associated
+#'   direction, the data object and expected lengths from [blicc_ref_pts]
+#'   function.
+#' @return A tibble of expected catches and residuals for each gear and MCMC
+#'   iteration
+#' @examples
+#' blicc_expected_catches(trgl_rp) |>
+#'   dplyr::group_by(gear) |>
+#'   dplyr::summarise(resid=mean(resid))
+#' 
+blicc_expected_catches <- function(blicc_rp) {
+  Linf = Galpha = Mk = Fk = Sm = .draw = NULL
+  
+  dr_df <- blicc_rp$dr_df
+  blicc_ld <- blicc_rp$ld  
+  suppressWarnings({
+    ca_df <- dr_df |>
+      dplyr::mutate(
+        expect = purrr::pmap(
+          list(Linf, Galpha, Mk, Fk, Sm),
+          blicc_get_eca,
+          blicc_ld = blicc_ld),
+        resid = purrr::pmap(
+          list(expect),
+          \(x) as.vector(blicc_ld$prop_catch - x))
+      ) |>
+      dplyr::select(`.draw`, expect, resid) |>
+      tidyr::unnest_longer(c(expect, resid)) |> 
+      dplyr::mutate(
+        gear = rep(blicc_ld$gname, nrow(dr_df)),
+        std_resid = resid / blicc_ld$polCs) |>
+      dplyr::select(`.draw`, gear, expect, resid, std_resid) 
+  })
+  return(ca_df)
+}
+
+
 #' Generate a data frame of length-based expected values
 #'
 #' The functions returns a tibble of draws from the posterior MCMC stanfit
@@ -365,7 +416,7 @@ blicc_ref_pts <-
 #' large depending on the number of draws.
 #'
 #' @inheritParams blicc_mpd
-#' @param rp_df   Posterior draws and reference points tibble from
+#' @param dr_df   Posterior draws and reference points tibble from
 #'   [blicc_ref_pts] function.
 #' @return A tibble containing fitted values with respect to length
 #' @noRd
@@ -409,8 +460,8 @@ blicc_expect_len <- function(dr_df, blicc_ld) {
 #'   length bin
 #' @return A tibble of expected values for each length bin for each gear
 #' @examples
-#' blicc_get_expected(Linf = 32, Galpha = 100, Mk = 1.5, Fk = 1.5,
-#'                    Sm = c(24, 0.1, 0.001), blicc_ld = eg_ld)
+#' blicc_get_expected(Linf = 62, Galpha = 100, Mk = 1.5, Fk = 1.5,
+#'                    Sm = c(24, 0.1), blicc_ld = gillnet_ld)
 #'
 blicc_get_expected <-
   function(Linf, Galpha, Mk, Fk, Sm, blicc_ld) {
@@ -444,11 +495,10 @@ blicc_get_expected <-
 #' For a set of parameter values, returns the expected catch in each length bin
 #' for each gear based on the BLICC model. This is the same as the
 #' [blicc_get_expected] function, but only returns the expected length
-#' frequency. Used for predictive posterior in some plots. Works for a single 
-#' time period.
+#' frequency. Used for predictive posterior in some plots. 
 #'
 #' @inheritParams blicc_get_expected
-#' @param gear_i A integer vector of gears to obtain the expected catch for
+#' @param gear_i A integer vector of gears to obtain the expected frequency for
 #' @return A list of two vectors: the gear names, and a vector of the expected
 #'   length bin frequency
 #' @noRd
@@ -462,13 +512,46 @@ blicc_get_efq <-
     Pop <- Rpop_F(Galpha, Galpha/Linf, Mk, Fk, Rsel, blicc_ld)
 
     efq <- double(0)
-    for (gi in gear_i) {
-      ex_fq <- Pop$N_L[[1]] * Pop$Fki[[gi]] # Catch
-      ex_fq <- sum(blicc_ld$fq[[gi]]) * ex_fq / sum(ex_fq) # Normalise
-      efq <- c(efq, ex_fq)
+    for (qi in seq(blicc_ld$NQ)) {
+      gi <- blicc_ld$Gi[qi]
+      if (gi %in% gear_i) {
+        ti <- blicc_ld$Ti[qi]
+        ex_fq <- Pop$N_L[[blicc_ld$Ti[qi]]] * Pop$Fki[[gi]] # Catch
+        ex_fq <- sum(blicc_ld$fq[[gi]]) * ex_fq / sum(ex_fq) # Normalise
+        efq <- c(efq, ex_fq)
+      }
     }
     # interleaved gear_names=rep(blicc_ld$gear_names[gear_i], each=blicc_ld$NB)
     return(efq)
+  }
+
+
+#' Get the expected catch proportions from BLICC model parameters
+#'
+#' For a set of parameter values, returns the expected catch numbers for each
+#' gear for each gear based on the BLICC model. This is the same as the
+#' [blicc_get_expected] function, but only returns the expected catches. 
+#'
+#' @inheritParams blicc_get_expected
+#' @return A vector of the same length as the number of frequencies containing
+#'   the expected catch number proportions.
+#' @noRd
+#' 
+blicc_get_eca <-
+  function(Linf, Galpha, Mk, Fk, Sm, blicc_ld) {
+    if (blicc_ld$NG == 1) {
+      return(rep(1, blicc_ld$NQ))
+    }
+    Rsel <- Rselectivities(Sm, blicc_ld)
+    pop <- Rpop_F(Galpha, Galpha/Linf, Mk, Fk, Rsel, blicc_ld)
+    
+    eca <- double(blicc_ld$NQ)
+    for (qi in seq(blicc_ld$NQ)) {
+      eca[qi] <- with(blicc_ld, sum(pop$N_L[[Ti[qi]]] * pop$Fki[[Gi[qi]]])) # Catch numbers
+    }
+    sums <- with(blicc_ld, tapply(eca, Ti[Fkq>0], sum))
+    eca <- with(blicc_ld, eca / sums[Ti[Fkq>0]]) # Normalise
+    return(as.vector(eca))
   }
 
 
@@ -488,7 +571,7 @@ blicc_get_efq <-
 #'   MCMC (the default).
 #' @return A matrix with rows equal to gears*draws and columns to length
 #' @examples
-#' yrep <- posterior_predict(blicc_rp = eg_rp, gear=1, time_period = 1, draws=100)
+#' yrep <- posterior_predict(blicc_rp = trgl_rp, gear=1, time_period = 1, draws=100)
 #'
 posterior_predict <- function(blicc_rp, gear = NULL, time_period = NULL, draws = 0) {
   .draw = Lgroup = Qgroup = efq = NULL

@@ -47,6 +47,6 @@ the i^th^ bin. Natural mortality will be constant within each bin. If
 \code{ref_length} is not given, a constant natural mortality is assumed.
 }
 \examples{
-new_ld <- blip_Mk(eg_ld, lMk=c(log(1.9), NA), ref_length=25)
+new_ld <- blip_Mk(gillnet_ld, lMk=c(log(1.7), NA), ref_length=25)
 
 }

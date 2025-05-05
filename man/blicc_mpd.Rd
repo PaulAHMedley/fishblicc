@@ -47,6 +47,6 @@ In addition to the parameters, the fit reports the spawning potential ratio
 (SPR) and the log probability at the mode (\code{lp__}).
 }
 \examples{
-mpd_fit <- blicc_mpd(eg_ld)
+mpd_fit <- blicc_mpd(gillnet_ld)
 
 }

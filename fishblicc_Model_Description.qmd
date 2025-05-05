@@ -7,7 +7,7 @@ format:
     toc: true
     code-fold: true
     toc-depth: 2.0
-    keep-md: true
+    keep-md: false
     df-print: paged
     embed-resources: true
 number-sections: true

@@ -36,6 +36,6 @@ already present these are conserved. Mixture weights, if they are used, can be
 set in \link{blip_mix}.
 }
 \examples{
-new_ld <- blip_sel(eg_ld, sel_indx = 1, loc = 10, lslope = -0.8)
+new_ld <- blip_sel(gillnet_ld, sel_indx = 1, loc = 30, lslope = -2.8)
 
 }

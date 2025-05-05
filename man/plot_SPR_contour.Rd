@@ -28,6 +28,6 @@ calculated for a single reference gear. For multiple time series, the plot is
 for the time period used to estimate reference points (see \link{blicc_ref_pts}).
 }
 \examples{
-plot_SPR_contour(eg_rp)
+plot_SPR_contour(trgl_rp)
 
 }

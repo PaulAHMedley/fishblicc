@@ -21,6 +21,6 @@ reference point. This plot requires the MCMC to have been run. For multiple
 time periods, densities are overlaid.
 }
 \examples{
-plot_SPR_density(eg_rp)
+plot_SPR_density(trgl_rp)
 
 }

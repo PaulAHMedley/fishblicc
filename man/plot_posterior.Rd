@@ -28,6 +28,6 @@ binomial observation error, so on average 8 out of ten observations would be
 expected within these bounds.
 }
 \examples{
-plot_posterior(eg_rp)
+plot_posterior(trgl_rp)
 
 }

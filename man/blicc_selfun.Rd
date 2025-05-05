@@ -34,6 +34,6 @@ which indexes the relevant functions. In this case, only those
 functions will need to have the prior parameters updated.
 }
 \examples{
-new_ld <- blicc_selfun(eg_ld, sel_fun="logistic", model_name = "Logistic Selectivity")
+new_ld <- blicc_selfun(gillnet_ld, sel_fun="logistic", model_name = "Logistic Selectivity")
 
 }

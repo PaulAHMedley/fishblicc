@@ -19,7 +19,7 @@
 #' @inheritParams blicc_mpd
 #' @return A tibble describing the priors being applied.
 #' @examples
-#' blicc_prior(eg_ld)
+#' blicc_prior(trgl_ld)
 #' 
 blicc_prior <- function(blicc_ld) {
 
@@ -98,7 +98,7 @@ blicc_prior <- function(blicc_ld) {
 #'   [blicc_ref_pts]
 #' @return A tibble summarising results of the model fit object.
 #' @examples
-#' blicc_results(eg_rp)
+#' blicc_results(trgl_slim)
 #' 
 blicc_results <- function(blicc_res) {
   Fk = Linf = Parameter = Rhat = Sm = Value = lp__ = median = mpd = NULL
@@ -174,3 +174,47 @@ blicc_results <- function(blicc_res) {
   }
   return(res)
 }
+
+
+#' Impact from the removal of each gear on the YPR and SPR in the specified
+#' period.
+#'
+#' The change in YPR and SPR are calculated for each parameter set to produce a
+#' tibble of the YPR and SPR change from the removal of each gear in sequence.
+#' This is only useful if there is more than one gear.
+#'
+#' @export
+#' @inheritParams blicc_expected_catches
+#' @return A tibble with the changes in YPR and SPR from the removal of each
+#'   gear for the scenario in blicc result list.
+#' @examples
+#' blicc_impact(blicc_ref_pts(blicc_mpd(trgl_ld), trgl_ld))
+#'   
+blicc_impact <- function(blicc_rp) {
+  tp_ld <- blicc_rp$scenario$time_period_ld
+  rp_df <- blicc_rp$rp_df
+  
+  suppressWarnings(
+    dr_df <- blicc_rp$dr_df |>
+      dplyr::select(.draw, YPR, SPR) |>
+      dplyr::mutate(curValues = purrr::pmap(list(YPR, SPR), \(x, y) c(x, y))) |>
+      dplyr::select(.draw, curValues)
+  )
+  suppressWarnings(
+    rp_df <- rp_df |>
+      dplyr::left_join(dr_df, by = ".draw") |>
+      dplyr::mutate(
+        Impact = purrr::pmap(
+          list(Linf, Galpha, Mk, Fk, Sm, curValues),
+          fPRImpact,
+          blicc_ld = tp_ld,
+          .progress = "Gear Impacts"
+        )
+      ) |>
+      dplyr::select(.draw, Impact) |>
+      tidyr::unnest(col = Impact)
+  )
+  return(rp_df)
+}
+
+

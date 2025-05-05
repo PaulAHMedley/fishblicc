@@ -199,7 +199,7 @@ transformed data {
       reject("Data object error: Number of mixtures / mixture references incorrect.");
   }
 
-  if (NF==NQ) {
+  if (NF==NT) {
     olC = rep_vector(0, NF);
     multigear = 0;
   } else {  // Identify gears contributing to catch in each NQ
@@ -332,8 +332,10 @@ model {
     for (qi in 1:NQ) {
       eC = Fki[qi] .* Pop[Ti[qi]];
       eC_sum = sum(eC);
-      efq = eC * NObs[qi]/eC_sum + eps;    // Normalise and raise to the expected numbers in the sample
-      target += neg_binomial_2_lupmf(fq[qi] | efq, NB_phi);
+      if (NObs[qi] > 0) {
+        efq = eC * NObs[qi]/eC_sum + eps;    // Normalise and raise to the expected numbers in the sample
+        target += neg_binomial_2_lupmf(fq[qi] | efq, NB_phi);
+      }
       if ((multigear == 1) && (Fkq[qi] > 0)) {
           Total_Catch[Ti[qi]] += eC_sum;
           elC[Fkq[qi]] = log(eC_sum);

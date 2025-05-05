@@ -43,10 +43,11 @@ than Linf. A small increment is added to L50 if it is not provided.
 Optional.}
 }
 \value{
-A list of 1) vdir: the direction vector 2) dr_df: posterior draws or
-mpd point estimates of important parameters 3) rp_df: per-recruit reference
-points 4) lx_df: observed-expected length frequencies, 5) ld: \code{blicc_ld}
-data object used.
+A list of 1) dr_df: posterior draws or mpd point estimates of
+important parameters 2) lx_df: observed-expected length frequencies, 3) ld:
+\code{blicc_ld} data list used. 4) scenario used: includes a direction vector
+and subsets of the data and parameters sufficient to calculate rp_df 5)
+rp_df: per-recruit reference points
 }
 \description{
 The function returns a list consisting of the search direction vector, a
@@ -107,7 +108,7 @@ yield or SPR surface must be plotted.
 }
 \examples{
 \dontrun{
-res_rp <- blicc_ref_pts(eg_slim, eg_ld)
+res_rp <- blicc_ref_pts(trgl_slim, trgl_ld)
 summary(res_rp$rp_df)
 }
 

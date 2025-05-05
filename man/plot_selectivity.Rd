@@ -23,6 +23,6 @@ multiplied by the fishing mortality (Fk) parameters to obtain the relative
 fishing mortality at length. The 80\%CI is only available for the MCMC fit.
 }
 \examples{
-plot_selectivity(eg_rp)
+plot_selectivity(trgl_rp)
 
 }

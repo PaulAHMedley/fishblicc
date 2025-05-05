@@ -15,10 +15,10 @@ A tibble describing the priors being applied.
 }
 \description{
 This function provides a summary of the priors contained in a fishblicc data
-object in a tibble. This can be used to inspect the model's assumptions or to
-create a table in a report. (Weights have not been included yet).
+list in a tibble. This can be used to inspect the model's assumptions or to
+create a table in a report. (Mixture weights have not been included yet).
 }
 \examples{
-blicc_prior(eg_ld)
+blicc_prior(trgl_ld)
 
 }

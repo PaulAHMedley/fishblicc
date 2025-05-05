@@ -26,6 +26,6 @@ The model calculates the spawning potential by multiplying the proportion of
 numbers in each length bin with no fishing by the mature biomass per recruit.
 }
 \examples{
-RSPR_0(Galpha=100, Gbeta=100/50, Mk=1.5, blicc_ld=eg_ld)
+RSPR_0(Galpha=100, Gbeta=100/50, Mk=1.5, blicc_ld=gillnet_ld)
 
 }

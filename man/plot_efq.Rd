@@ -48,6 +48,6 @@ practice and more realistic scenarios may need to be constructed to test
 possible management actions.
 }
 \examples{
-plot_efq(eg_rp)
+plot_efq(trgl_rp)
 
 }
