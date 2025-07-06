@@ -199,7 +199,7 @@ transformed data {
       reject("Data object error: Number of mixtures / mixture references incorrect.");
   }
 
-  if (NF==NT) {
+  if (NQ==NT) {
     olC = rep_vector(0, NF);
     multigear = 0;
   } else {  // Identify gears contributing to catch in each NQ

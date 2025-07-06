@@ -1485,7 +1485,7 @@ public:
         }
       }
       current_statement__ = 242;
-      if (stan::math::logical_eq(NF, NT)) {
+      if (stan::math::logical_eq(NQ, NT)) {
         current_statement__ = 239;
         stan::model::assign(olC, stan::math::rep_vector(0, NF),
           "assigning variable olC");

@@ -3,6 +3,7 @@
 .Rdata
 .httr-oauth
 .DS_Store
+.quarto
 fishblicc.Rproj
 Package_Creation.qmd
 .check.env
