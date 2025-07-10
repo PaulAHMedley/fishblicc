@@ -14,7 +14,7 @@ Description: The package provides functions for fitting a catch curve to
     up of logistic / normal mixtures representing different fishing gears
     applied over different time periods (or locations). The model is fitted 
     using Stan.
-License: MIT + file LICENSE
+License: GPL (>= 3)
 URL: https://github.com/PaulAHMedley/fishblicc
 BugReports: https://github.com/PaulAHMedley/fishblicc/issues
 Depends: 

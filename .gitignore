@@ -12,3 +12,8 @@ tests
 Cynoscion_virescens_SPR.rda
 GuyanaSeatrout_ld.rda
 Nephrops.rda
+.RData
+.Ruserdata
+src/*.o
+src/*.so
+src/*.dll
