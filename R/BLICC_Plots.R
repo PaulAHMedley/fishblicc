@@ -294,11 +294,13 @@ plot_residuals <- function(blicc_rp, gear = "All", time_period = "All") {
 #'
 #' @export
 #' @inheritParams plot_posterior
+#' @param plotFk Whther to plot the graph as fishing mortality at length or 
+#'   selectivity (default)
 #' @return ggplot geom object for plotting
 #' @examples
 #' plot_selectivity(trgl_rp)
 #' 
-plot_selectivity <- function(blicc_rp, gear = "All") {
+plot_selectivity <- function(blicc_rp, gear = "All", plotFk=FALSE) {
   Lgroup = sel = LMP = sel_10 = sel_90 = sel_m = Qgroup = NULL
 
   blicc_ld <- blicc_rp$ld
@@ -313,6 +315,16 @@ plot_selectivity <- function(blicc_rp, gear = "All") {
   blicc_lx <- blicc_lx |>
     dplyr::filter(Qgroup %in% fq2plot)|>
     dplyr::mutate(Qgroup = gear2plot[match(Qgroup, fq2plot)]) # filter only one selectivity for each gear
+  if (plotFk) {
+    suppressWarnings({
+      df <- blicc_rp$dr_df |>
+        dplyr::select(.draw, Fk) |> 
+        tidyr::unnest(cols=c(Fk)) |>
+        dplyr::mutate(Qgroup = rep(blicc_ld$gname, nrow(blicc_rp$dr_df)))
+      blicc_lx <- dplyr::inner_join(blicc_lx, df, by=c(".draw", "Qgroup")) |>
+        dplyr::mutate(sel = sel * Fk)
+    })
+  }
   
   gp <- blicc_lx |>
     dplyr::select(Qgroup, Lgroup, sel) |>
@@ -327,14 +339,26 @@ plot_selectivity <- function(blicc_rp, gear = "All") {
     dplyr::mutate(LMP = blicc_ld$LMP[as.integer(Lgroup)]) |>
     ggplot2::ggplot(ggplot2::aes(x = LMP, fill = Qgroup, colour = Qgroup)) +
     ggplot2::geom_ribbon(ggplot2::aes(ymin = sel_10, ymax = sel_90),
-                         alpha = 0.5) +
-    ggplot2::geom_line(ggplot2::aes(y = sel_m)) +
-    ggplot2::labs(
+                         alpha = 0.5, linetype=0) +
+    ggplot2::geom_line(ggplot2::aes(y = sel_m))
+  if (plotFk) {
+    gp <- gp +
+      ggplot2::labs(
+        x = "Length",
+        y = "F/K (at length)",
+        fill = "Gear",
+        colour = "Gear"
+      )
+  } else {
+    gp <- gp +
+      ggplot2::labs(
       x = "Length",
       y = "Selectivity",
       fill = "Gear",
       colour = "Gear"
     )
+  }
+  
   return(gp)
 }
 
@@ -342,9 +366,9 @@ plot_selectivity <- function(blicc_rp, gear = "All") {
 #' Plot the estimated spawning potential ratio probability density, if
 #' available.
 #'
-#' The SPR estimate is converted to a probability density plot with 20% and 40%
-#' reference point. This plot requires the MCMC to have been run. For multiple 
-#' time periods, densities are overlaid.
+#' The SPR estimate as a percentage is converted to a probability density plot
+#' with 20% and 40% reference point. This plot requires the MCMC to have been
+#' run. For multiple time periods, densities are overlaid.
 #'
 #' @export
 #' @inheritParams plot_posterior
@@ -361,7 +385,8 @@ plot_SPR_density <- function(blicc_rp) {
     dr_df <- blicc_rp$dr_df |>
       dplyr::select(.draw, SPR) |>
       dplyr::mutate(Period = list(blicc_rp$ld$tpname)) |>
-      tidyr::unnest(c(SPR, Period))
+      tidyr::unnest(c(SPR, Period)) |>
+      dplyr::mutate(SPR = SPR * 100)
   })
   
   if (blicc_rp$ld$NT==1) {
@@ -372,14 +397,14 @@ plot_SPR_density <- function(blicc_rp) {
       ggplot2::geom_density(alpha=0.5)
   }
   gp <- gp +
-    ggplot2::geom_vline(ggplot2::aes(xintercept = 0.2),
+    ggplot2::geom_vline(ggplot2::aes(xintercept = 20),
                         colour = "red",
                         linetype = 2) +
-    ggplot2::geom_vline(ggplot2::aes(xintercept = 0.4),
+    ggplot2::geom_vline(ggplot2::aes(xintercept = 40),
                         colour = "green",
                         linetype = 2) +
-    ggplot2::coord_cartesian(xlim = c(0, 1)) +
-    ggplot2::labs(x = "Spawning Potential Ratio", y = "Probability Density")
+    ggplot2::coord_cartesian(xlim = c(0, 100)) +
+    ggplot2::labs(x = "Spawning Potential Ratio (%)", y = "Probability Density")
   return(gp)
 }
 

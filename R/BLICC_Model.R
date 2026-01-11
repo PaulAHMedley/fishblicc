@@ -258,6 +258,7 @@ Rselectivities <- function(Sm, blicc_ld) {
   return(GSki)
 }
 
+
 #' Calculate the spawning potential with no fishing
 #'
 #' The model calculates the spawning potential by multiplying the proportion of

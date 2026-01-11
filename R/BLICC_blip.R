@@ -9,18 +9,18 @@
 #'
 #' New `Linf` prior hyper-parameters are set in the [blicc_dat] data object as a
 #' vector of the mean (mu) and standard deviation (sigma) for the normal prior
-#' to be used. The `Linf` will need to be a vector of 2 values.
+#' to be used. The `Linf` parameter will need to be a vector of 2 values.
 #'
 #' The `Linf` defines the gamma growth probability density function mean, so it
-#' is the mean asymptotic length of the population.
+#' is the mean of the asymptotic length in the population.
 #'
 #' @export
 #' @inheritParams blicc_mpd
-#' @param Linf  A numeric vector of double containing the mu and sigma for the
+#' @param Linf  A numeric vector length 2 containing the mu and sigma for the
 #'   prior normal.
-#' @param model_name A string for a replacement model name in the data object.
+#' @param model_name A string for a replacement model name in the data list.
 #'   Optional.
-#' @return The data object blicc_ld but with the prior for `Linf` changed.
+#' @return The data list blicc_ld but with the prior for `Linf` changed.
 #' @examples
 #' new_ld <- blip_Linf(gillnet_ld, c(60,2), model_name="Sensitivity")
 #' 
@@ -54,17 +54,17 @@ blip_Linf <- function(blicc_ld,
 #' The `Galpha` lognormal prior is updated with new values for the mean (mu) and
 #' standard deviation (sigma). The CV is likely to be between 5% (`Galpha` mu =
 #' `log(1/0.05^2)`) and 30% (`Galpha` mu = `log(1/0.3^2)`) Values outside this
-#' range are not recommended. A 30% CV makes length very uninformative on age.
+#' range are not recommended. A 30% CV makes length uninformative on age.
 #'
 #' `Galpha` is the alpha parameter in the gamma distribution for the Linf
-#' probability density. The default in [blicc_dat] is CV=10%: `lGa1pha = c(log(1
-#' / 0.1 ^ 2), 0.25)`. 
+#' probability density. The default in [blicc_dat] is CV=10%: 
+#' `lGa1pha = c(log(1 / 0.1 ^ 2), 0.25)`. 
 #'
 #' @export
 #' @inheritParams blip_Linf
 #' @param lGalpha  A numeric vector of double containing the mean and sd for the
 #'   prior log-normal.
-#' @return The data object blicc_ld but with the prior for Galpha changed.
+#' @return The data list blicc_ld but with the prior for Galpha changed.
 #' @examples
 #' new_ld <- blip_Galpha(gillnet_ld, lGalpha=c(log(1/0.05^2), 0.1))
 #' 
@@ -87,7 +87,7 @@ blip_Galpha <- function(blicc_ld,
 #' The function checks the proposed values are valid. Also, if the ref_length
 #' parameter is defined, apply the inverse length function for natural
 #' mortality. These are replaced in the data object, which is then returned.
-#' Note that the Mk must be provided as the log value. The default in
+#' Note that the M/K `Mk` must be provided as the log value. The default in
 #' [blicc_dat] depends on the length at 50% maturity, but might be reasonably
 #' close to: `lMk = c(log(1.5), 0.1)`. Values are only changed if the supplied
 #' value is not `NA`.
@@ -104,9 +104,9 @@ blip_Galpha <- function(blicc_ld,
 #' @inheritParams blicc_dat
 #' @param lMk A vector of the mu and sigma for the lognormal natural mortality
 #'   prior
-#' @param ref_length Reference length in the length-inverse mortality is
-#'   applied. Set to -1 to turn off the length-inverse model.
-#' @return The supplied data object blicc_ld but with the prior and function for
+#' @param ref_length Reference length (single length value) in the 
+#'   length-inverse mortality is applied. Set to -1 to turn off the length-inverse model.
+#' @return The supplied data list blicc_ld but with the prior and function for
 #'   Mk changed.
 #' @examples
 #' new_ld <- blip_Mk(gillnet_ld, lMk=c(log(1.7), NA), ref_length=25)
@@ -144,7 +144,7 @@ blip_Mk <- function(blicc_ld,
 }
 
 
-#' Set `Fk` log-normal prior hyper-parameters in the data object
+#' Set `Fk` log-normal prior hyper-parameters in the data list
 #'
 #' The `Fk` lognormal prior is updated with new mu for each gear and a single
 #' sigma parameter. If no value (`NA`) is provided for `lFk`, the defaults are
@@ -164,7 +164,7 @@ blip_Mk <- function(blicc_ld,
 #' @param lFk   A vector containing the log-normal mean `Fk` for each gear
 #'   having a non-negligible catch
 #' @param lFks  A double containing the same log-normal sigma `Fk` for all gears
-#' @return The data object `blicc_ld` with the prior for `Fk` changed.
+#' @return The data list `blicc_ld` with the prior for `Fk` changed.
 #' @examples
 #' new_ld <- blip_Fk(gillnet_ld, lFk=log(1.9), lFks=1.5)
 #' 
@@ -197,15 +197,15 @@ blip_Fk <- function(blicc_ld,
 #' (from [blicc_dat]) to new values. The values are either provided as vectors
 #' or model parameters to calculate the vectors. Calculations are done for the
 #' length bin mid-points. The models for the calculation are the standard
-#' length-weight (`W=aL^b`) and logistic model for the maturity-at-length: (`Lm
-#' = 1/(1+exp(Ls*(L-L50)))`).
+#' length-weight (`W=aL^b`) and logistic model for the maturity-at-length: 
+#' (`Lm = 1/(1+exp(Ls*(L-L50)))`).
 #'
 #' @export
 #' @inheritParams blip_Linf
 #' @inheritParams blicc_dat
 #' @param set_defaults Logical indicating whether to set defaults if parameters
 #'   are `NA`. Leaves them alone if `FALSE`.
-#' @return The data object blicc_ld with the new life-history parameters
+#' @return The data list blicc_ld with the new life-history parameters
 #' @examples
 #' new_ld <- blip_LH(gillnet_ld, a=1.2e-4, b=3, model_name="Alternative LW")
 #' 
@@ -315,10 +315,11 @@ blip_LH <-
 #'[blip_sel] function.
 #'
 #'If a selectivity is made up of a mixture of functions, prior parameters are
-#'not estimated and [blip_sel] must be used to set the parameters manually. This
+#'not estimated and [blip_sel] must be used to set the parameters manually 
+#'as well as the mixture weights with [blip_mix]. This
 #'is necessary because the user must propose the hypothesis for the mixtures and
 #'it cannot easily be determined from the data what a suitable hypothesis might
-#'be.
+#'be. 
 #'
 #'@export
 #'@inheritParams blicc_selfun
@@ -365,7 +366,6 @@ blip_sel_auto <- function(blicc_ld,
         )
       )
     else {
-      
       qi <- which(blicc_ld$Gi==gi) # combine frequencies for this gear
       fq <- Reduce(`+`, blicc_ld$fq[qi])
       pfq <- fq * mort_corr  # adjust data for mortality
@@ -428,9 +428,9 @@ blip_sel_auto <- function(blicc_ld,
 #'the log of the reciprocal of the variance for the normal functions. For the
 #'double-sided normal, two parameters must be provided and for all other
 #'functions only one parameter. If `lslope` is not provided, a default slope of
-#' -4.5 is applied if the slope parameters have not already been set. If values are
-#'already present these are conserved. Mixture weights, if they are used, can be
-#'set in [blip_mix].
+#'-4.5 is applied if the slope parameters have not already been set. If values 
+#'are already present these are conserved. Priors for mixture weights, if a 
+#'mixture is used, must be set in [blip_mix].
 #'
 #'@export
 #'@inheritParams blicc_mpd
@@ -493,7 +493,7 @@ blip_sel <- function(blicc_ld,
 #'   selectivity function after the first (which has a default weight of 1.0).
 #'   If it is not provided it is loosely estimated from the data using weighted
 #'   least squares.
-#' @return The data object `blicc_ld` but with the new selectivity priors set
+#' @return The data list `blicc_ld` but with the new selectivity priors set
 #' 
 blip_mix <- function(blicc_ld,
                      gear,
@@ -575,11 +575,11 @@ blip_mix <- function(blicc_ld,
 #'
 #' The function checks each gear that has mixtures that the maximum weight is
 #' 1.0. If it is higher than 1.0, the selectivity with the highest weight is
-#' moved to the base component using `blip_MainComp`.
+#' moved to the base component using [blip_main_sel].
 #' 
 #' @export
 #' @inheritParams blicc_mpd
-#' @return The data object `blicc_ld` with normalized weights
+#' @return The data list `blicc_ld` with normalized weights
 #' 
 blip_normalize_mix <- function(blicc_ld) {
   for (gi in 1:blicc_ld$NG) {
@@ -596,7 +596,7 @@ blip_normalize_mix <- function(blicc_ld) {
 }
 
 
-#' Set gear selectivity component to main
+#' Set a selectivity component to main component for a gear
 #'
 #' A gear's selectivity component is set so that its weight equals 1.0. Other 
 #' mixture weights are adjusted accordingly. 
@@ -646,8 +646,8 @@ blip_main_sel <- function(blicc_ld,
 #' The `NB_phi` log-normal prior is updated with a mean (mu) and standard
 #' deviation (sigma). NB_phi controls the negative binomial over-dispersion
 #' compared to the Poisson distribution. It is sometimes useful to reduce the
-#' NB_phi lognormal standard deviation hyper-parameter below the 0.5 default to
-#' avoid variation in the data being interpreted as observation error when it
+#' NB_phi lognormal standard deviation of the hyper-parameter to below the 0.5 
+#' default to avoid variation in the data being interpreted as observation error when it
 #' can be explained better by the model.
 #'
 #' The variance for the negative binomial is ` Var = mu + mu^2 / NB_phi`

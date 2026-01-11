@@ -43,7 +43,7 @@
 #' @examples
 #' mpd_fit <- blicc_mpd(gillnet_ld)
 #' 
-blicc_mpd <- function(blicc_ld) {
+blicc_mpd <- function(blicc_ld, refresh = 500) {
   # Find the posterior mode
   fit <-
     rstan::optimizing(
@@ -58,7 +58,7 @@ blicc_mpd <- function(blicc_ld) {
       as_vector = FALSE,
       verbose = FALSE,
       iter = 10000,
-      refresh = 500,
+      refresh = refresh,
       tol_obj = 1e-12,
       tol_rel_obj = 1e3,
       tol_grad = 1e-8,

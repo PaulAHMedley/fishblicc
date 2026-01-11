@@ -70,10 +70,11 @@
 #' @param vdir  A search direction vector with maximum value 1 and minimum 0
 #'   applied to changes across gears. Optional.
 #' @return A list of 1) dr_df: posterior draws or mpd point estimates of
-#'   important parameters 2) lx_df: observed-expected length frequencies, 3) ld:
-#'   `blicc_ld` data list used. 4) scenario used: includes a direction vector
-#'   and subsets of the data and parameters sufficient to calculate rp_df 5)
-#'   rp_df: per-recruit reference points
+#'   important parameters 2) lx_df: selectivity (sel), relative population size
+#'   (N_L) and expected length frequencies (efq)  3) ld: `blicc_ld` data list
+#'   used. 4) scenario used: includes a direction vector and subsets of the data
+#'   and parameters sufficient to calculate rp_df 5) rp_df: some standard
+#'   per-recruit reference points
 #' @examples
 #' \dontrun{
 #' res_rp <- blicc_ref_pts(trgl_slim, trgl_ld)
