@@ -11,10 +11,10 @@ blip_normalize_mix(blicc_ld)
 \link{blicc_dat})}
 }
 \value{
-The data object \code{blicc_ld} with normalized weights
+The data list \code{blicc_ld} with normalized weights
 }
 \description{
 The function checks each gear that has mixtures that the maximum weight is
 1.0. If it is higher than 1.0, the selectivity with the highest weight is
-moved to the base component using \code{blip_MainComp}.
+moved to the base component using \link{blip_main_sel}.
 }

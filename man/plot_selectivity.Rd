@@ -4,7 +4,7 @@
 \alias{plot_selectivity}
 \title{Plot selectivity and 80\% credible interval, if available, by length.}
 \usage{
-plot_selectivity(blicc_rp, gear = "All")
+plot_selectivity(blicc_rp, gear = "All", plotFk = FALSE)
 }
 \arguments{
 \item{blicc_rp}{A list of posterior draws, reference points with associated
@@ -12,6 +12,9 @@ direction, the data object and expected lengths from \link{blicc_ref_pts}
 function.}
 
 \item{gear}{Specifies the gear(s) to plot as an integer index or full name}
+
+\item{plotFk}{Whther to plot the graph as fishing mortality at length or
+selectivity (default)}
 }
 \value{
 ggplot geom object for plotting

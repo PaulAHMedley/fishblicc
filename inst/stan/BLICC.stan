@@ -2,10 +2,10 @@
  // ><>  ><>  ><>  ><>  ><>  ><>  ><>  ><>  ><>  ><>  ><>  ><>  ><>  ><>  ><>
  //
  /////////////    Bayes Length Interval Catch Curve Stock Assessment /////////////
- /////////////    Multiple and Population Selectivity Fit            /////////////
+ /////////////    Multiple Population and Selectivity Fit            /////////////
  /////////////    PAUL MEDLEY                                        /////////////
  /////////////    paulahmedley@gmail.com                             /////////////
- /////////////    January 2025                                       /////////////
+ /////////////    April 2026                                       /////////////
  //><>  ><>  ><>  ><>  ><>  ><>  ><>  ><>  ><>  ><>  ><>  ><>  ><>  ><>  ><>
  // ><>  ><>  ><>  ><>  ><>  ><>  ><>  ><>  ><>  ><>  ><>  ><>  ><>  ><>  ><>
 
@@ -132,8 +132,9 @@ data {
   int<lower=1>               NQ;           // Number of separate length frequencies
   int<lower=1>               NG;           // Number of gears: separate selectivities
   int<lower=1>               NS;           // Number of selectivity components
-  int<lower=1>               NT;           // Number of time periods (same MK and Linf apply)
-  int<lower=0, upper=NQ>     NF;           // Number of F's: gears/periods associated with non-zero catches
+  int<lower=1>               NX;           // Number of species (different MK and Linf)
+  int<lower=1>               NN;           // Number of populations 
+  int<lower=0, upper=NQ>     NF;           // Number of F's: gears/populations associated with non-zero catches
   int<lower=1>               NB;           // Number of length bins
   int<lower=2>               NP;           // Number of selectivity parameters
   int<lower=0>               NM;           // Number of mixture functions, & therefore mixture weights. Can be zero.
@@ -141,7 +142,8 @@ data {
   vector[NB]              LLB;            // Bin lower bounds
   int                     fq[NQ, NB];     // Frequency in each bin for each gear
   int<lower=1, upper=NG>  Gi[NQ];         // Gear index for frequency data
-  int<lower=1, upper=NT>  Ti[NQ];         // Time period index for frequency
+  int<lower=1, upper=NX>  Xi[NN];         // Growth group index for population
+  int<lower=1, upper=NN>  Ni[NQ];         // Population index for frequency
   vector[NF]              prop_catch;     // Estimated total relative catch in numbers of fish, excluding zeroes for surveys etc.
   int<lower=0, upper=NF>  Fkq[NQ];        // Index of the Fk associated with frequency data. 0 implies no contribution to F (catch negligible)
   int<lower=1, upper=4>   fSel[NS];       // Selectivity function to use: 1 = logistic, 2 = normal, 3 = ss_normal, 4 = ds_normal
@@ -149,16 +151,17 @@ data {
   int<lower=1, upper=NS>  GSbase[NG];     // Integers linking gear to a selectivity function reference in fSel
   int<lower=0, upper=NM>  GSmix1[NG*2];   // Integer pairs linking gear to selectivity function reference in GSMix2
   int<lower=1, upper=NS>  GSmix2[NM];     // Integer references to fSel for mixtures. Could be zero length.
-  row_vector[NB]          ma_L;           // Mature biomass at length
+  //matrix[NB, NX]          ma_L;           
+  array[NX] row_vector[NB] ma_L;          // Mature biomass at length for each species
   //Constant Hyperparameters for priors - Linf has a normal prior; all other priors are log normal
   //see https://github.com/stan-dev/stan/wiki/Prior-Choice-Recommendations
-  real            poLinfm;
-  real            poLinfs;
+  vector[NX]      poLinfm;
+  vector[NX]      poLinfs;
   real            polGam;
   real            polGas;
   vector[NB]      M_L;          // Length-based adjustment for natural mortality
-  real            polMkm;
-  real            polMks;
+  vector[NX]      polMkm;
+  vector[NX]      polMks;
   vector[NF]      polFkm;
   real            polFks;
   vector[NP+NM]   polSm;
@@ -199,22 +202,22 @@ transformed data {
       reject("Data object error: Number of mixtures / mixture references incorrect.");
   }
 
-  if (NQ==NT) {
+  if (NQ==NN) {
     olC = rep_vector(0, NF);
     multigear = 0;
   } else {  // Identify gears contributing to catch in each NQ
-    vector[NT] catch_sum = rep_vector(0, NT);
+    vector[NN] catch_sum = rep_vector(0, NN);
     multigear = 1;
     for (qi in 1:NQ) {
       if (Fkq[qi] > 0) {
-        catch_sum[Ti[qi]] += prop_catch[Fkq[qi]];
+        catch_sum[Ni[qi]] += prop_catch[Fkq[qi]];
         olC[Fkq[qi]] = log(prop_catch[Fkq[qi]]);
       }
     }
 
     for (qi in 1:NQ) {
       if (Fkq[qi] > 0) {
-        olC[Fkq[qi]] -= log(catch_sum[Ti[qi]]);  //ensures catches proportional
+        olC[Fkq[qi]] -= log(catch_sum[Ni[qi]]);  //ensures catches proportional
       }
     }
   }
@@ -227,31 +230,29 @@ transformed data {
   LMP[NB] = LLB[NB] + 0.5*(LLB[NB] - LLB[NB-1]);
 }
 
-
 /////////////////////////////////////////////
 //////  PARAMETERS  /////////////////////////
 /////////////////////////////////////////////
 
-
 parameters {  //modelled param
-  real<lower = -poLinfm/poLinfs>  nLinf;
-  real                            nGalpha;
-  real                            nMk;
-  vector[NF]                      nFk;
-  vector[NP+NM]                   nSm; //Includes selectivity mixture weights. NM may be zero.
-  real                            nNB_phi;
+  vector[NX]  nLinf; 
+  real                                  nGalpha;
+  vector[NX]                            nMk;
+  vector[NF]                            nFk;
+  vector[NP+NM]                         nSm; //Includes selectivity mixture weights. NM may be zero.
+  real                                  nNB_phi;
 }
 
 transformed parameters {
-  real Linf = poLinfm + nLinf*poLinfs;
-  real Galpha = exp(polGam + nGalpha*polGas);
-  real Mk = exp(polMkm + nMk*polMks);
+  vector[NX] Linf = poLinfm + nLinf .* poLinfs;
+  if (min(Linf) <= 0) reject("Negative length");
+  real   Galpha = exp(polGam + nGalpha * polGas);
+  vector[NX] Mk = exp(polMkm + nMk .* polMks);
   vector[NF] Fk = exp(polFkm + nFk * polFks);
   vector[NP+NM] Sm = exp(polSm + nSm .* polSs);
-  real NB_phi = exp(polNB_phim + nNB_phi*polNB_phis);
-  real Gbeta = Galpha / Linf;
+  real   NB_phi = exp(polNB_phim + nNB_phi * polNB_phis);
+  vector[NX] Gbeta = Galpha / Linf;
 }
-
 
 /////////////////////////////////////////////
 //////    MODEL     /////////////////////////
@@ -275,19 +276,19 @@ model {
   {
     //calculate expected mortality for current parameter set
     vector[NB] efq;
-    vector[NT] Total_Catch = rep_vector(0, NT);
+    vector[NN] Total_Catch = rep_vector(0, NN);
     vector[NF] elC;
     real       eC_sum;
     vector[NB] eC;
     vector[NS] Seli[NS];                    // Selectivity models
     vector[NB] Sgi[NG];                     // Gear Selectivity
     vector[NB] Fki[NQ];                     // Gear Selectivity
-    vector[NB] Mki = Mk * M_L;              // Natural mortality
-    vector[NB] Zki[NT];                     // Total mortality
-    vector[NB] Pop[NT];                     // Populations
+    //vector[NB] Mki = Mk * M_L;              // Natural mortality
+    vector[NB] Zki[NN];                     // Total mortality
+    vector[NB] Pop[NN];                     // Populations
 
-    for (ti in 1:NT)
-      Zki[ti] = Mki;
+    for (ni in 1:NN)
+      Zki[ni] = Mk[Xi[ni]] * M_L;
 
     // Selectivity Components
     for (si in 1:NS) {
@@ -314,15 +315,15 @@ model {
     for (qi in 1:NQ) {
       if (Fkq[qi] > 0) {
         Fki[qi] = Sgi[Gi[qi]] * Fk[Fkq[qi]];  // Fishing mortality at length
-        Zki[Ti[qi]] += Fki[qi];       // Total mortality at length
+        Zki[Ni[qi]] += Fki[qi];       // Total mortality at length
       } else {
         Fki[qi] = Sgi[Gi[qi]];
       }
     }
 
-    for (ti in 1:NT) {
+    for (ni in 1:NN) {
       //calculate the expected survival at each length point integrating over age
-      Pop[ti] = Pop_L(gl_nodes, gl_weights, LLB, Zki[ti], Galpha, Gbeta);
+      Pop[ni] = Pop_L(gl_nodes, gl_weights, LLB, Zki[ni], Galpha, Gbeta[Xi[ni]]);
     }
 
     //<><  ><>  <><  ><>  <><  ><>  <><  ><>  <><  ><>
@@ -330,14 +331,14 @@ model {
     //<><  ><>  <><  ><>  <><  ><>  <><  ><>  <><  ><>
 
     for (qi in 1:NQ) {
-      eC = Fki[qi] .* Pop[Ti[qi]];
+      eC = Fki[qi] .* Pop[Ni[qi]];
       eC_sum = sum(eC);
       if (NObs[qi] > 0) {
         efq = eC * NObs[qi]/eC_sum + eps;    // Normalise and raise to the expected numbers in the sample
         target += neg_binomial_2_lupmf(fq[qi] | efq, NB_phi);
       }
       if ((multigear == 1) && (Fkq[qi] > 0)) {
-          Total_Catch[Ti[qi]] += eC_sum;
+          Total_Catch[Ni[qi]] += eC_sum;
           elC[Fkq[qi]] = log(eC_sum);
         }
     }
@@ -345,7 +346,7 @@ model {
     if (multigear == 1) {
       for (qi in 1:NQ) {
         if (Fkq[qi] > 0) {
-          elC[Fkq[qi]] -= log(Total_Catch[Ti[qi]]);         // Normalise
+          elC[Fkq[qi]] -= log(Total_Catch[Ni[qi]]);         // Normalise
         }
       }
       target += normal_lupdf(olC | elC, polCs);
@@ -356,26 +357,27 @@ model {
 
 
 generated quantities {
-  vector[NT] SPR;
+  vector[NN] SPR;
   //<><  ><>  <><  ><>  <><  ><>  <><  ><>  <><  ><>
   ///// Spawning Potential Ratio (SPR) ///  <><  ><>
   //<><  ><>  <><  ><>  <><  ><>  <><  ><>  <><  ><>
 
   {
-    real SPR0;
-    vector[NT] SPRF;
+    vector[NX] SPR0;
+    vector[NN] SPRF;
     vector[NS] Seli[NS];                    // Selectivity models
     vector[NB] Sv;                         // Survival
     //vector[NB] Fki[NQ];                     // fishing mortality
-    vector[NB] Mki = Mk * M_L;              // Natural mortality
-    vector[NB] Zki[NT];                     // Total mortality
-    vector[NB] Pop[NT];                     // Populations
+    //vector[NB] Mki = Mk * M_L;              // Natural mortality
+    vector[NB] Zki[NN];                     // Total mortality
+    vector[NB] Pop[NN];                     // Populations
 
-    for (ti in 1:NT)
-      Zki[ti] = Mki;
+    for (ni in 1:NN)
+      Zki[ni] = Mk[Xi[ni]] * M_L;
 
     // spawning biomass for the unexploited stock
-    SPR0 = ma_L * Pop_L(gl_nodes, gl_weights, LLB, Mki, Galpha, Gbeta);
+    for (xi in 1:NX)
+      SPR0[xi] = ma_L[xi] * Pop_L(gl_nodes, gl_weights, LLB, Mk[xi] * M_L, Galpha, Gbeta[xi]);
 
     // Add fishing mortality rate to each length bin
     for (gi in 1:NS) {
@@ -391,20 +393,20 @@ generated quantities {
 
     for (qi in 1:NQ) {
       if (Fkq[qi] > 0) {
-        Zki[Ti[qi]] += Seli[GSbase[Gi[qi]]] * Fk[Fkq[qi]];
+        Zki[Ni[qi]] += Seli[GSbase[Gi[qi]]] * Fk[Fkq[qi]];
         if (GSmix0[Gi[qi]] != 0) {  // Add other selectivity if they exist
           int si = 1 + (Gi[qi]-1)*2;
           for (i in GSmix1[si]:GSmix1[si+1])
-            Zki[Ti[qi]] += Sm[NP+i] * Seli[GSmix2[i]] * Fk[Fkq[qi]];
+            Zki[Ni[qi]] += Sm[NP+i] * Seli[GSmix2[i]] * Fk[Fkq[qi]];
         }
       }
     }
 
-    for (ti in 1:NT)
-      SPRF[ti] = ma_L * Pop_L(gl_nodes, gl_weights, LLB, Zki[ti], Galpha, Gbeta);   // Spawning biomass calculation
-
     //SPR is the ratio of the spawning biomass with fishing to spawning biomass without fishing
-    SPR = SPRF/SPR0;
+    for (ni in 1:NN) {
+      SPR[ni] = ma_L[Xi[ni]] * Pop_L(gl_nodes, gl_weights, LLB, Zki[ni], 
+                         Galpha, Gbeta[Xi[ni]]) / SPR0[Xi[ni]];
+    }
   }
 }
 

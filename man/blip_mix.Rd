@@ -18,7 +18,7 @@ If it is not provided it is loosely estimated from the data using weighted
 least squares.}
 }
 \value{
-The data object \code{blicc_ld} but with the new selectivity priors set
+The data list \code{blicc_ld} but with the new selectivity priors set
 }
 \description{
 A single gear's prior mixture weights can be set or estimated if not

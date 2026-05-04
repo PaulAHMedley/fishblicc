@@ -8,15 +8,15 @@ bins for the BLICC model}
 Rpop_F(Galpha, Gbeta, Mk, Fk, FSel, blicc_ld)
 }
 \arguments{
-\item{Galpha}{Alpha parameter for the Gamma probability density function that
-governs growth variability.}
+\item{Galpha}{Alpha parameter (scalar) for the Gamma probability density
+function that governs growth variability.}
 
-\item{Gbeta}{Rate parameter for the Gamma distribution growth variability
+\item{Gbeta}{Vector rate parameter for the Gamma distribution growth variability
 (=Galpha/Linf)}
 
-\item{Mk}{Natural mortality divided by the growth rate K}
+\item{Mk}{Natural mortality vector divided by the growth rate K}
 
-\item{Fk}{Fishing mortality divided by the growth rate K for each gear
+\item{Fk}{Fishing mortality vector divided by the growth rate K for each gear
 making a contribution}
 
 \item{FSel}{A list of all the selectivities for each length bin}

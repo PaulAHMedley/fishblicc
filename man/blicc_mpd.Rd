@@ -4,11 +4,14 @@
 \alias{blicc_mpd}
 \title{Finds Bayesian length interval catch curve maximum posterior density point}
 \usage{
-blicc_mpd(blicc_ld)
+blicc_mpd(blicc_ld, refresh = 500)
 }
 \arguments{
 \item{blicc_ld}{A standard data list suitable for the model (see function
 \link{blicc_dat})}
+
+\item{refresh}{Stan \code{optimizing} controlling how many iterations between
+progress reports.}
 }
 \value{
 A tibble of parameter estimates (mpd) with standard errors.

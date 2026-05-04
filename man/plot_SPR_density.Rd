@@ -16,9 +16,9 @@ function.}
 ggplot geom object for plotting
 }
 \description{
-The SPR estimate is converted to a probability density plot with 20\% and 40\%
-reference point. This plot requires the MCMC to have been run. For multiple
-time periods, densities are overlaid.
+The SPR estimate as a percentage is converted to a probability density plot
+with 20\% and 40\% reference point. This plot requires the MCMC to have been
+run. For multiple time periods, densities are overlaid.
 }
 \examples{
 plot_SPR_density(trgl_rp)

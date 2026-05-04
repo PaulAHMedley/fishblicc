@@ -2,7 +2,7 @@
 % Please edit documentation in R/BLICC_blip.R
 \name{blip_Fk}
 \alias{blip_Fk}
-\title{Set \code{Fk} log-normal prior hyper-parameters in the data object}
+\title{Set \code{Fk} log-normal prior hyper-parameters in the data list}
 \usage{
 blip_Fk(blicc_ld, lFk = NULL, lFks = NULL, model_name = NULL)
 }
@@ -15,11 +15,11 @@ having a non-negligible catch}
 
 \item{lFks}{A double containing the same log-normal sigma \code{Fk} for all gears}
 
-\item{model_name}{A string for a replacement model name in the data object.
+\item{model_name}{A string for a replacement model name in the data list.
 Optional.}
 }
 \value{
-The data object \code{blicc_ld} with the prior for \code{Fk} changed.
+The data list \code{blicc_ld} with the prior for \code{Fk} changed.
 }
 \description{
 The \code{Fk} lognormal prior is updated with new mu for each gear and a single

@@ -2,7 +2,7 @@
 % Please edit documentation in R/BLICC_blip.R
 \name{blip_main_sel}
 \alias{blip_main_sel}
-\title{Set gear selectivity component to main}
+\title{Set a selectivity component to main component for a gear}
 \usage{
 blip_main_sel(blicc_ld, gear, sel_N)
 }

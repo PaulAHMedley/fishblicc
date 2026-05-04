@@ -4,11 +4,13 @@
 \alias{blicc_results}
 \title{Return a tibble containing a summary of the results from a fishblicc fit}
 \usage{
-blicc_results(blicc_res)
+blicc_results(blicc_res, MCMC = FALSE)
 }
 \arguments{
 \item{blicc_res}{Results from \link{blicc_fit} (stanfit object), \link{blicc_mpd} or
 \link{blicc_ref_pts}}
+
+\item{MCMC}{Whether to return the MCMC summary (if there is one).}
 }
 \value{
 A tibble summarising results of the model fit object.

@@ -39,6 +39,8 @@
 #' @export
 #' @param  blicc_ld    A standard data list suitable for the model (see function
 #'   [blicc_dat])
+#' @param  refresh Stan `optimizing` controlling how many iterations between 
+#'   progress reports.
 #' @return A tibble of parameter estimates (mpd) with standard errors.
 #' @examples
 #' mpd_fit <- blicc_mpd(gillnet_ld)
@@ -66,22 +68,32 @@ blicc_mpd <- function(blicc_ld, refresh = 500) {
       tol_param = 1e-8,
       draws = 1000
     )
-
-  full_par_names <- c("Linf", "Galpha", "Mk",
+  
+  full_par_names <- c(paste0("Linf[", as.character(1:blicc_ld$NX), "]"), 
+                      "Galpha",
+                      paste0("Mk[", as.character(1:blicc_ld$NX), "]"), 
                       paste0("Fk[", as.character(1:blicc_ld$NF), "]"),
                       paste0("Sm[", as.character(1:(blicc_ld$NP+blicc_ld$NM)), "]"),
-                      "NB_phi", "Gbeta", paste0("SPR[", as.character(1:blicc_ld$NT), "]"))
+                      "NB_phi", 
+                      paste0("Gbeta[", as.character(1:blicc_ld$NX), "]"), 
+                      paste0("SPR[", as.character(1:blicc_ld$NN), "]"))
   rd <- fit$theta_tilde[ , full_par_names]
 
-  if (blicc_ld$NF>1) F_names <- paste0("Fk", as.character(1:blicc_ld$NF)) 
-  else F_names <- "Fk"
-  if (blicc_ld$NT>1) SPR_names <- paste0("SPR", as.character(1:blicc_ld$NT)) 
-  else SPR_names <- "SPR"
-  
-  
-  par_names <- c("Linf", "Galpha", "Mk", F_names,
+  if (blicc_ld$NX>1) {
+    L_names <- paste0("Linf", as.character(1:blicc_ld$NX)) 
+    M_names <- paste0("Mk", as.character(1:blicc_ld$NX)) 
+    gb_names <- paste0("Gbeta", as.character(1:blicc_ld$NX)) 
+  } else {
+    L_names <- "Linf"
+    M_names <- "Mk"
+    gb_names <- "Gbeta"
+  }
+  if (blicc_ld$NF>1) F_names <- paste0("Fk", as.character(1:blicc_ld$NF)) else F_names <- "Fk"
+  if (blicc_ld$NN>1) SPR_names <- paste0("SPR", as.character(1:blicc_ld$NN)) else SPR_names <- "SPR"
+
+  par_names <- c(L_names, "Galpha", M_names, F_names,
                    paste0("Sm", as.character(1:(blicc_ld$NP+blicc_ld$NM))),
-                   "NB_phi", "Gbeta", SPR_names)
+                   "NB_phi", gb_names, SPR_names)
   se <- tryCatch(unname(c(apply(rd, MARGIN=2, FUN="sd"), NA)),
                  error=function(cond) return(NA))
 
@@ -280,6 +292,16 @@ blicc_fit <- function(blicc_ld,
 #'   [blip_Linf], [blip_Galpha], [blip_Mk], [blip_Fk], [blip_LH] and
 #'   [blip_NBphi].
 #'
+#'   The length frequencies should all have the same length bins, specified by
+#'   the lower bound of each bin. The length data can be split into categories
+#'   representing different gears each with their own selectivity, different
+#'   time periods where all parameters except fishing mortality remain the same
+#'   across time periods, and different growth groups where fishing mortality,
+#'   natural mortality and asymptotic length are estimated separately, but
+#'   selectivity is shared. This last might be useful, for example, when
+#'   estimating mortality between males and females of the same species where
+#'   they have different growth forms.
+#'
 #'   The list also contains NK, the number of knots (nodes) used in the
 #'   quadrature integration. The default is 110, which is safe but extends
 #'   running times. Lower values risk inaccurate integration but result in
@@ -312,8 +334,8 @@ blicc_fit <- function(blicc_ld,
 #' @param fq   A list of vectors, each the same length as LLB, containing the
 #'   frequency data for each gear. Zeroes must be included. If only one gear,
 #'   can be a vector. Required.
-#' @param Linf A vector of two values: mean and sd of the prior maximum mean
-#'   length for the stock. Required.
+#' @param Linf A vector or matrix of paired values: mean and sd of the prior
+#'   maximum mean length, with a row for each growth group. Required.
 #' @param sel_fun A vector of selectivity function names (character) or index
 #'   (1-4), with 1="logistic", 2="normal", 3="ss_normal", 4="ds_normal". Length
 #'   must be the same as fq if `gear_sel` is not provided. Required.
@@ -327,6 +349,10 @@ blicc_fit <- function(blicc_ld,
 #' @param period_freq An integer vector indexing which data frequencies are in
 #'   each time period. If not provided, it is assumed there is only one time
 #'   period for all frequencies. Optional.
+#' @param grgp_freq An integer vector or name linking each frequency to a growth
+#'   group. If not provided, it is assumed there is only one growth group for
+#'   all frequencies. A growth group has the same Linf and M/K parameters, so
+#'   multiple parameters can be fitted in the same model. Optional.
 #' @param Catch A vector of relative catches, one for each gear. Required if the
 #'   number of gears is more than one.
 #' @param freq_names A vector of names for the data frequencies for reference.
@@ -334,14 +360,20 @@ blicc_fit <- function(blicc_ld,
 #' @param gear_names A vector of names for the gears for reference. Optional.
 #' @param period_names A vector of names for the time periods for reference.
 #'   Optional.
+#' @param grgp_names A vector of names for the growth groups (species/sexes) 
+#'   for reference. Optional.
 #' @param Mk  Natural mortality divided by the growth rate K (usually around
-#'   1.5). Optional.
+#'   1.5), with the mean for each growth group. Optional.
 #' @param ref_length  The reference length for the inverse length function if it
 #'   is used. (default is NA i.e. constant natural mortality)
-#' @param wt_L  Weight (biomass) for each length bin. Optional.
-#' @param ma_L  Mature biomass for each length bin. Optional.
+#' @param wt_L  Weight (biomass) for each length bin. If more than one growth
+#'   group, must be a matrix with a column for each group and rows number of
+#'   bins. Specify only if not specifying a & b parameters. Optional.
+#' @param ma_L  Mature biomass for each length bin, matrix with a column for
+#'   each growth group as for wt_L. Specify only if not providing L50 and L95.
+#'   Optional.
 #' @param a  The length-weight parameter: a*L^b. Not used in model fitting, but
-#'   used to calculate `wt_L` if that is not provided. for plots etc. Optional.
+#'   used to calculate `wt_L` if that is not provided for plots etc. Optional.
 #' @param b  The length-weight exponent (a*L^b, usually close to 3.0). Not used
 #'   in model fitting, but used to calculate `wt_L` if that is not provided.
 #'   Optional.
@@ -372,9 +404,11 @@ blicc_dat <-
            gear_sel = NULL,
            gear_freq = NULL,
            period_freq = NULL,
+           grgp_freq = NULL,
            freq_names = NULL,
            gear_names = NULL,
            period_names = NULL,
+           grgp_names = NULL,
            Catch = 1,
            Mk = NULL,
            ref_length = -1,
@@ -418,15 +452,46 @@ blicc_dat <-
         )
       }
 
+    # Parse Growth groups
+    if (is.vector(Linf, mode="numeric") & length(Linf) == 2) 
+      dim(Linf) <- c(1,2)
+    Ngg <- dim(Linf)
+    if (length(Ngg) != 2)
+      stop("Error: Linf must be a vector or a 2-dimension matrix. \n")
+    Ngg <- Ngg[1]
+    if (is.null(grgp_names)) {
+      grgp_names <- paste0("GrowthGroup_", as.character(1:Ngg))
+    } else if (Ngg != length(grgp_names)  | !is.character(grgp_names)) {
+      stop("Error: grgp_names must be a character vector with the same length as the number of growth groups.\n")
+    }
+    ErrStr <- "Error: grgp_freq must be an integer vector linking each frequency to a growth group.\n"
+    if (is.null(grgp_freq)) {
+      if (Ngg != 1) 
+        stop(ErrStr)
+      grgp_freq <- rep(1L, Nfq)
+    } else { 
+      grgp_freq <- as.integer(grgp_freq)
+      suppressWarnings(
+        if (length(grgp_freq) != Nfq | max(grgp_freq) != Ngg)
+          stop(ErrStr)
+      )
+      tp <- sort(unique(grgp_freq))
+      suppressWarnings(
+        if (length(tp) != Ngg | any(tp != 1:Ngg)) {
+          stop(ErrStr)
+        })
+    }
+
     # Parse Time Periods
     ErrStr <- "Error: period_freq must be an integer vector linking each frequency to separate time periods.\n"
     if (is.null(period_freq)) {
       Nperiod <- 1 
-      period_freq <- rep(1, Nfq)
+      period_freq <- rep(1L, Nfq)
     } else { 
+      period_freq <- as.integer(period_freq)
       if (length(period_freq) != Nfq)
         stop(ErrStr)
-      suppressWarnings(Nperiod <- as.integer(max(period_freq)))
+      suppressWarnings(Nperiod <- max(period_freq))
       if(is.na(Nperiod) | Nperiod < 1) 
         stop(ErrStr)
       tp <- sort(unique(period_freq))
@@ -441,6 +506,24 @@ blicc_dat <-
       if ((length(period_names) != Nperiod) | !is.character(period_names)) {
         stop("Error: period_names must be a character vector with the same length as the number of time periods.\n")
       }
+    # Define number of populations needed
+    pop_idx <- (grgp_freq-1L)*Ngg + period_freq
+    cidx <- sort(unique(pop_idx))
+    pop_freq <- match(pop_idx, cidx)
+    Npop <- length(cidx)
+    grgp_pop <- grgp_freq[match(1:Npop, pop_freq)]
+    rm(cidx, pop_idx)
+    
+    if (Nperiod==1)
+      pop_names <- grgp_names
+    else {
+      pnames <- period_names[period_freq[match(seq_len(Npop), pop_freq)]]
+      if (Ngg==1) {
+        pop_names <- pnames
+      } else {
+        pop_names <- paste(grgp_names[grgp_pop], pnames)
+      }
+    }
     
     # Parse Gears
     Ngear <- 0
@@ -517,9 +600,12 @@ blicc_dat <-
     # Frequency data names
     if (is.null(freq_names)) {
       freq_names <- dplyr::case_when(
-        Nperiod==1 ~ gear_names[gear_freq],
-        Ngear==1   ~ period_names[period_freq],
-        TRUE       ~ paste(gear_names[gear_freq], 
+        Nperiod==1 & Ngg==1 ~ gear_names[gear_freq],
+        Ngear==1 & Ngg==1   ~ period_names[period_freq],
+        Nperiod==1 ~ paste(gear_names[gear_freq], grgp_names[grgp_freq]),
+        Ngear==1  ~ paste(period_names[period_freq], 
+                              grgp_names[grgp_freq]),
+        TRUE       ~ paste(gear_names[gear_freq], grgp_names[grgp_freq],
                            period_names[period_freq]))
     } else
       if ((length(freq_names) != Nfq) | !is.character(freq_names)) {
@@ -533,6 +619,8 @@ blicc_dat <-
       NG = Ngear,
       NS = 0,
       NT = Nperiod,
+      NX = Ngg,
+      NN = Npop,
       # Number of F's: gears associated with non-zero catches
       NF = length(catch_prop),
       # Number of length bins
@@ -546,14 +634,18 @@ blicc_dat <-
       gname = as.array(gear_names),
       # Time period names
       tpname = as.array(period_names),
+      ggname = as.array(grgp_names),
+      poname = as.array(pop_names),
       # Lower length boundaries for each bin
       LLB = LLB,
       # Length bin mid points (for plotting etc.)
       LMP = LMP,
-      # Frequency data with time period and gear indexing
+      # Frequency data with time period, growth group and gear indexing
       fq = fq,
       Gi = as.array(gear_freq),
       Ti = as.array(period_freq),
+      Xi = as.array(grgp_pop),
+      Ni = as.array(pop_freq),
       # Estimated total relative catch in numbers of fish, excluding zeroes for surveys etc.
       prop_catch = as.array(catch_prop),
       # Index of the Fk associated with each frequency: 0 implies catch negligible
@@ -567,21 +659,25 @@ blicc_dat <-
 
     dl <- blip_Linf(dl, Linf)
     dl <- blip_Galpha(dl, c(log(1 / 0.1 ^ 2), 0.25))
+    
     dl <- blip_LH(dl, a, b, L50, L95, ma_L, wt_L, set_defaults=TRUE)
     
     if (is.null(Mk)) {
       # from Prince et al. 2015
       Mk <-
         with(dl, b * (1 - (L50 / poLinfm)) / (L50 / poLinfm))
-      warning(paste0("Default Mk, based on life history invariant estimate, is: ",
+      warning(paste0("Default Mk, based on life history invariant estimate, are: ",
                      format(Mk, digits=2), "\n"))
     } else {
       # Natural mortality
-      if (Mk <= 0) 
+      if (length(Mk) != 1 & length(Mk) != Ngg)
+        stop("Error: Mk must be of length 1 or length equal to the number of growth groups. \n")
+      if (any(Mk <= 0))
         stop("Error: Mk must be greater than zero. \n")
     }
-
-    dl <- blip_Mk(dl, c(log(Mk), 0.1), ref_length)
+    if (length(Mk) == 1) Mk <- rep(Mk, Ngg)
+    
+    dl <- blip_Mk(dl, matrix(c(log(Mk), rep(0.1, Ngg)), ncol=2), ref_length)
     dl <- blip_Fk(dl, NULL, 2.0)  # loose prior for fully exploited stock
 
     # Selectivity functions
@@ -603,12 +699,12 @@ blicc_dat <-
       else {
         df <- with(dl,
                    tidyr::expand_grid(
-                     Linf = c(poLinfm - 3.1 * poLinfs, poLinfm, poLinfm + 3.1 * poLinfs),
+                     Linf = c(poLinfm[1] - 3.1 * poLinfs[1], poLinfm[1], poLinfm[1] + 3.1 * poLinfs[1]),
                      Galpha = exp(c(
                        polGam - 3.1 * polGas, polGam, polGam + 3.1 * polGas
                      )),
                      Mk = exp(c(
-                       polMkm - 3.1 * polMks, polMkm, polMkm + 3.1 * polMks
+                       polMkm[1] - 3.1 * polMks[1], polMkm[1], polMkm[1] + 3.1 * polMks[1]
                      )),
                      `.draw` = 0
                    ))
@@ -865,24 +961,27 @@ blicc_gear_sel <-
 
 
 
-#' Returns data list from [blicc_dat] with only the selected time period
+#' Returns data list from [blicc_dat] with only the selected populations
 #' included
 #'
 #' Subsets the data list with only selectivity components, gears, frequencies
-#' and parameters relevant to the defined time period.
+#' and parameters relevant to the defined populations.
 #'
 #' @export
 #' @inheritParams blicc_mpd
-#' @param time_period  The names or integer vector of the time periods being
-#'   selected
-#' @return The data object blicc_ld subset for the new time period.
+#' @param population  The names or an integer vector of the populations (time 
+#'   period/growth groups) being selected.
+#' @return The data object blicc_ld subset for the new populations 
+#'   (growth groups / time period).
 #' 
-blicc_period_filter <- function(blicc_ld, time_period) {
-  time_period <- parse_period(sort(time_period), blicc_ld)
+blicc_population_filter <- function(blicc_ld, population) {
+  population <- parse_population(population, blicc_ld)
   
-  if (blicc_ld$NT==1L) return(blicc_ld)
+  if (blicc_ld$NN==1L) return(blicc_ld)
   
-  Qindx <- blicc_ld$Ti %in% time_period
+  Xindx <- blicc_ld$Xi[population]
+  Qindx <- blicc_ld$Ni %in% population
+  Tindx <- unique(blicc_ld$Ti[Qindx])
   Findx <- Qindx & blicc_ld$Fkq > 0
   Gindx <- unique(blicc_ld$Gi[Qindx])
   Sindx <- get_selectivities(Gindx, blicc_ld)
@@ -890,34 +989,48 @@ blicc_period_filter <- function(blicc_ld, time_period) {
   for (si in Sindx) {
     Pindx <- c(Pindx, blicc_ld$sp_i[si]:blicc_ld$sp_e[si])
   }
-  #Mindx <- + MIXWeights
+  GTGindx <- sort(unique(Xindx))
   
   ld <- blicc_ld
-  ld$model_name <- paste(blicc_ld$model_name, "Subset Periods", 
-                         paste(as.character(time_period), collapse=" "))
+  ld$model_name <- paste(blicc_ld$model_name, "Subset Populations", 
+                         paste(as.character(population), collapse=" "))
   ld$NQ <- sum(Qindx)
   ld$NG <- length(Gindx)
   ld$NS <- length(Sindx)
   ld$fSel <- as.array(blicc_ld$fSel[Sindx])
 
-  ld$NT <- length(time_period)
+  ld$NN <- length(population)
+  ld$NT <- length(Tindx)
   ld$NF <- sum(Findx)
   ld$NP <- length(Pindx)
-  #ld$NM <- length(Mindx)
+  ld$NX <- length(GTGindx)
+  
+  
   ld$fqname <- as.array(blicc_ld$fqname[Qindx])
   ld$gname <- as.array(blicc_ld$gname[Gindx])
-  ld$tpname <- as.array(blicc_ld$tpname[time_period])
+  ld$tpname <- as.array(blicc_ld$tpname[Tindx])
   
   ld$fq <- blicc_ld$fq[Qindx]
+  ld$Ni <- as.array(match(blicc_ld$Ni[Qindx], population))
   ld$Gi <- as.array(match(blicc_ld$Gi[Qindx], Gindx))
-  ld$Ti <- as.array(match(blicc_ld$Ti[Qindx], time_period))
+  ld$Ti <- as.array(match(blicc_ld$Ti[Qindx], Tindx))
+  ld$Xi <- as.array(match(blicc_ld$Xi[Qindx], GTGindx))
+  ld$poLinfm <- blicc_ld$poLinfm[GTGindx]
+  ld$poLinfs <- blicc_ld$poLinfs[GTGindx]
+  ld$polMkm <- blicc_ld$polMkm[GTGindx]
+  ld$polMks <- blicc_ld$polMks[GTGindx]
+  ld$a <- blicc_ld$a[GTGindx]
+  ld$b <- blicc_ld$b[GTGindx]
+  ld$L50 <- blicc_ld$L50[GTGindx]
+  ld$Ls <- blicc_ld$Ls[GTGindx]
+  ld$wt_L <- blicc_ld$wt_L[, GTGindx, drop=FALSE]
+  ld$ma_L <- blicc_ld$ma_L[GTGindx, , drop=FALSE]
   
   ld$prop_catch <- as.array(blicc_ld$prop_catch[Qindx])
   ld$Fkq <- as.array(match(blicc_ld$Fkq[Qindx], which(Findx)))
   ld$Fkq[is.na(ld$Fkq)] <- 0
-  sums <- with(ld, tapply(prop_catch, Ti[Fkq>0], sum))
-  ld$prop_catch <- with(ld, prop_catch / sums[Ti[Fkq>0]]) # Normalise
-  
+  sums <- with(ld, tapply(prop_catch, Ni[Fkq>0], sum))
+  ld$prop_catch <- with(ld, prop_catch / sums[Ni[Fkq>0]]) # Normalise
   
   #seq_along(Gindx)
   ld$GSbase <- as.array(blicc_ld$GSbase[Gindx]) # resequence
@@ -943,7 +1056,6 @@ blicc_period_filter <- function(blicc_ld, time_period) {
     } else {
       mix_1 <- mix_1 + 2L
     }
-    
   }
   ld$GSmix2 <- mxn
   ld$NM <- length(mxn)
@@ -963,7 +1075,6 @@ blicc_period_filter <- function(blicc_ld, time_period) {
 
   ld$polSm <- c(blicc_ld$polSm[Pindx], mxpar)
   ld$polSs <- c(blicc_ld$polSs[Pindx], mxpars)
-  
   return(ld)    
 }
 
@@ -977,9 +1088,9 @@ blicc_period_filter <- function(blicc_ld, time_period) {
 #'
 blicc_ini <- function(blicc_ld) {
   return(list(
-    nLinf   = 0,
+    nLinf   = as.array(rep(0, blicc_ld$NX)),
     nGalpha = 0,
-    nMk    = 0,
+    nMk    = as.array(rep(0, blicc_ld$NX)),
     nFk    = as.array(rep(0.0, blicc_ld$NF), dim=1),
     nSm    = rep(0.0, blicc_ld$NP+blicc_ld$NM),
     nNB_phi = 0

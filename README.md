@@ -4,17 +4,19 @@
 # fishblicc
 
 <!-- badges: start -->
+
 <!-- badges: end -->
 
 `fishblicc` provides tools to fit a catch curve model to individual
 length frequency samples, analogous to an age-based catch curve.
 However, the model accounts for different length-based selectivities and
-multiple gears. The model is fitted using MCMC in Stan (mc-stan.org).
-The approach could be useful for data-limited stock assessments, such as
-assessing stock status at end of projects where length data have been
-collected, or continuous monitoring of low-data bycatch species as part
-of a harvest strategy. The model also provides tools to assess how
-effective length sampling is in estimating quantities of interest.
+multiple gears (Medley 2025). The model is fitted using MCMC in Stan
+(mc-stan.org). The approach could be useful for data-limited stock
+assessments, such as assessing stock status at end of projects where
+length data have been collected, or continuous monitoring of low-data
+bycatch species as part of a harvest strategy. The model also provides
+tools to assess how effective length sampling is in estimating
+quantities of interest.
 
 ## Installation
 
@@ -169,17 +171,17 @@ dl <- blicc_dat(
 
 ## Fit the model to these data 
 slim <- blicc_mpd(dl)
-><> Chain 1: Initial log joint probability = -14101.5
+><> Chain 1: Initial log joint probability = -14122.9
 ><> Chain 1:     Iter      log prob        ||dx||      ||grad||       alpha      alpha0  # evals  Notes 
-><> Chain 1: Exception: neg_binomial_2_lpmf: Location parameter[1] is nan, but must be positive finite! (in 'string', line 290, column 6 to column 59)
-><> Exception: neg_binomial_2_lpmf: Location parameter[1] is nan, but must be positive finite! (in 'string', line 290, column 6 to column 59)
-><> Exception: neg_binomial_2_lpmf: Location parameter[1] is nan, but must be positive finite! (in 'string', line 290, column 6 to column 59)
-><> Exception: neg_binomial_2_lpmf: Location parameter[1] is nan, but must be positive finite! (in 'string', line 290, column 6 to column 59)
-><> Exception: neg_binomial_2_lpmf: Location parameter[1] is nan, but must be positive finite! (in 'string', line 290, column 6 to column 59)
+><> Chain 1: Exception: neg_binomial_2_lpmf: Location parameter[1] is nan, but must be positive finite! (in 'string', line 291, column 8 to column 61)
+><> Exception: neg_binomial_2_lpmf: Location parameter[1] is nan, but must be positive finite! (in 'string', line 291, column 8 to column 61)
+><> Exception: neg_binomial_2_lpmf: Location parameter[1] is nan, but must be positive finite! (in 'string', line 291, column 8 to column 61)
+><> Exception: neg_binomial_2_lpmf: Location parameter[1] is nan, but must be positive finite! (in 'string', line 291, column 8 to column 61)
+><> Exception: neg_binomial_2_lpmf: Location parameter[1] is nan, but must be positive finite! (in 'string', line 291, column 8 to column 61)
 ><> 
-><> Chain 1:      499      -534.177    0.00168532        1.8609           1           1      563   
+><> Chain 1:      499      -535.644   0.000268392      0.253038           1           1      554   
 ><> Chain 1:     Iter      log prob        ||dx||      ||grad||       alpha      alpha0  # evals  Notes 
-><> Chain 1:      962      -534.172   2.03742e-06     0.0131157           1           1     1071   
+><> Chain 1:      688      -535.644    1.9733e-06     0.0173782           1           1      758   
 ><> Chain 1: Optimization terminated normally: 
 ><> Chain 1:   Convergence detected: relative gradient magnitude is below tolerance
 ## "slim <- blicc_fit(dl)" to run the full MCMC, but this takes a little time to run.
@@ -228,15 +230,15 @@ blicc_prior(dl)
 ><>  5 Estuarine set bagnet Fk        Lognormal         0.385  -0.955  2   
 ><>  6 Gill net             Fk        Lognormal         0.449  -0.802  2   
 ><>  7 Marine set bagnet    Fk        Lognormal         1.30    0.264  2   
-><>  8 <NA>                 Mode      Lognormal        15.5     2.74   1.5 
-><>  9 <NA>                 Left SD   <NA>              0.111  -2.20   1.5 
-><> 10 <NA>                 Right SD  <NA>              0.0625 -2.77   1.5 
-><> 11 <NA>                 Mode      Lognormal        23.5     3.16   1.5 
-><> 12 <NA>                 Left SD   <NA>              0.0816 -2.51   1.5 
-><> 13 <NA>                 Right SD  <NA>              0.0816 -2.51   1.5 
-><> 14 <NA>                 Mode      Lognormal        22.5     3.11   1.5 
-><> 15 <NA>                 Left SD   <NA>              0.0816 -2.51   1.5 
-><> 16 <NA>                 Right SD  <NA>              0.0625 -2.77   1.5 
+><>  8 Estuarine set bagnet Mode      Lognormal        15.5     2.74   1.5 
+><>  9 Estuarine set bagnet Left SD   <NA>              0.111  -2.20   1.5 
+><> 10 Estuarine set bagnet Right SD  <NA>              0.0625 -2.77   1.5 
+><> 11 Gill net             Mode      Lognormal        23.5     3.16   1.5 
+><> 12 Gill net             Left SD   <NA>              0.0816 -2.51   1.5 
+><> 13 Gill net             Right SD  <NA>              0.0816 -2.51   1.5 
+><> 14 Marine set bagnet    Mode      Lognormal        22.5     3.11   1.5 
+><> 15 Marine set bagnet    Left SD   <NA>              0.0816 -2.51   1.5 
+><> 16 Marine set bagnet    Right SD  <NA>              0.0625 -2.77   1.5 
 ><> 17 <NA>                 NB_phi    Lognormal       100       4.61   0.5 
 ><> 18 <NA>                 b         <NA>              3.15    3.15  NA   
 ><> 19 <NA>                 L50       <NA>             23.2    23.2   NA   
@@ -250,25 +252,25 @@ blicc_results(slim)
 ><> # A tibble: 19 × 3
 ><>    Parameter `Max. Posterior`        SE
 ><>    <chr>                <dbl>     <dbl>
-><>  1 Linf              42.6      1.41    
-><>  2 Galpha            95.5     25.2     
-><>  3 Mk                 1.96     0.203   
-><>  4 Fk[1]              1.43     0.987   
-><>  5 Fk[2]              0.214    1.69    
-><>  6 Fk[3]              0.463    1.26    
-><>  7 Sm[1]             15.0      0.974   
-><>  8 Sm[2]              0.0422   0.00782 
-><>  9 Sm[3]              0.00298  0.000779
-><> 10 Sm[4]             25.5      0.732   
-><> 11 Sm[5]              0.0238   0.00229 
-><> 12 Sm[6]              0.0115   0.00184 
-><> 13 Sm[7]             24.6      0.702   
-><> 14 Sm[8]              0.0253   0.00208 
-><> 15 Sm[9]              0.0102   0.00137 
-><> 16 NB_phi            18.9      4.26    
-><> 17 Gbeta              2.24     0.564   
-><> 18 SPR[1]             0.194    0.0731  
-><> 19 lp__            -534.      NA
+><>  1 Linf              42.4      1.35    
+><>  2 Galpha            97.1     24.4     
+><>  3 Mk                 2.00     0.211   
+><>  4 Fk[1]              0.123    0.0276  
+><>  5 Fk[2]              0.399    0.0988  
+><>  6 Fk[3]              1.06     0.233   
+><>  7 Sm[1]             13.7      0.590   
+><>  8 Sm[2]              0.0519   0.00730 
+><>  9 Sm[3]              0.00303  0.000708
+><> 10 Sm[4]             25.2      0.778   
+><> 11 Sm[5]              0.0230   0.00240 
+><> 12 Sm[6]              0.0115   0.00173 
+><> 13 Sm[7]             24.2      0.634   
+><> 14 Sm[8]              0.0250   0.00217 
+><> 15 Sm[9]              0.0101   0.00131 
+><> 16 NB_phi            18.0      3.88    
+><> 17 Gbeta              2.29     0.554   
+><> 18 SPR[1]             0.340    0.0798  
+><> 19 lp__            -536.      NA
 ```
 
 There are a number of specialized plotting functions specific to length
@@ -285,6 +287,7 @@ plot_posterior(rp_res, gear=1:3) #Plot the results to check the model fit
 
 <img src="man/figures/README-unnamed-chunk-5-1.png" alt="Figure: Posterior expected frequency" width="100%" />
 <p class="caption">
+
 Figure: Posterior expected frequency
 </p>
 
@@ -303,6 +306,7 @@ plot_residuals(rp_res)
 
 <img src="man/figures/README-unnamed-chunk-6-1.png" alt="Figure: Standardised residuals" width="100%" />
 <p class="caption">
+
 Figure: Standardised residuals
 </p>
 
@@ -319,6 +323,7 @@ plot_selectivity(rp_res)
 
 <img src="man/figures/README-unnamed-chunk-7-1.png" alt="Figure: Fitted selectivities " width="100%" />
 <p class="caption">
+
 Figure: Fitted selectivities
 </p>
 
@@ -329,3 +334,19 @@ the logistic, see whether gill net and the marine set bagnet could share
 the same selectivity function or propose a more complex function mixture
 function for the gillnet. The priority would be to see whether any of
 these changes make much difference to the SPR estimate.
+
+## Reference
+
+<div id="refs" class="references csl-bib-body hanging-indent"
+entry-spacing="0">
+
+<div id="ref-medley2025" class="csl-entry">
+
+Medley, Paul A H. 2025. “A New Bayesian Catch Curve Stock Assessment
+Model for the Analysis of Length Data from Multi-Gear Fisheries.” Edited
+by Jan Jaap Poos. *ICES Journal of Marine Science* 82 (12): fsaf224.
+<https://doi.org/10.1093/icesjms/fsaf224>.
+
+</div>
+
+</div>

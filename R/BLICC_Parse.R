@@ -152,16 +152,16 @@ parse_gear <- function(Gear, blicc_ld) {
 #' names are also accepted.
 #'
 #' @inheritParams blicc_mpd
-#' @param Period  A vector of 1 or more numbers or strings representing valid
+#' @param time_period  A vector of 1 or more numbers or strings representing valid
 #'   periods in the model
 #' @return Integer period index (or stops with error message)
 #' @noRd
 #' 
-parse_period <- function(Period, blicc_ld) {
+parse_period <- function(time_period, blicc_ld) {
   if (blicc_ld$NT == 1) {
     return(1L)
   } else {
-    if (any(is.na(Period))) {
+    if (any(is.na(time_period))) {
       stop(
         paste0(
           "Error: Periods must be specified as 'All', or exact matches for period names or integers between 1 and ",
@@ -169,12 +169,12 @@ parse_period <- function(Period, blicc_ld) {
         )
       )
     } else {
-      if (is.character(Period[1])) {
-        if (Period[1] == "All")
-          Period <- 1:blicc_ld$NT
+      if (is.character(time_period[1])) {
+        if (time_period[1] == "All")
+          time_period <- 1:blicc_ld$NT
         else {
-          Period <- match(Period, blicc_ld$tpname)
-          if (any(is.na(Period))) {
+          time_period <- match(time_period, blicc_ld$tpname)
+          if (any(is.na(time_period))) {
             stop(
               paste0(
                 "Error: Periods must be specified as 'All', or exact matches for period names or integers between 1 and ",
@@ -184,17 +184,121 @@ parse_period <- function(Period, blicc_ld) {
           }
         }
       }
-      Period <- as.integer(unique(Period))
-      if (!all(dplyr::between(Period, 1, blicc_ld$NT))) {
+      time_period <- as.integer(unique(time_period))
+      if (!all(dplyr::between(time_period, 1, blicc_ld$NT))) {
         stop(paste0(
           "Error: Specified periods must be between 1 and ",
           as.character(blicc_ld$NT)
         ))
       }
-      return(Period)
+      return(time_period)
     }
   }
 }
+
+
+#' Parse the growth group parameter, converting to an integer
+#'
+#' The growth_group parameter is converted to an integer index of the growth 
+#' groups. Exact growth group names are also accepted.
+#'
+#' @inheritParams blicc_mpd
+#' @param growth_group  A vector of 1 or more numbers or strings representing 
+#'   valid growth groups in the model
+#' @return Integer growth group index (or stops with error message)
+#' @noRd
+#' 
+parse_growth_group <- function(growth_group, blicc_ld) {
+  if (blicc_ld$NX == 1) {
+    return(1L)
+  } else {
+    if (any(is.na(growth_group))) {
+      stop(
+        paste0(
+          "Error: Growth groups must be specified as 'All', or exact matches for growth group names or integers between 1 and ",
+          as.character(blicc_ld$NX)
+        )
+      )
+    } else {
+      if (is.character(growth_group[1])) {
+        if (growth_group[1] == "All")
+          growth_group <- 1:blicc_ld$NX
+        else {
+          growth_group <- match(growth_group, blicc_ld$ggname)
+          if (any(is.na(growth_group))) {
+            stop(
+              paste0(
+                "Error: Growth groups must be specified as 'All', or exact matches for growth group names or integers between 1 and ",
+                as.character(blicc_ld$NX)
+              )
+            )
+          }
+        }
+      }
+      growth_group <- as.integer(unique(growth_group))
+      if (!all(dplyr::between(growth_group, 1, blicc_ld$NX))) {
+        stop(paste0(
+          "Error: Specified periods must be between 1 and ",
+          as.character(blicc_ld$NX)
+        ))
+      }
+      return(growth_group)
+    }
+  }
+}
+
+
+
+#' Parse the population parameter, converting to an integer
+#'
+#' The population parameter is converted to an integer index of the population 
+#' (periods & growth groups). Exact population names are also accepted.
+#'
+#' @inheritParams blicc_mpd
+#' @param population  A vector of 1 or more integers or population names  
+#'   representing valid populations in the model. 
+#' @return Integer population index (or stops with error message)
+#' @noRd
+#' 
+parse_population <- function(population, blicc_ld) {
+  if (blicc_ld$NN == 1) {
+    return(1L)
+  } else {
+    if (any(is.na(population))) {
+      stop(
+        paste0(
+          "Error: Population must be specified as 'All' or exact matches for population names or integers between 1 and ",
+          as.character(blicc_ld$NN)
+        )
+      )
+    } else {
+      if (is.character(population[1])) {
+        if (population[1] == "All")
+          population <- 1:blicc_ld$NN
+        else {
+          population <- match(population, blicc_ld$poname)
+          if (any(is.na(population))) {
+            stop(
+            paste0(
+              "Error: Population must be specified as 'All' or exact matches for population names or integers between 1 and ",
+              as.character(blicc_ld$NN)
+            )
+          )
+          }
+        }
+      }
+    population <- as.integer(unique(population))
+      if (!all(dplyr::between(population, 1, blicc_ld$NN))) {
+        stop(paste0(
+          "Error: Specified populations must be between 1 and ",
+          as.character(blicc_ld$NN)
+        ))
+      }
+      return(population)
+    }
+  }
+}
+
 
 
 #' Get indices for all referenced selectivity functions for the specified gears

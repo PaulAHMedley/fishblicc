@@ -25,10 +25,14 @@ blicc_prior <- function(blicc_ld) {
 
   sel_fun <- Rsel_functions()
 
-  gear_names <- c(NA, NA, NA)
-  function_type <- c("Normal", "Lognormal", "Lognormal")
-  par_names <- c("Linf", "Galpha", "Mk")
-  Mean <- with(blicc_ld, c(poLinfm, exp(c(polGam, polMkm))))
+  gear_names <- rep(NA, 2*blicc_ld$NX+1)
+  function_type <- c("Normal", rep(NA, blicc_ld$NX-1L),
+                     "Lognormal", 
+                     "Lognormal", rep(NA, blicc_ld$NX-1L))
+  par_names <- c("Linf", rep("", blicc_ld$NX-1L),
+                 "Galpha", 
+                 "Mk", rep(NA, blicc_ld$NX-1L))
+  Means <- with(blicc_ld, c(poLinfm, exp(c(polGam, polMkm))))
   Mu <- with(blicc_ld, c(poLinfm, polGam, polMkm))
   SD <- with(blicc_ld, c(poLinfs, polGas, polMks))
 
@@ -36,7 +40,7 @@ blicc_prior <- function(blicc_ld) {
     gear_names <- c(gear_names, NA)
     function_type <- c(function_type, "Ref. length")
     par_names <- c(par_names, NA)
-    Mean <- with(blicc_ld, c(Mean, ref_length))
+    Means <- with(blicc_ld, c(Means, ref_length))
     Mu <- c(Mu, NA)
     SD <- c(SD, NA)
   }
@@ -65,21 +69,24 @@ blicc_prior <- function(blicc_ld) {
                        rep(NA, npar))
   }
 
-  gear_names <- c(gear_names, rep(NA, 4))
-  function_type <- c(function_type, "Lognormal", rep(NA, 3))
-  par_names <- c(par_names, "NB_phi", "b", "L50", "Ls")
-  Mean <- with(blicc_ld, c(Mean, exp(c(polFkm, polSm[1:blicc_ld$NP], polNB_phim)),
+  gear_names <- c(gear_names, rep(NA, 1+3*blicc_ld$NX))
+  function_type <- c(function_type, "Lognormal", rep(NA, 3*blicc_ld$NX))
+  par_names <- c(par_names, "NB_phi", 
+                 "b", rep(NA, blicc_ld$NX-1L),
+                 "L50", rep(NA, blicc_ld$NX-1L),
+                 "Ls", rep(NA, blicc_ld$NX-1L))
+  Means <- with(blicc_ld, c(Means, exp(c(polFkm, polSm[1:blicc_ld$NP], polNB_phim)),
                           b, L50, Ls))
   Mu <- with(blicc_ld, c(Mu, polFkm, polSm[1:blicc_ld$NP], polNB_phim,
                         b, L50, Ls))
   SD <- with(blicc_ld, c(SD, rep(polFks, NF), polSs[1:blicc_ld$NP], polNB_phis,
-                        NA, NA, NA))
+                        rep(NA, 3*blicc_ld$NX)))
 
   return(tibble::tibble(
     Gear = gear_names,
     Parameter = par_names,
     `Function Type` = function_type,
-    Mean = Mean,
+    Mean = Means,
     Mu = Mu,
     SD = SD)
   )
@@ -96,14 +103,15 @@ blicc_prior <- function(blicc_ld) {
 #' @export
 #' @param blicc_res Results from [blicc_fit] (stanfit object), [blicc_mpd] or
 #'   [blicc_ref_pts]
+#' @param MCMC Whether to return the MCMC summary (if there is one).
 #' @return A tibble summarising results of the model fit object.
 #' @examples
 #' blicc_results(trgl_slim)
 #' 
-blicc_results <- function(blicc_res) {
+blicc_results <- function(blicc_res, MCMC = FALSE) {
   Fk = Linf = Parameter = Rhat = Sm = Value = lp__ = median = mpd = NULL
-  n_eff = par = sd = se = slim = NULL
-  `2.5%` = `97.5%` = SPR = YPR = B_B0 = NULL
+  n_eff = par = sd = se = slim = Mk = NULL
+  `10%` = `90%` = SPR = YPR = B_B0 = NULL
   
   if (class(blicc_res)[1]=="stanfit") {
     NF <- blicc_res@par_dims$nFk
@@ -120,39 +128,46 @@ blicc_results <- function(blicc_res) {
       paste0("SPR[", as.character(1:NT), "]"),
       "lp__"
     )
-    par_value <- rstan::summary(blicc_res, pars = params, probs = 0.5)$summary
+    par_value <- rstan::summary(blicc_res, pars = params, probs = c(0.1, 0.9))$summary
     res <- tibble::as_tibble(par_value) |>
       dplyr::mutate(Parameter = rownames(par_value)) |>
       dplyr::select(Parameter,
              Mean = mean,
              SD = sd,
-             `2.5%`,
-             `97.5%`,
+             `10%`,
+             `90%`,
              `N (eff)` = n_eff,
              Rhat)
   } else if (tibble::is_tibble(blicc_res) & paste(names(blicc_res), collapse=" ")=="par mpd se") {
     res <- blicc_res |>
       dplyr::rename(Parameter=par, `Max. Posterior` = mpd, `SE`=se)
   } else {
-    if ("dr_df lx_df ld scenario rp_df" != paste(names(blicc_res), collapse=" ")) {
+    if ("dr_df lx_df ld" != paste(names(blicc_res[1:3]), collapse=" ")) {
       stop(
         "The provided parameter must be a stanfit object, mpd fit or a results list from blicc_ref_pts() function."
       )
     }
-    suppressWarnings(
-      res <- blicc_res$dr_df |>
-        dplyr::select(Linf:lp__, SPR, B_B0, YPR) |>
-        tidyr::unnest_wider(col=Fk, names_sep="[") |>
-        dplyr::rename_with(~ paste0(.x, "]"), tidyselect::starts_with("Fk")) |>
-        tidyr::unnest_wider(col=Sm, names_sep="[") |>
-        dplyr::rename_with(~ paste0(.x, "]"), tidyselect::starts_with("Sm")) |>
-        tidyr::unnest_wider(col=SPR, names_sep="[") |>
-        dplyr::rename_with(~ paste0(.x, "]"), tidyselect::starts_with("SPR")) |>
-        tidyr::unnest_wider(col=YPR, names_sep="[") |>
-        dplyr::rename_with(~ paste0(.x, "]"), tidyselect::starts_with("YPR")) |>
-        tidyr::unnest_wider(col=B_B0, names_sep="[") |>
-        dplyr::rename_with(~ paste0(.x, "]"), tidyselect::starts_with("B_B0"))
-    )
+    
+    if (MCMC & !is.null(blicc_res$mcmc_summary)) return(blicc_res$mcmc_summary)
+    
+    res <- blicc_res$dr_df |>
+      tibble::as_tibble() |>
+      dplyr::select(Linf:lp__, SPR, B_B0, YPR) |>
+      tidyr::unnest_wider(col=Linf, names_sep="[") |>
+      dplyr::rename_with(~ paste0(.x, "]"), tidyselect::starts_with("Linf")) |>
+      tidyr::unnest_wider(col=Mk, names_sep="[") |>
+      dplyr::rename_with(~ paste0(.x, "]"), tidyselect::starts_with("Mk")) |>
+      tidyr::unnest_wider(col=Fk, names_sep="[") |>
+      dplyr::rename_with(~ paste0(.x, "]"), tidyselect::starts_with("Fk")) |>
+      tidyr::unnest_wider(col=Sm, names_sep="[") |>
+      dplyr::rename_with(~ paste0(.x, "]"), tidyselect::starts_with("Sm")) |>
+      tidyr::unnest_wider(col=SPR, names_sep="[") |>
+      dplyr::rename_with(~ paste0(.x, "]"), tidyselect::starts_with("SPR")) |>
+      tidyr::unnest_wider(col=YPR, names_sep="[") |>
+      dplyr::rename_with(~ paste0(.x, "]"), tidyselect::starts_with("YPR")) |>
+      tidyr::unnest_wider(col=B_B0, names_sep="[") |>
+      dplyr::rename_with(~ paste0(.x, "]"), tidyselect::starts_with("B_B0"))
+
     p_order <- names(res)
     res <- res |>
       tidyr::pivot_longer(cols=tidyselect::everything(), names_to="Parameter",
@@ -191,15 +206,17 @@ blicc_results <- function(blicc_res) {
 #' blicc_impact(blicc_ref_pts(blicc_mpd(trgl_ld), trgl_ld))
 #'   
 blicc_impact <- function(blicc_rp) {
-  tp_ld <- blicc_rp$scenario$time_period_ld
+  .draw = YPR = SPR = curValues = Linf = Galpha = Mk = Fk = Sm = Impact = NULL
+
+  tp_ld <- blicc_rp$scenario$population_ld
   rp_df <- blicc_rp$rp_df
   
-  suppressWarnings(
-    dr_df <- blicc_rp$dr_df |>
-      dplyr::select(.draw, YPR, SPR) |>
-      dplyr::mutate(curValues = purrr::pmap(list(YPR, SPR), \(x, y) c(x, y))) |>
-      dplyr::select(.draw, curValues)
-  )
+  dr_df <- blicc_rp$dr_df |>
+    tibble::as_tibble() |>
+    dplyr::select(.draw, YPR, SPR) |>
+    dplyr::mutate(curValues = purrr::pmap(list(YPR, SPR), \(x, y) c(x, y))) |>
+    dplyr::select(.draw, curValues)
+
   suppressWarnings(
     rp_df <- rp_df |>
       dplyr::left_join(dr_df, by = ".draw") |>

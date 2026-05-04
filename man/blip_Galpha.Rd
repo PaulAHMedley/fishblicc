@@ -14,17 +14,18 @@ blip_Galpha(blicc_ld, lGalpha)
 prior log-normal.}
 }
 \value{
-The data object blicc_ld but with the prior for Galpha changed.
+The data list blicc_ld but with the prior for Galpha changed.
 }
 \description{
 The \code{Galpha} lognormal prior is updated with new values for the mean (mu) and
 standard deviation (sigma). The CV is likely to be between 5\% (\code{Galpha} mu =
 \code{log(1/0.05^2)}) and 30\% (\code{Galpha} mu = \code{log(1/0.3^2)}) Values outside this
-range are not recommended. A 30\% CV makes length very uninformative on age.
+range are not recommended. A 30\% CV makes length uninformative on age.
 }
 \details{
 \code{Galpha} is the alpha parameter in the gamma distribution for the Linf
-probability density. The default in \link{blicc_dat} is CV=10\%: \code{lGa1pha = c(log(1 / 0.1 ^ 2), 0.25)}.
+probability density. The default in \link{blicc_dat} is CV=10\%:
+\code{lGa1pha = c(log(1 / 0.1 ^ 2), 0.25)}.
 }
 \examples{
 new_ld <- blip_Galpha(gillnet_ld, lGalpha=c(log(1/0.05^2), 0.1))

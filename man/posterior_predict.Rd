@@ -4,14 +4,14 @@
 \alias{posterior_predict}
 \title{Get a posterior predicted length frequency}
 \usage{
-posterior_predict(blicc_rp, gear = NULL, time_period = NULL, draws = 0)
+posterior_predict(blicc_rp, gear = NULL, population = NULL, draws = 0)
 }
 \arguments{
 \item{blicc_rp}{List of fishblicc result tables from \link{blicc_ref_pts}}
 
 \item{gear}{Identifies the single gear (selectivity) providing predictions}
 
-\item{time_period}{Identifies the single time_period used to simulate a
+\item{population}{Identifies the single population used to simulate a
 length frequency}
 
 \item{draws}{The number of random draws up to the number of draws from the
@@ -27,6 +27,6 @@ might be expected if the model is correct, can be used in the posterior
 and \code{bayesplot} packages for evaluation.
 }
 \examples{
-yrep <- posterior_predict(blicc_rp = trgl_rp, gear=1, time_period = 1, draws=100)
+yrep <- posterior_predict(blicc_rp = trgl_rp, gear=1, population = 1, draws=100)
 
 }

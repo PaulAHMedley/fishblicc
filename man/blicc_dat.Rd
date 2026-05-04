@@ -13,9 +13,11 @@ blicc_dat(
   gear_sel = NULL,
   gear_freq = NULL,
   period_freq = NULL,
+  grgp_freq = NULL,
   freq_names = NULL,
   gear_names = NULL,
   period_names = NULL,
+  grgp_names = NULL,
   Catch = 1,
   Mk = NULL,
   ref_length = -1,
@@ -38,8 +40,8 @@ bin. Required.}
 frequency data for each gear. Zeroes must be included. If only one gear,
 can be a vector. Required.}
 
-\item{Linf}{A vector of two values: mean and sd of the prior maximum mean
-length for the stock. Required.}
+\item{Linf}{A vector or matrix of paired values: mean and sd of the prior
+maximum mean length, with a row for each growth group. Required.}
 
 \item{sel_fun}{A vector of selectivity function names (character) or index
 (1-4), with 1="logistic", 2="normal", 3="ss_normal", 4="ds_normal". Length
@@ -58,6 +60,11 @@ otherwise an error is raised. Optional.}
 each time period. If not provided, it is assumed there is only one time
 period for all frequencies. Optional.}
 
+\item{grgp_freq}{An integer vector or name linking each frequency to a growth
+group. If not provided, it is assumed there is only one growth group for
+all frequencies. A growth group has the same Linf and M/K parameters, so
+multiple parameters can be fitted in the same model. Optional.}
+
 \item{freq_names}{A vector of names for the data frequencies for reference.
 Optional.}
 
@@ -66,21 +73,28 @@ Optional.}
 \item{period_names}{A vector of names for the time periods for reference.
 Optional.}
 
+\item{grgp_names}{A vector of names for the growth groups (species/sexes)
+for reference. Optional.}
+
 \item{Catch}{A vector of relative catches, one for each gear. Required if the
 number of gears is more than one.}
 
 \item{Mk}{Natural mortality divided by the growth rate K (usually around
-1.5). Optional.}
+1.5), with the mean for each growth group. Optional.}
 
 \item{ref_length}{The reference length for the inverse length function if it
 is used. (default is NA i.e. constant natural mortality)}
 
-\item{wt_L}{Weight (biomass) for each length bin. Optional.}
+\item{wt_L}{Weight (biomass) for each length bin. If more than one growth
+group, must be a matrix with a column for each group and rows number of
+bins. Specify only if not specifying a & b parameters. Optional.}
 
-\item{ma_L}{Mature biomass for each length bin. Optional.}
+\item{ma_L}{Mature biomass for each length bin, matrix with a column for
+each growth group as for wt_L. Specify only if not providing L50 and L95.
+Optional.}
 
 \item{a}{The length-weight parameter: a*L^b. Not used in model fitting, but
-used to calculate \code{wt_L} if that is not provided. for plots etc. Optional.}
+used to calculate \code{wt_L} if that is not provided for plots etc. Optional.}
 
 \item{b}{The length-weight exponent (a*L^b, usually close to 3.0). Not used
 in model fitting, but used to calculate \code{wt_L} if that is not provided.
@@ -130,6 +144,16 @@ parameters (such as Fk, selectivity parameters and negative binomial
 can be subsequently changed using the various \code{blip_} functions:
 \link{blip_Linf}, \link{blip_Galpha}, \link{blip_Mk}, \link{blip_Fk}, \link{blip_LH} and
 \link{blip_NBphi}.
+
+The length frequencies should all have the same length bins, specified by
+the lower bound of each bin. The length data can be split into categories
+representing different gears each with their own selectivity, different
+time periods where all parameters except fishing mortality remain the same
+across time periods, and different growth groups where fishing mortality,
+natural mortality and asymptotic length are estimated separately, but
+selectivity is shared. This last might be useful, for example, when
+estimating mortality between males and females of the same species where
+they have different growth forms.
 
 The list also contains NK, the number of knots (nodes) used in the
 quadrature integration. The default is 110, which is safe but extends

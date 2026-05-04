@@ -123,12 +123,12 @@ Rsel_dsnormal <- function(Sp, LMP) {
 #'
 #' @export
 #' @inheritParams blicc_mpd
-#' @param Galpha Alpha parameter for the Gamma probability density function that
-#'   governs growth variability.
-#' @param Gbeta  Rate parameter for the Gamma distribution growth variability
+#' @param Galpha Alpha parameter (scalar) for the Gamma probability density 
+#'   function that governs growth variability.
+#' @param Gbeta  Vector rate parameter for the Gamma distribution growth variability
 #'   (=Galpha/Linf)
-#' @param Mk     Natural mortality divided by the growth rate K
-#' @param Fk     Fishing mortality divided by the growth rate K for each gear
+#' @param Mk     Natural mortality vector divided by the growth rate K
+#' @param Fk     Fishing mortality vector divided by the growth rate K for each gear
 #'   making a contribution
 #' @param FSel    A list of all the selectivities for each length bin
 #' @return A list of the population size in each length bin for each time period 
@@ -140,22 +140,22 @@ Rsel_dsnormal <- function(Sp, LMP) {
 #' plot(y=S$N_L[[1]], x=trgl_ld$LMP, type="l")
 #' 
 Rpop_F <- function(Galpha, Gbeta, Mk, Fk, FSel, blicc_ld) {
-  FFSel <- list()
-  N_L <- list()
-  Zki <- rep(list(Mk * blicc_ld$M_L), blicc_ld$NT)
+  FFSel <- rep(list(NULL), blicc_ld$NQ)
+  N_L <- Zki <- rep(list(NULL), blicc_ld$NN)
+  #Zki <- rep(list(Mk * blicc_ld$M_L), blicc_ld$NN)
   for (qi in seq(blicc_ld$NQ)) {
     if (blicc_ld$Fkq[qi] > 0) {
-      ti <- blicc_ld$Ti[qi]
+      pi <- blicc_ld$Ni[qi]
       gi <- blicc_ld$Gi[qi]
       FFSel[[qi]] <- FSel[[gi]] * Fk[blicc_ld$Fkq[qi]]  # Fishing mortality
-      Zki[[ti]] <- Zki[[ti]] + FFSel[[qi]]
+      Zki[[pi]] <- Mk[blicc_ld$Xi[pi]] * blicc_ld$M_L + FFSel[[qi]]
     }
   }
   
-  for (ti in seq(blicc_ld$NT))
-    N_L[[ti]] <- with(blicc_ld,
+  for (pi in seq(blicc_ld$NN))
+    N_L[[pi]] <- with(blicc_ld,
                  Cpop_len(gl_nodes, gl_weights,
-                          LLB, Zki[[ti]], Galpha, Gbeta) )
+                          LLB, Zki[[pi]], Galpha, Gbeta[Xi[pi]]) )
   return(list(N_L=N_L, Fki=FFSel))
 }
 

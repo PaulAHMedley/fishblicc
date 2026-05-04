@@ -10,23 +10,24 @@ blip_Linf(blicc_ld, Linf, model_name = NULL)
 \item{blicc_ld}{A standard data list suitable for the model (see function
 \link{blicc_dat})}
 
-\item{Linf}{A numeric vector of double containing the mu and sigma for the
+\item{Linf}{A numeric vector length 2 containing the mu and sigma for the
 prior normal.}
 
-\item{model_name}{A string for a replacement model name in the data object.
+\item{model_name}{A string for a replacement model name in the data list.
 Optional.}
 }
 \value{
-The data object blicc_ld but with the prior for \code{Linf} changed.
+The data list blicc_ld but with the prior for \code{Linf} changed.
 }
 \description{
 New \code{Linf} prior hyper-parameters are set in the \link{blicc_dat} data object as a
 vector of the mean (mu) and standard deviation (sigma) for the normal prior
-to be used. The \code{Linf} will need to be a vector of 2 values.
+to be used. The \code{Linf} parameter will need to be a vector of 2 values if
+one growth group, or a matrix with a row for each growth group.
 }
 \details{
 The \code{Linf} defines the gamma growth probability density function mean, so it
-is the mean asymptotic length of the population.
+is the mean of the asymptotic length in the population.
 }
 \examples{
 new_ld <- blip_Linf(gillnet_ld, c(60,2), model_name="Sensitivity")

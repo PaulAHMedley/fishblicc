@@ -8,8 +8,8 @@
 #' The function calculates the spawning potential ratio (SPR) based on the
 #' provided parameter set. The SPR is calculated as a ratio between the spawning
 #' biomass per recruit for a particular fishing mortality divided by the
-#' spawning biomass per recruit with no fishing. Works with multiple gears and
-#' time periods.
+#' spawning biomass per recruit with no fishing. Works with multiple gears, 
+#' growth groups and time periods.
 #'
 #' @inheritParams blicc_get_expected
 #' @param Gbeta The Gamma distribution parameter for the growth model
@@ -25,14 +25,15 @@ Calc_SPR <-
            Sm,
            blicc_ld) {
     Sel <- Rselectivities(Sm, blicc_ld)
-    SPR <- double(blicc_ld$NT)
-    for (ti in seq(blicc_ld$NT)) {
-      qi <- blicc_ld$Ti==ti & blicc_ld$Fkq > 0
+    SPR <- SPR0 <- double(blicc_ld$NN)
+    for (pi in seq(blicc_ld$NN)) {
+      qi <- blicc_ld$Ni==pi & blicc_ld$Fkq > 0
       selt <- Sel[blicc_ld$Gi[qi]]
       Fkt <- Fk[blicc_ld$Fkq[qi]]
-      SPR[ti] <- fSPR(Galpha, Gbeta, Mk, Fkt, selt, blicc_ld)
-      }
-    SPR0 <- RSPR_0(Galpha, Gbeta, Mk, blicc_ld) # Unexploited SPR
+      grgp <- blicc_ld$Xi[pi]
+      SPR[pi] <- fSPR(Galpha, Gbeta[grgp], Mk[grgp], Fkt, selt, blicc_ld)
+      SPR0[pi] <- RSPR_0(Galpha, Gbeta[grgp], Mk[grgp], blicc_ld) # Unexploited SPR
+    }
     return(SPR/SPR0)
   }
 
@@ -41,25 +42,21 @@ Calc_SPR <-
 #'
 #' The function calculates the yield per recruit (YPR) based on the provided
 #' parameter set. The YPR is calculated as a sum of catch-at-length multiplied
-#' by the weight at length. Works with multiple gears and time periods.
+#' by the weight at length. Works with multiple gears, growth groups and time 
+#' periods.
 #'
 #' @inheritParams Calc_SPR
-#' @return The yield per recruit for each gear/time period
+#' @return The yield per recruit for each gear/time/growth group period
 #' @noRd
 #' 
 Calc_YPR <-
-  function(Galpha,
-           Gbeta,
-           Mk,
-           Fk,
-           Sm,
-           blicc_ld) {
+  function(Galpha, Gbeta, Mk, Fk, Sm, blicc_ld) {
     YPR <- double(blicc_ld$NQ)
     Sel <- Rselectivities(Sm, blicc_ld)
     Pop <- Rpop_F(Galpha, Gbeta, Mk, Fk, Sel, blicc_ld)
-    for (qi in seq(blicc_ld$NQ)) {
+    for (qi in seq_len(blicc_ld$NQ)) {
       if (blicc_ld$Fkq[qi] > 0) {
-        YPR[qi] <- with(blicc_ld, sum(Pop$N_L[[Ti[qi]]] * Pop$Fki[[Gi[qi]]] * wt_L)) # Catch weight
+        YPR[qi] <- with(blicc_ld, sum(Pop$N_L[[Ni[qi]]] * Pop$Fki[[Gi[qi]]] * wt_L[,Xi[Ni[qi]]])) # Catch weight
       }  
     }
     return(YPR)
@@ -72,30 +69,35 @@ Calc_YPR <-
 #' by dividing the exploitable biomass in each length bin with
 #' fishing by the exploitable biomass with no fishing. The exploitable biomass is
 #' the biomass at length weighted by the fishing mortality at each length
-#' (i.e. overall selectivity). Works with multiple time 
-#' periods.
+#' (i.e. overall selectivity). Works with multiple time periods and growth 
+#' groups.
 #'
 #' @inheritParams Calc_SPR
 #' @return The biomass as a proportion of the unexploited biomass.
 #' @noRd
 #' 
 Calc_BB0 <- function(Galpha, Gbeta, Mk, Fk, Sm, blicc_ld) {
-  Bt0 <- double(blicc_ld$NT)
+  Zki <- popM <- popZ <- list()
+  Bt0 <- double(blicc_ld$NN)
   Sel <- Rselectivities(Sm, blicc_ld)
+
   popZ <- Rpop_F(Galpha, Gbeta, Mk, Fk,
-                 FSel=Sel, blicc_ld)
-  Zki <- Mk * blicc_ld$M_L
-  popM <- with(blicc_ld,
-               Rpop_len(gl_nodes, gl_weights,
-                        LLB, Zki, Galpha, Gbeta))
+                       FSel=Sel, blicc_ld)
+
+  for (xi in seq_len(blicc_ld$NX)) {
+    Zki[[xi]] <- Mk[xi] * blicc_ld$M_L
+    popM[[xi]] <- with(blicc_ld,
+                 Rpop_len(gl_nodes, gl_weights,
+                          LLB, Zki[[xi]], Galpha, Gbeta[xi]))
+  }
   
-  for (ti in seq(blicc_ld$NT)) {
+  for (pi in seq(blicc_ld$NN)) {
     Fl <- double(blicc_ld$NB)
-    for (gi in blicc_ld$Gi[blicc_ld$Ti==ti])
+    for (gi in blicc_ld$Gi[blicc_ld$Ni==pi])
       Fl <- Fl + popZ$Fki[[gi]]
-    Wt <- Fl * blicc_ld$wt_L  # Exploitable biomass fish weight * Total F for each length
+    Wt <- with(blicc_ld, Fl * wt_L[, Xi[pi]])  # Exploitable biomass fish weight * Total F for each length
         
-    Bt0[ti] <- sum(popZ$N_L[[ti]] * Wt) / sum(popM * Wt)
+    Bt0[pi] <- sum(popZ$N_L[[pi]] * Wt) / sum(popM[[blicc_ld$Xi[pi]]] * Wt)
   }
 
   return(Bt0)
@@ -172,7 +174,7 @@ FSPR_solve <-
 #' vector to achieve a target spawning potential ratio. This should often work
 #' for sensible reference point target. However, note that selectivity may not
 #' achieve any particular reference point if the fishing mortality is too low.
-#' In these cases, `NA` is returned. Only works for a single time period with
+#' In these cases, `NA` is returned. Only works for a single population with
 #' non-zero F's, so the inputs will need to be filtered accordingly.
 #'
 #' @details `vdir` should be the same length as gear. It is a dummy variable
@@ -233,7 +235,7 @@ SSPR_solve <-
     } else {
       # V2 > 0
       mindL <- blicc_ld$LLB[1]/ref_par - 1
-      S1 <- blicc_ld$L50/ref_par - 1
+      S1 <- as.vector(blicc_ld$L50)/ref_par - 1
       V1 <- SRP_eval(S1)
       while ((V1 > 0) & (S1 >= mindL)) {
         S1 <- S1 - 1.0
@@ -257,7 +259,7 @@ SSPR_solve <-
 #' Estimates an F0.1 reference point consistent with parameters and YPR slope
 #' 10% of initial slope. The function solves for F0.1 using a simple linear
 #' approximation to slope at the origin and at each point on the curve. Only
-#' works for a single time period with non-zero F's, so the inputs will need to
+#' works for a single population with non-zero F's, so the inputs will need to
 #' be filtered accordingly.
 #'
 #' @inheritParams FSPR_solve
@@ -312,7 +314,7 @@ F01_solve <-
 #'
 #' This should generally work because there must be a maximum yield between
 #' the extreme lengths (`0` and `Linf`). Only works for a single 
-#' time period with non-zero F's, so the inputs will need to be filtered 
+#' population with non-zero F's, so the inputs will need to be filtered 
 #' accordingly. 
 #'
 #' @inheritParams FSPR_solve
@@ -353,7 +355,7 @@ SMY_solve <-
 #' Yield per recruit with variable fishing mortality. 
 #'
 #' Used to evaluate the YPR for different values of Fk. Only works for a single 
-#' time period with non-zero F's, so the inputs will need to be filtered 
+#' population with non-zero F's, so the inputs will need to be filtered 
 #' accordingly. 
 #'
 #' @inheritParams FSPR_solve
@@ -374,14 +376,15 @@ fYPR <- function(Galpha, Gbeta, Mk, Fk, Rsel, blicc_ld) {
   N_L <- with(blicc_ld, Cpop_len(gl_nodes, gl_weights, LLB, Zki, Galpha, Gbeta))
   Yield <- 0
   for (gi in seq(blicc_ld$NG)) 
-    Yield <- Yield + sum(N_L * Fki[[gi]] * blicc_ld$wt_L)
+    Yield <- Yield + sum(N_L * Fki[[gi]] * blicc_ld$wt_L[ , 1L])
   return(Yield)
 }
 
 
 #' Spawning biomass per recruit with variable fishing mortality
 #'
-#' Used to evaluate the SPR for different values of Fk.
+#' Used to evaluate the SPR for different values of Fk. Only works on a 
+#' single population.
 #'
 #' @inheritParams fYPR
 #' @return spawning biomass per recruit
@@ -413,7 +416,7 @@ maxYPR <- function(Galpha, Gbeta, Mk, tarSPR, blicc_ld) {
   Zki <- Mk * blicc_ld$M_L
 
   N_L <- with(blicc_ld, Cpop_len(gl_nodes, gl_weights, LLB, Zki, Galpha, Gbeta))
-  Pwt_L <- N_L  * blicc_ld$wt_L
+  Pwt_L <- N_L  * as.vector(blicc_ld$wt_L)
   return(sum(Pwt_L))
 }
 
@@ -421,7 +424,7 @@ maxYPR <- function(Galpha, Gbeta, Mk, tarSPR, blicc_ld) {
 #' Calculates the impact on YPR and SPR of sequentially removing each gear
 #'
 #' Used to calculate the impact each gear has on other gears and the SPR. Only
-#' works for a single period. 
+#' works for a single population. 
 #'
 #' @inheritParams FSPR_solve
 #' @param curValues vector of YPR for the relevant gears and SPR for the current 
@@ -438,6 +441,7 @@ fPRImpact <-
            Sm,
            curValues,
            blicc_ld) {
+    Variable = NULL
     Gbeta <- Galpha / Linf
     Rsel <- Rselectivities(Sm, blicc_ld)
     SPR0 <- RSPR_0(Galpha, Gbeta, Mk, blicc_ld) # Unexploited SPR
@@ -448,7 +452,7 @@ fPRImpact <-
       dFk[i] <- 0
       pop <- Rpop_F(Galpha, Gbeta, Mk, dFk, Rsel, blicc_ld)
       Pop_N_L <- unlist(pop$N_L)
-      dPR[[i]] <- c(sapply(pop$Fki, \(x) sum(x*Pop_N_L*blicc_ld$wt_L )),
+      dPR[[i]] <- c(sapply(pop$Fki, \(x) sum(x*Pop_N_L*as.vector(blicc_ld$wt_L) )),
                     sum(Pop_N_L * blicc_ld$ma_L) / SPR0) - curValues
     }
     names(dPR) <- paste("Remove", blicc_ld$gname)

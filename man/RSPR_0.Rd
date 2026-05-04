@@ -7,13 +7,13 @@
 RSPR_0(Galpha, Gbeta, Mk, blicc_ld)
 }
 \arguments{
-\item{Galpha}{Alpha parameter for the Gamma probability density function that
-governs growth variability.}
+\item{Galpha}{Alpha parameter (scalar) for the Gamma probability density
+function that governs growth variability.}
 
-\item{Gbeta}{Rate parameter for the Gamma distribution growth variability
+\item{Gbeta}{Vector rate parameter for the Gamma distribution growth variability
 (=Galpha/Linf)}
 
-\item{Mk}{Natural mortality divided by the growth rate K}
+\item{Mk}{Natural mortality vector divided by the growth rate K}
 
 \item{blicc_ld}{A standard data list suitable for the model (see function
 \link{blicc_dat})}

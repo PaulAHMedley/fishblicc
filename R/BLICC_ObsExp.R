@@ -65,15 +65,17 @@
 #' @inheritParams blicc_mpd
 #' @inheritParams blicc_dat
 #' @param slimf An object from the [blicc_fit] or [blicc_mpd] functions.
-#' @param time_period Specifies the time period used for reference point
-#'   scenario. If not specified, the default is the final time period.
+#' @param population Specifies the population used for reference point
+#'   scenario. If not specified, the default is the final time period and 
+#'   growth group.
 #' @param vdir  A search direction vector with maximum value 1 and minimum 0
 #'   applied to changes across gears. Optional.
 #' @return A list of 1) dr_df: posterior draws or mpd point estimates of
 #'   important parameters 2) lx_df: selectivity (sel), relative population size
 #'   (N_L) and expected length frequencies (efq)  3) ld: `blicc_ld` data list
-#'   used. 4) scenario used: includes a direction vector and subsets of the data
-#'   and parameters sufficient to calculate rp_df 5) rp_df: some standard
+#'   used. 4) mcmc_summary: a summary table of the MCMC (or NULL if no MCMC) 
+#'   5) scenario used: includes a direction vector and subsets of the data
+#'   and parameters sufficient to calculate rp_df 6) rp_df: some standard
 #'   per-recruit reference points
 #' @examples
 #' \dontrun{
@@ -84,27 +86,28 @@
 blicc_ref_pts <-
   function(slimf,
            blicc_ld,
-           time_period = NULL,
+           population = NULL,
            vdir = NULL,
-           a = NA,
-           b = NA,
-           L50 = NA,
-           L95 = NA) {
+           a = NULL,
+           b = NULL,
+           L50 = NULL,
+           L95 = NULL) {
     Linf = Galpha = Mk = Fk = Sm = mpd = par = .draw = name2 = se = NULL
-    Gbeta = SPR = lp__ = B_B0 = NULL
+    Gbeta = SPR = lp__ = B_B0 = `Linf[1]` = NB_phi = .chain = .iteration = NULL
+    param = index = name = value = vec = YPR = NULL 
 
-    if (is.null(time_period)) {
-      time_period <- blicc_ld$NT
+    if (is.null(population)) {
+      population <- blicc_ld$NN
     } else {
-      time_Period <- parse_period(time_period, blicc_ld)
-      if (length(time_period) > 1) 
-        stop("Error: Only one time period can be specified to define the reference point scenario.\n")
+      population <- parse_population(population, blicc_ld)
+      if (length(population) > 1) 
+        stop("Error: Only one population can be specified to define the reference point scenario.\n")
     }
     
-    gears <- with(blicc_ld, Gi[Ti==time_period & Fkq > 0])
+    gears <- with(blicc_ld, Gi[Ni==population & Fkq > 0])
     
     if (length(gears)==0) 
-      stop("Error: A time period must be specified with at least one active fishing gear.\n")
+      stop("Error: A population must be specified with at least one active fishing gear.\n")
     
     if (is.null(vdir)) {
       vdir <- rep(1, length(gears))
@@ -121,81 +124,68 @@ blicc_ref_pts <-
       # Convert stanfit object to posterior draws with list columns for F and
       # Sm parameters
       dr_df <- posterior::as_draws_df(slimf) |>
-        dplyr::select(Linf:`.draw`)
+        tibble::as_tibble() |>
+        dplyr::select(`Linf[1]`:`.draw`) 
 
-      par_c <- paste0("Sm[", as.character(1:(blicc_ld$NP+blicc_ld$NM)), "]")
-      suppressWarnings(
-        sel_tmp <- dr_df |>
-          dplyr::select(.draw, tidyselect::all_of(par_c)) |>
-          tidyr::pivot_longer(
-            cols = tidyselect::all_of(par_c),
-            names_to = "name2",
-            values_to = "Sm"
-          ) |>
-          dplyr::group_by(.draw) |>
-          dplyr::summarise(Sm = list(Sm)) |>
-          dplyr::ungroup()
-      )
-      dr_df <- dr_df |>
-        dplyr::select(-tidyselect::all_of(par_c))
-
-      par_c <- paste0("Fk[", as.character(1:blicc_ld$NF), "]")
-      suppressWarnings(
-        F_tmp <- dr_df |>
-          dplyr::select(.draw, tidyselect::all_of(par_c)) |>
-          tidyr::pivot_longer(
-            cols = tidyselect::all_of(par_c),
-            names_to = "name2",
-            values_to = "Fk"
-          ) |>
-          dplyr::group_by(.draw) |>
-          dplyr::summarise(Fk = list(Fk)) |>
-          dplyr::ungroup()
-      )
-      dr_df <- dr_df |>
-        dplyr::select(-tidyselect::all_of(par_c))
-
-      par_c <- paste0("SPR[", as.character(1:blicc_ld$NT), "]")
-      suppressWarnings(
-        SPR_tmp <- dr_df |>
-          dplyr::select(.draw, tidyselect::all_of(par_c)) |>
-          tidyr::pivot_longer(
-            cols = tidyselect::all_of(par_c),
-            names_to = "name2",
-            values_to = "SPR"
-          ) |>
-          dplyr::group_by(.draw) |>
-          dplyr::summarise(SPR = list(SPR)) |>
-          dplyr::ungroup()
-      )
-      dr_df <- dr_df |>
-        dplyr::select(-tidyselect::all_of(par_c))
+      scalar_df <- dplyr::select(dr_df, Galpha, NB_phi, lp__, .chain, .iteration, .draw)
       
       dr_df <- dr_df |>
-        dplyr::left_join(F_tmp, by = ".draw") |>
-        dplyr::left_join(sel_tmp, by = ".draw") |>
-        dplyr::left_join(SPR_tmp, by = ".draw") |>
-        dplyr::select(Linf:Mk, Fk, Sm, tidyselect::everything())
-
+        dplyr::select(-c(Galpha, NB_phi, lp__, .chain, .iteration)) |>
+        tidyr::pivot_longer(
+          cols = -.draw,
+          names_to = "param",
+          values_to = "value"
+        ) |>
+        tidyr::extract(
+          param,
+          into = c("name", "index"),
+          regex = "(.+?)\\[(\\d+)\\]",
+          remove = FALSE
+        ) |>
+        dplyr::mutate(
+          index = as.integer(index)) |>
+        dplyr::group_by(.draw, name) |>
+        dplyr::summarise(
+           vec = list(value[order(index)]),
+          .groups = "drop"
+          ) |>
+        tidyr::pivot_wider(
+          names_from = name,
+          values_from = vec
+          ) |>
+        dplyr::left_join(
+          scalar_df,
+          by = ".draw"
+          ) |>
+        dplyr::select(Linf, Galpha, Mk, Fk, Sm, NB_phi, lp__, Gbeta, SPR, .chain, .iteration, .draw)
+      mcmc_sum <- blicc_results(slimf)
     } else if (class(slimf)[1] == "tbl_df" &&
                all(names(slimf) == c("par", "mpd", "se"))) {
-      par_c <- paste0("Sm[", as.character(1:(blicc_ld$NP+blicc_ld$NM)), "]")
-      S_v <- dplyr::pull(dplyr::filter(slimf, par %in% par_c), mpd)
-      dr_df <- dplyr::filter(slimf,!(par %in% par_c))
-      par_c <- paste0("Fk[", as.character(1:blicc_ld$NF), "]")
-      F_v <- dplyr::pull(dplyr::filter(dr_df, par %in% par_c), mpd)
-      dr_df <- dplyr::filter(dr_df,!(par %in% par_c))
-      par_c <- paste0("SPR[", as.character(1:blicc_ld$NT), "]")
-      R_v <- dplyr::pull(dplyr::filter(dr_df, par %in% par_c), mpd)
-      
-      dr_df <- dplyr::filter(dr_df,!(par %in% par_c)) |>
-        dplyr::select(-se) |>
-        tidyr::pivot_wider(names_from = par, values_from = mpd) |>
-        dplyr::mutate(Fk = list(F_v),
-                      Sm = list(S_v),
-                      SPR = list(R_v),
-                      `.draw` = 0) |>
-        dplyr::select(Linf:Mk, Fk, Sm, tidyselect::everything())
+
+    dr_df <- slimf |>
+      tidyr::extract(
+        par,
+        into = c("name", "index"),
+        regex = "(.+?)\\[(\\d+)\\]",
+        remove = FALSE
+        ) |>
+      dplyr::mutate(
+        name = ifelse(is.na(name), par, name),
+        index = as.integer(index)) |>
+        dplyr::group_by(name) |>
+        dplyr::summarise(
+          vec = list(if (all(is.na(index))) mpd else list(mpd[order(index)])),
+          .groups = "drop"
+        ) |>
+        tidyr::pivot_wider(
+          names_from = name,
+          values_from = vec
+        ) |>
+      tidyr::unnest(dplyr::everything()) |>
+      dplyr::mutate(.draw = 0) |>
+      dplyr::select(Linf, Galpha, Mk, Fk, Sm, NB_phi, lp__, Gbeta, SPR, .draw)
+
+      mcmc_sum <- NULL
     } else {
       stop("Error: parameter slimf must be a stanfit object or mpd data frame")
     }
@@ -210,21 +200,8 @@ blicc_ref_pts <-
       blicc_ld$gl_weights <- glq$weights
     }
 
-    Recalc_SPR <- !all(is.na(c(a, b, L50, L95)))
-    if (Recalc_SPR) {
-      if (!is.na(a))
-        blicc_ld$a <- a
-      if (!is.na(b))
-        blicc_ld$b <- b
-      if (!is.na(L50))
-        blicc_ld$L50 <- L50
-      if (!is.na(L95))
-        blicc_ld$Ls <- -log(1 / 0.95 - 1) / (L95 - blicc_ld$L50)
-      blicc_ld$ma_L <- (exp(blicc_ld$b * log(blicc_ld$LMP)) /
-                          (1 + exp(
-                            -blicc_ld$Ls * (blicc_ld$LMP - blicc_ld$L50)
-                          )))
-      blicc_ld$wt_L <- blicc_ld$a * exp(blicc_ld$b * log(blicc_ld$LMP))
+    if (!all(is.null(c(a, b, L50, L95)))) {
+      blicc_ld <- blip_LH(blicc_ld, a=a, b=b, L50=L50, L95=L95)
 
       dr_df <- dr_df |>
         dplyr::mutate(SPR = purrr::pmap(
@@ -234,27 +211,29 @@ blicc_ref_pts <-
           .progress = "SPR"
         ))
     }
-
+    
     dr_df <- dr_df |>
       dplyr::mutate(
         B_B0 = purrr::pmap(
           list(Galpha, Gbeta, Mk, Fk, Sm),
-          Calc_BB0,
+          .f = Calc_BB0,
           blicc_ld = blicc_ld,
           .progress = "B_B0"
-        ),
+        )) |>
+      dplyr::mutate(
         YPR = purrr::pmap(
-          list(Galpha, Gbeta, Mk, Fk, Sm),
-          Calc_YPR,
+          .l = list(Galpha, Gbeta, Mk, Fk, Sm),
+          .f = Calc_YPR,
           blicc_ld = blicc_ld,
           .progress = "YPR"
       )) |>
-      dplyr::select(Linf:lp__, SPR, B_B0, YPR, dplyr::everything())
+      dplyr::select(Linf:Gbeta, SPR, B_B0, YPR, tidyselect::everything())
     
     lx_df <- blicc_expect_len(dr_df, blicc_ld)
     
-    # For reference points, we only estimate for the reference time_period scenario    
-    Findx <- blicc_ld$Ti==time_period & blicc_ld$Fkq > 0
+    # For reference points, we only estimate for the reference population scenario    
+    pindx <- blicc_ld$Xi[population]
+    Findx <- blicc_ld$Ni==population & blicc_ld$Fkq > 0
     seli <- get_selectivities(blicc_ld$Gi[Findx], blicc_ld)
     parindx <- integer(0)
     for (si in seli) {
@@ -271,6 +250,14 @@ blicc_ref_pts <-
     rp_df <- dr_df |>
       dplyr::select(-lp__, -SPR, -B_B0, -YPR) |>
       dplyr::mutate(
+        Linf = purrr::pmap(
+          list(Linf),
+          \(x) x[pindx]
+         ),
+        Mk = purrr::pmap(
+          list(Mk),
+          \(x) x[pindx]
+        ),
         Fk = purrr::pmap(
           list(Fk),
           \(x) x[Findx]
@@ -278,10 +265,14 @@ blicc_ref_pts <-
         Sm = purrr::pmap(
           list(Sm),
           \(x) x[parindx]
-        )
-      )
-
-    tp_ld <- blicc_period_filter(blicc_ld, time_period) # reduces ld to single time period
+        ),
+        Gbeta = purrr::pmap(
+          list(Gbeta),
+          \(x) x[pindx])
+       ) |>
+       tidyr::unnest(c(Linf, Mk, Gbeta))
+    
+    tp_ld <- blicc_population_filter(blicc_ld, population) # reduces ld to single time period
     
     rp_df <- rp_df |>
       dplyr::mutate(
@@ -340,15 +331,15 @@ blicc_ref_pts <-
           .progress = "SMY"
         )
       )
-    
     return(list(
       dr_df = dr_df,
       lx_df = lx_df,
       ld = blicc_ld,
-      scenario = list(time_period = time_period,
+      mcmc_summary = mcmc_sum,
+      scenario = list(population = population,
                       gears = gears,
                       vdir = vdir,
-                      time_period_ld = tp_ld
+                      population_ld = tp_ld
                       ),
       rp_df = rp_df
     ))
@@ -380,27 +371,27 @@ blicc_ref_pts <-
 #' 
 blicc_expected_catches <- function(blicc_rp) {
   Linf = Galpha = Mk = Fk = Sm = .draw = NULL
+  expect = resid = gear = std_resid = NULL
   
   dr_df <- blicc_rp$dr_df
   blicc_ld <- blicc_rp$ld  
-  suppressWarnings({
-    ca_df <- dr_df |>
-      dplyr::mutate(
-        expect = purrr::pmap(
-          list(Linf, Galpha, Mk, Fk, Sm),
-          blicc_get_eca,
-          blicc_ld = blicc_ld),
-        resid = purrr::pmap(
-          list(expect),
-          \(x) as.vector(blicc_ld$prop_catch - x))
-      ) |>
-      dplyr::select(`.draw`, expect, resid) |>
-      tidyr::unnest_longer(c(expect, resid)) |> 
-      dplyr::mutate(
-        gear = rep(blicc_ld$gname, nrow(dr_df)),
-        std_resid = resid / blicc_ld$polCs) |>
-      dplyr::select(`.draw`, gear, expect, resid, std_resid) 
-  })
+  ca_df <- dr_df |>
+    tibble::as_tibble() |>
+    dplyr::mutate(
+      expect = purrr::pmap(
+        list(Linf, Galpha, Mk, Fk, Sm),
+        blicc_get_eca,
+        blicc_ld = blicc_ld),
+      resid = purrr::pmap(
+        list(expect),
+        \(x) as.vector(blicc_ld$prop_catch - x))
+    ) |>
+    dplyr::select(`.draw`, expect, resid) |>
+    tidyr::unnest_longer(c(expect, resid)) |> 
+    dplyr::mutate(
+      gear = rep(blicc_ld$gname, nrow(dr_df)),
+      std_resid = resid / blicc_ld$polCs) |>
+    dplyr::select(`.draw`, gear, expect, resid, std_resid) 
   return(ca_df)
 }
 
@@ -424,16 +415,15 @@ blicc_expected_catches <- function(blicc_rp) {
 #'
 blicc_expect_len <- function(dr_df, blicc_ld) {
   Linf = Galpha = Mk = Fk = Sm = .draw = expect = NULL
-  suppressWarnings({
-    lx_df <- dr_df |>
-      dplyr::mutate(expect = purrr::pmap(
-        list(Linf, Galpha, Mk, Fk, Sm),
-        blicc_get_expected,
-        blicc_ld = blicc_ld
-      )) |>
-      dplyr::select(`.draw`, expect) |>
-      tidyr::unnest(expect)
-  })
+  lx_df <- dr_df |>
+    tibble::as_tibble() |>
+    dplyr::mutate(expect = purrr::pmap(
+      list(Linf, Galpha, Mk, Fk, Sm),
+      blicc_get_expected,
+      blicc_ld = blicc_ld
+    )) |>
+    dplyr::select(`.draw`, expect) |>
+    tidyr::unnest(expect)
   return(lx_df)
 }
 
@@ -473,8 +463,8 @@ blicc_get_expected <-
     ex_df <- tibble::tibble()
     for (qi in seq(blicc_ld$NQ)) {
       gi <- blicc_ld$Gi[qi]
-      ti <- blicc_ld$Ti[qi]
-      efq <- pop$N_L[[ti]] * pop$Fki[[gi]] # Catch
+      ni <- blicc_ld$Ni[qi]
+      efq <- pop$N_L[[ni]] * pop$Fki[[gi]] # Catch
       efq <- sum(blicc_ld$fq[[qi]]) * efq / sum(efq) # Normalise
       ex_df <- with(blicc_ld, rbind(
         ex_df,
@@ -482,7 +472,7 @@ blicc_get_expected <-
           Qgroup = fqname[qi],
           Lgroup = factor(LLB),
           sel = Rsel[[gi]],
-          N_L = pop$N_L[[ti]],
+          N_L = pop$N_L[[ni]],
           efq = efq
         )
       ))
@@ -566,26 +556,26 @@ blicc_get_eca <-
 #' @export
 #' @param blicc_rp List of fishblicc result tables from [blicc_ref_pts]
 #' @param gear Identifies the single gear (selectivity) providing predictions
-#' @param time_period Identifies the single time_period used to simulate a 
+#' @param population Identifies the single population used to simulate a 
 #'   length frequency
 #' @param draws  The number of random draws up to the number of draws from the
 #'   MCMC (the default).
 #' @return A matrix with rows equal to gears*draws and columns to length
 #' @examples
-#' yrep <- posterior_predict(blicc_rp = trgl_rp, gear=1, time_period = 1, draws=100)
+#' yrep <- posterior_predict(blicc_rp = trgl_rp, gear=1, population = 1, draws=100)
 #'
-posterior_predict <- function(blicc_rp, gear = NULL, time_period = NULL, draws = 0) {
+posterior_predict <- function(blicc_rp, gear = NULL, population = NULL, draws = 0) {
   .draw = Lgroup = Qgroup = efq = NULL
   
   blicc_ld <- blicc_rp$ld
   gear <- parse_gear(gear, blicc_ld)
   if (length(gear) > 1)
     stop("Error: a single gear must be specified. \n")
-  time_period <- parse_period(time_period, blicc_ld)
-  if (length(time_period) > 1)
-    stop("Error: a single time_period must be specified. \n")
+  population <- parse_population(population, blicc_ld)
+  if (length(population) > 1)
+    stop("Error: a single population must be specified. \n")
   
-  fqi <- with(blicc_ld, which(gear==Gi & time_period==Ti))
+  fqi <- with(blicc_ld, which(gear==Gi & population==Ni))
   
   if ((draws <= 0) | (draws >= nrow(blicc_rp$dr_df))) {
     df <- blicc_rp$lx_df

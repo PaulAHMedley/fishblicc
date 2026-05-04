@@ -17,10 +17,10 @@ Rpop_len(node, wt, Len, Zki, Galpha, Gbeta)
 parameter K) to be applied in each length interval. This vector should be
 the same length as Len}
 
-\item{Galpha}{Alpha parameter for the Gamma probability density function that
-governs growth variability.}
+\item{Galpha}{Alpha parameter (scalar) for the Gamma probability density
+function that governs growth variability.}
 
-\item{Gbeta}{Rate parameter for the Gamma distribution growth variability
+\item{Gbeta}{Vector rate parameter for the Gamma distribution growth variability
 (=Galpha/Linf)}
 }
 \value{

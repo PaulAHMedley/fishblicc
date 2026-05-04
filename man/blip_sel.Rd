@@ -31,9 +31,9 @@ relevant function. This is either the log of the logistic slope parameter, or
 the log of the reciprocal of the variance for the normal functions. For the
 double-sided normal, two parameters must be provided and for all other
 functions only one parameter. If \code{lslope} is not provided, a default slope of
--4.5 is applied if the slope parameters have not already been set. If values are
-already present these are conserved. Mixture weights, if they are used, can be
-set in \link{blip_mix}.
+-4.5 is applied if the slope parameters have not already been set. If values
+are already present these are conserved. Priors for mixture weights, if a
+mixture is used, must be set in \link{blip_mix}.
 }
 \examples{
 new_ld <- blip_sel(gillnet_ld, sel_indx = 1, loc = 30, lslope = -2.8)

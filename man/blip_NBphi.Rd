@@ -20,8 +20,8 @@ The data object blicc_ld but with the prior for \code{NBphi} changed.
 The \code{NB_phi} log-normal prior is updated with a mean (mu) and standard
 deviation (sigma). NB_phi controls the negative binomial over-dispersion
 compared to the Poisson distribution. It is sometimes useful to reduce the
-NB_phi lognormal standard deviation hyper-parameter below the 0.5 default to
-avoid variation in the data being interpreted as observation error when it
+NB_phi lognormal standard deviation of the hyper-parameter to below the 0.5
+default to avoid variation in the data being interpreted as observation error when it
 can be explained better by the model.
 }
 \details{

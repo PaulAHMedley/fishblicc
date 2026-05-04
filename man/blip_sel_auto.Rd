@@ -31,7 +31,8 @@ priors. Alternatively, setting parameters manually can be done using the
 \link{blip_sel} function.
 
 If a selectivity is made up of a mixture of functions, prior parameters are
-not estimated and \link{blip_sel} must be used to set the parameters manually. This
+not estimated and \link{blip_sel} must be used to set the parameters manually
+as well as the mixture weights with \link{blip_mix}. This
 is necessary because the user must propose the hypothesis for the mixtures and
 it cannot easily be determined from the data what a suitable hypothesis might
 be.

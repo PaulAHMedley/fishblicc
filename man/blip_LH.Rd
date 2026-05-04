@@ -21,7 +21,7 @@ blip_LH(
 \link{blicc_dat})}
 
 \item{a}{The length-weight parameter: a*L^b. Not used in model fitting, but
-used to calculate \code{wt_L} if that is not provided. for plots etc. Optional.}
+used to calculate \code{wt_L} if that is not provided for plots etc. Optional.}
 
 \item{b}{The length-weight exponent (a*L^b, usually close to 3.0). Not used
 in model fitting, but used to calculate \code{wt_L} if that is not provided.
@@ -35,25 +35,30 @@ and primarily applies to females. Must be less than \code{Linf}, usually around
 than Linf. A small increment is added to L50 if it is not provided.
 Optional.}
 
-\item{ma_L}{Mature biomass for each length bin. Optional.}
+\item{ma_L}{Mature biomass for each length bin, matrix with a column for
+each growth group as for wt_L. Specify only if not providing L50 and L95.
+Optional.}
 
-\item{wt_L}{Weight (biomass) for each length bin. Optional.}
+\item{wt_L}{Weight (biomass) for each length bin. If more than one growth
+group, must be a matrix with a column for each group and rows number of
+bins. Specify only if not specifying a & b parameters. Optional.}
 
-\item{model_name}{A string for a replacement model name in the data object.
+\item{model_name}{A string for a replacement model name in the data list.
 Optional.}
 
 \item{set_defaults}{Logical indicating whether to set defaults if parameters
 are \code{NA}. Leaves them alone if \code{FALSE}.}
 }
 \value{
-The data object blicc_ld with the new life-history parameters
+The data list blicc_ld with the new life-history parameters
 }
 \description{
 Sets the maturity-at-length and weight-at-length vectors in the data object
 (from \link{blicc_dat}) to new values. The values are either provided as vectors
 or model parameters to calculate the vectors. Calculations are done for the
 length bin mid-points. The models for the calculation are the standard
-length-weight (\code{W=aL^b}) and logistic model for the maturity-at-length: (\code{Lm = 1/(1+exp(Ls*(L-L50)))}).
+length-weight (\code{W=aL^b}) and logistic model for the maturity-at-length:
+(\code{Lm = 1/(1+exp(Ls*(L-L50)))}).
 }
 \examples{
 new_ld <- blip_LH(gillnet_ld, a=1.2e-4, b=3, model_name="Alternative LW")

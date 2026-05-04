@@ -16,43 +16,57 @@
 #' @param gear Specifies the gear(s) to plot as an integer index or full name
 #' @param time_period Specifies the period(s) to plot as an integer index or 
 #'   full name
+#' @param growth_group Specifies the growth group(s) to plot as an integer index or 
+#'   full name
 #' @return ggplot geom object plotting observed and the prior's expected
 #'   frequency, separated by gear.
 #' @examples
 #' plot_prior(gillnet_ld)
 #' 
-plot_prior <- function(blicc_ld, gear = "All", time_period = "All") {
+plot_prior <- function(blicc_ld, 
+                       gear = "All", 
+                       time_period = "All", 
+                       growth_group = "All") {
   Gear = LMP = fq = Name = NULL
 
   gear <- parse_gear(gear, blicc_ld)
   fq_used <- which(blicc_ld$Gi %in% gear)
   
-  if (any(gear != "All" | time_period != "All")) { 
+  if (any(gear != "All" | time_period != "All" | growth_group != "All")) { 
     gear <- parse_gear(gear, blicc_ld)
     time_period <- parse_period(time_period, blicc_ld)
-    subset_fq <- with(blicc_ld, which(Gi %in% gear & Ti %in% time_period))
+    growth_group <- parse_growth_group(growth_group, blicc_ld)
+    population <- which(blicc_ld$Xi %in% growth_group)
+    subset_fq <- with(blicc_ld, which(Gi %in% gear & 
+                                        Ti %in% time_period & 
+                                        Ni %in% population))
+    if (length(subset_fq)==0)
+      stop("Error: No frequencies meet the gear/period/growth group criteria.")
   } else {
-    subset_fq <- seq(blicc_ld$NQ)
+    subset_fq <- seq_len(blicc_ld$NQ)
   }
   
   sel <- Rselectivities(exp(blicc_ld$polSm), blicc_ld)
 
-  Zk <- with(blicc_ld, rep(list(exp(polMkm)*M_L), NT))
+  Zk <- list()
+  for (ni in 1:blicc_ld$NN) {
+    Zk[[ni]] <- with(blicc_ld, exp(polMkm[Xi[ni]])*M_L)
+  }
   for (qi in subset_fq) {
     if (blicc_ld$Fkq[qi] > 0)
-      Zk[[blicc_ld$Ti[qi]]] <- with(blicc_ld, Zk[[Ti[qi]]] + 
+      Zk[[blicc_ld$Ni[qi]]] <- with(blicc_ld, Zk[[Ni[qi]]] + 
                                       exp(polFkm[Fkq[qi]]) * sel[[Gi[qi]]])
   }
   pop <- list()
-  ti_range <- unique(blicc_ld$Ti[subset_fq])
+  Ni_range <- unique(blicc_ld$Ni[subset_fq])
   
-  for (ti in ti_range)
-    pop[[ti]] <- with(blicc_ld, Rpop_len(gl_nodes, gl_weights, LLB, Zk[[ti]],
-                                   exp(polGam), exp(polGam)/poLinfm))
+  for (pi in Ni_range)
+    pop[[pi]] <- with(blicc_ld, Rpop_len(gl_nodes, gl_weights, LLB, Zk[[pi]],
+                                   exp(polGam), exp(polGam)/poLinfm[pi]))
 
   df <- tibble::tibble()
   for (qi in subset_fq) {
-    efq <- with(blicc_ld, sel[[Gi[qi]]]*pop[[Ti[qi]]])
+    efq <- with(blicc_ld, sel[[Gi[qi]]]*pop[[Ni[qi]]])
     efq <- with(blicc_ld, efq * sum(fq[[qi]]) / sum(efq))
     df <- with(blicc_ld, rbind(df, 
                                tibble::tibble(Name=fqname[qi], LMP = LMP,
@@ -84,7 +98,10 @@ plot_prior <- function(blicc_ld, gear = "All", time_period = "All") {
 #' plot_posterior(trgl_rp)
 #' 
 plot_posterior <-
-  function(blicc_rp, gear = "All", time_period = "All") {
+  function(blicc_rp, 
+           gear = "All", 
+           time_period = "All", 
+           growth_group = "All") {
     .draw = Lgroup = LMP = fq = NB_phi = NULL  # Not necessary but stops CMD check notes
     efq = fq_lo = fq_hi = efq_m = efq_lo = efq_hi = dat_lo = dat_hi = NULL
     Qgroup = ofq = NULL
@@ -96,7 +113,13 @@ plot_posterior <-
     if (any(gear != "All" | time_period != "All")) { 
       gear <- parse_gear(gear, blicc_ld)
       time_period <- parse_period(time_period, blicc_ld)
-      subset_fq <- with(blicc_ld, Gi %in% gear & Ti %in% time_period)
+      growth_group <- parse_growth_group(growth_group, blicc_ld)
+      population <- which(blicc_ld$Xi %in% growth_group)
+      subset_fq <- with(blicc_ld, which(Gi %in% gear & 
+                                        Ti %in% time_period & 
+                                        Ni %in% population))
+      if (length(subset_fq)==0)
+        stop("Error: No frequencies meet the gear/period/growth group criteria.")
       fq2plot <- blicc_ld$fqname[subset_fq]
       ssfq <- blicc_ld$fq[subset_fq]
       
@@ -204,7 +227,10 @@ plot_posterior <-
 #' @examples
 #' plot_residuals(trgl_rp)
 #' 
-plot_residuals <- function(blicc_rp, gear = "All", time_period = "All") {
+plot_residuals <- function(blicc_rp, 
+                           gear = "All", 
+                           time_period = "All", 
+                           growth_group = "All") {
   .draw = NB_phi = Qgroup = Lgroup = efq = ofq = LMP = std_res = NULL
   std_res_m = std_res_005 = std_res_995 = NULL
 
@@ -215,7 +241,13 @@ plot_residuals <- function(blicc_rp, gear = "All", time_period = "All") {
   if (any(gear != "All" | time_period != "All")) { 
     gear <- parse_gear(gear, blicc_ld)
     time_period <- parse_period(time_period, blicc_ld)
-    subset_fq <- with(blicc_ld, Gi %in% gear & Ti %in% time_period)
+    growth_group <- parse_growth_group(growth_group, blicc_ld)
+    population <- which(blicc_ld$Xi %in% growth_group)
+    subset_fq <- with(blicc_ld, which(Gi %in% gear & 
+                                        Ti %in% time_period & 
+                                        Ni %in% population))
+    if (length(subset_fq)==0)
+      stop("Error: No frequencies meet the gear/period/growth group criteria.")
     fq2plot <- blicc_ld$fqname[subset_fq]
     ssfq <- blicc_ld$fq[subset_fq]
     
@@ -302,7 +334,8 @@ plot_residuals <- function(blicc_rp, gear = "All", time_period = "All") {
 #' 
 plot_selectivity <- function(blicc_rp, gear = "All", plotFk=FALSE) {
   Lgroup = sel = LMP = sel_10 = sel_90 = sel_m = Qgroup = NULL
-
+  .draw = Fk = NULL
+  
   blicc_ld <- blicc_rp$ld
   blicc_lx <- blicc_rp$lx_df
 
@@ -377,25 +410,32 @@ plot_selectivity <- function(blicc_rp, gear = "All", plotFk=FALSE) {
 #' plot_SPR_density(trgl_rp)
 #' 
 plot_SPR_density <- function(blicc_rp) {
-  SPR = .draw = Period = NULL
-  if (nrow(blicc_rp$dr_df)/blicc_rp$ld$NT <= 500) {
+  SPR = .draw = Period = Population = NULL
+  if (nrow(blicc_rp$dr_df)/blicc_rp$ld$NN <= 500) {
     stop("To obtain a density, you will need to obtain sufficient values (>500) from MCMC.")
   }
-  suppressWarnings({
-    dr_df <- blicc_rp$dr_df |>
-      dplyr::select(.draw, SPR) |>
-      dplyr::mutate(Period = list(blicc_rp$ld$tpname)) |>
-      tidyr::unnest(c(SPR, Period)) |>
-      dplyr::mutate(SPR = SPR * 100)
-  })
   
-  if (blicc_rp$ld$NT==1) {
+  if (blicc_rp$ld$NN==1) {
+    suppressWarnings({
+      dr_df <- blicc_rp$dr_df |>
+        dplyr::select(.draw, SPR) |>
+        tidyr::unnest(SPR) |>
+        dplyr::mutate(SPR = SPR * 100)
+    })
     gp <- ggplot2::ggplot(dr_df, ggplot2::aes(SPR)) +
       ggplot2::geom_density(fill = "lightblue") 
   } else {
-    gp <- ggplot2::ggplot(dr_df, ggplot2::aes(SPR, fill=Period)) +
-      ggplot2::geom_density(alpha=0.5)
-  }
+    suppressWarnings({
+      dr_df <- blicc_rp$dr_df |>
+        dplyr::select(.draw, SPR) |>
+        dplyr::mutate(Population = list(blicc_rp$ld$poname)) |>
+        tidyr::unnest(c(SPR, Population)) |>
+        dplyr::mutate(SPR = SPR * 100)
+        })
+      gp <- ggplot2::ggplot(dr_df, ggplot2::aes(SPR, fill=Population)) +
+        ggplot2::geom_density(alpha=0.5)
+  }   
+  
   gp <- gp +
     ggplot2::geom_vline(ggplot2::aes(xintercept = 20),
                         colour = "red",
@@ -551,7 +591,7 @@ plot_efq <- function(blicc_rp, gear = NULL) {
   F_SPR20 = F20 = F30 = F40 = efq = fq_lo = fq_hi = N = NULL
   efq_m = dat_lo = dat_hi = lab = x = y = NULL
 
-  blicc_ld <- blicc_rp$scenario$time_period_ld
+  blicc_ld <- blicc_rp$scenario$population_ld
   svdir <-blicc_rp$scenario$vdir
   #  blicc_lx <- blicc_rp$lx_df
 
@@ -715,7 +755,7 @@ plot_SPR_contour <- function(blicc_rp, gear = NULL) {
     return(sum(res$N_L[[1]] * blicc_ld$ma_L / SPR0))
   }
 
-  blicc_ld <- blicc_rp$scenario$time_period_ld
+  blicc_ld <- blicc_rp$scenario$population_ld
   rp_df <- blicc_rp$rp_df
   svdir <-blicc_rp$scenario$vdir
   
@@ -890,7 +930,7 @@ plot_YPR_contour <- function(blicc_rp, gear = NULL) {
     return(Yield)
   }
 
-  blicc_ld <- blicc_rp$scenario$time_period_ld
+  blicc_ld <- blicc_rp$scenario$population_ld
   rp_df <- blicc_rp$rp_df
   svdir <-blicc_rp$scenario$vdir
   

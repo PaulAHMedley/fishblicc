@@ -15,17 +15,18 @@ blip_Mk(
 \item{blicc_ld}{A standard data list suitable for the model (see function
 \link{blicc_dat})}
 
-\item{lMk}{A vector of the mu and sigma for the lognormal natural mortality
-prior}
+\item{lMk}{A vector or matrix of the mu and sigma for the lognormal
+natural mortality prior. The number of rows must equal the number of
+growth groups.}
 
-\item{ref_length}{Reference length in the length-inverse mortality is
-applied. Set to -1 to turn off the length-inverse model.}
+\item{ref_length}{Reference length (single length value) in the
+length-inverse mortality is applied. Set to -1 to turn off the length-inverse model.}
 
-\item{model_name}{A string for a replacement model name in the data object.
+\item{model_name}{A string for a replacement model name in the data list.
 Optional.}
 }
 \value{
-The supplied data object blicc_ld but with the prior and function for
+The supplied data list blicc_ld but with the prior and function for
 Mk changed.
 }
 \description{
@@ -33,10 +34,10 @@ The \code{Mk} hyper-parameters are provided as a mean and sigma for the lognorma
 The function checks the proposed values are valid. Also, if the ref_length
 parameter is defined, apply the inverse length function for natural
 mortality. These are replaced in the data object, which is then returned.
-Note that the Mk must be provided as the log value. The default in
+Note that the M/K \code{Mk} must be provided as the log value. The default in
 \link{blicc_dat} depends on the length at 50\% maturity, but might be reasonably
-close to: \code{lMk = c(log(1.5), 0.1)}. Values are only changed if the supplied
-value is not \code{NA}.
+close to: \code{lMk = c(log(1.5), 0.1)}. Values are only changed if none of the
+supplied values are \code{NA}.
 }
 \details{
 The \code{ref_length} parameter, if used, indicates a length-inverse natural

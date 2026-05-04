@@ -14,7 +14,7 @@ test_that("Selectivity function", {
 
 glq <- statmod::gauss.quad(90, kind = "laguerre", alpha = 0.0)
 
-test_that("Population function", {
+test_that("Population function Rpop_len", {
   expect_equal(
     sum(abs(Rpop_len(glq$nodes, glq$weights, Len=15:25, Zki=c(rep(1.5, 5),
                                         rep(3, 6)), 100, 100/50) -
@@ -23,6 +23,25 @@ test_that("Population function", {
         0.020717327866104584544, 0.019101328145692042515, 0.150836517508279338573))),
     0, tolerance=1.0e-8)
 })
+
+
+# Rpop_F <- function(Galpha, Gbeta, Mk, Fk, FSel, blicc_ld) 
+  
+  test_that("Population function Rpop_F", {
+    Rsel <- Rselectivities(trgl_ld$polSm, trgl_ld)
+    res <- with(trgl_ld, Rpop_F(exp(polGam), 
+                                exp(polGam)/poLinfm, exp(polMkm), polFkm, Rsel, trgl_ld))
+    
+    expect_equal(
+      sum(abs(Rpop_len(glq$nodes, glq$weights, Len=15:25, Zki=c(rep(1.5, 5),
+                                                                rep(3, 6)), 100, 100/50) -
+                c(0.028956026873118229786, 0.028514321584766966211, 0.028065487563002939481,0.027609157811218087986,
+                  0.027144931645364318157, 0.025976456119747082241, 0.024154891852984621686, 0.022401849101788291058,
+                  0.020717327866104584544, 0.019101328145692042515, 0.150836517508279338573))),
+      0, tolerance=1.0e-8)
+  })
+  
+
 
 test_that("RSPR_0 function", {
   expect_equal(

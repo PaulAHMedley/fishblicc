@@ -7,12 +7,12 @@
 blicc_ref_pts(
   slimf,
   blicc_ld,
-  time_period = NULL,
+  population = NULL,
   vdir = NULL,
-  a = NA,
-  b = NA,
-  L50 = NA,
-  L95 = NA
+  a = NULL,
+  b = NULL,
+  L50 = NULL,
+  L95 = NULL
 )
 }
 \arguments{
@@ -21,14 +21,15 @@ blicc_ref_pts(
 \item{blicc_ld}{A standard data list suitable for the model (see function
 \link{blicc_dat})}
 
-\item{time_period}{Specifies the time period used for reference point
-scenario. If not specified, the default is the final time period.}
+\item{population}{Specifies the population used for reference point
+scenario. If not specified, the default is the final time period and
+growth group.}
 
 \item{vdir}{A search direction vector with maximum value 1 and minimum 0
 applied to changes across gears. Optional.}
 
 \item{a}{The length-weight parameter: a*L^b. Not used in model fitting, but
-used to calculate \code{wt_L} if that is not provided. for plots etc. Optional.}
+used to calculate \code{wt_L} if that is not provided for plots etc. Optional.}
 
 \item{b}{The length-weight exponent (a*L^b, usually close to 3.0). Not used
 in model fitting, but used to calculate \code{wt_L} if that is not provided.
@@ -44,10 +45,12 @@ Optional.}
 }
 \value{
 A list of 1) dr_df: posterior draws or mpd point estimates of
-important parameters 2) lx_df: observed-expected length frequencies, 3) ld:
-\code{blicc_ld} data list used. 4) scenario used: includes a direction vector
-and subsets of the data and parameters sufficient to calculate rp_df 5)
-rp_df: per-recruit reference points
+important parameters 2) lx_df: selectivity (sel), relative population size
+(N_L) and expected length frequencies (efq)  3) ld: \code{blicc_ld} data list
+used. 4) mcmc_summary: a summary table of the MCMC (or NULL if no MCMC)
+5) scenario used: includes a direction vector and subsets of the data
+and parameters sufficient to calculate rp_df 6) rp_df: some standard
+per-recruit reference points
 }
 \description{
 The function returns a list consisting of the search direction vector, a

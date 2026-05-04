@@ -9,7 +9,8 @@
 #'
 #' New `Linf` prior hyper-parameters are set in the [blicc_dat] data object as a
 #' vector of the mean (mu) and standard deviation (sigma) for the normal prior
-#' to be used. The `Linf` parameter will need to be a vector of 2 values.
+#' to be used. The `Linf` parameter will need to be a vector of 2 values if 
+#' one growth group, or a matrix with a row for each growth group. 
 #'
 #' The `Linf` defines the gamma growth probability density function mean, so it
 #' is the mean of the asymptotic length in the population.
@@ -27,24 +28,28 @@
 blip_Linf <- function(blicc_ld,
                       Linf,
                       model_name=NULL) {
-  if (! is.vector(Linf, mode="double") | length(Linf) != 2)
-    stop("Error: Linf must be a vector of 2 (mu, sigma) for the prior. \n")
-  if (Linf[1] <= min(blicc_ld$LLB)) {
+  if ((is.vector(Linf, mode = "numeric") & length(Linf)==2))
+    dim(Linf) <- c(blicc_ld$NX, 2)
+
+  if (! (is.array(Linf) & is.numeric(Linf) & all(dim(Linf)==c(blicc_ld$NX, 2))))
+    stop("Error: Linf must be provided as an array of means and sigmas for the normal, a row for each growth group. \n")
+  
+  if (any(Linf[, 1] <= min(blicc_ld$LLB))) {
     stop(paste(
       "Error: Linf must be greater than the lowest bin value:",
       as.character(min(blicc_ld$LLB)), " \n"
     ))
   }
-  if (Linf[2] <= 0) {
-    stop("Error: Linf prior sd must be greater than zero. \n")
+  if (any(Linf[, 2] <= 0)) {
+    stop("Error: Linf prior sigma must be greater than zero. \n")
   }
 
   if (!is.null(model_name))
     blicc_ld$model_name <- model_name
   # Expected Linf
-  blicc_ld$poLinfm <- Linf[1]
+  blicc_ld$poLinfm <- as.array(Linf[, 1])
   # sd for the normal Linf, see above
-  blicc_ld$poLinfs <- Linf[2]
+  blicc_ld$poLinfs <- as.array(Linf[, 2])
   return(blicc_ld)
 }
 
@@ -89,8 +94,8 @@ blip_Galpha <- function(blicc_ld,
 #' mortality. These are replaced in the data object, which is then returned.
 #' Note that the M/K `Mk` must be provided as the log value. The default in
 #' [blicc_dat] depends on the length at 50% maturity, but might be reasonably
-#' close to: `lMk = c(log(1.5), 0.1)`. Values are only changed if the supplied
-#' value is not `NA`.
+#' close to: `lMk = c(log(1.5), 0.1)`. Values are only changed if none of the 
+#' supplied values are `NA`.
 #'
 #' The `ref_length` parameter, if used, indicates a length-inverse natural
 #' mortality model, where `ref_length` is the length where the given natural
@@ -102,8 +107,9 @@ blip_Galpha <- function(blicc_ld,
 #' @export
 #' @inheritParams blip_Linf
 #' @inheritParams blicc_dat
-#' @param lMk A vector of the mu and sigma for the lognormal natural mortality
-#'   prior
+#' @param lMk A vector or matrix of the mu and sigma for the lognormal 
+#'   natural mortality prior. The number of rows must equal the number of 
+#'   growth groups.
 #' @param ref_length Reference length (single length value) in the 
 #'   length-inverse mortality is applied. Set to -1 to turn off the length-inverse model.
 #' @return The supplied data list blicc_ld but with the prior and function for
@@ -127,19 +133,26 @@ blip_Mk <- function(blicc_ld,
   blicc_ld$M_L <- M_L
   blicc_ld$ref_length <- ref_length
 
-  if (! (is.vector(lMk, mode = "numeric") & length(lMk)==2))
-    stop("Error: natural mortality must be provided as vector of mean and sigma for the lognormal. \n")
-
+  
+  if ((is.vector(lMk, mode = "numeric") & length(lMk)==2)) {
+    if (blicc_ld$NX > 1L)
+      lMk <- rep(lMk, each=blicc_ld$NX) # extend if necessary
+    dim(lMk) <- c(blicc_ld$NX, 2)
+  } else {    
+    if (! (is.array(lMk) & is.numeric(lMk) & all(dim(lMk)==c(blicc_ld$NX, 2))))
+      stop("Error: natural mortality must be provided as array of means and sigmas the lognormal, a row for each growth group. \n")
+  }
+  
   if (!is.null(model_name))
     blicc_ld$model_name <- model_name
-  if (!is.na(lMk[1])) {
-    if (lMk[1]<0 | lMk[1]>log(5))
+  if (!any(is.na(lMk[,1]))) {
+    if (any(lMk[,1]<0) | any(lMk[,1]>log(5)))
       warning(paste0("Mk outside range 1-5: ",
-                     format(exp(lMk[1]), digits=2), " (make sure you provide the log-Mk)"))
-    blicc_ld$polMkm <- lMk[1]
+                     format(exp(lMk[,1]), digits=2), " (make sure you provide the log-Mk)"))
+    blicc_ld$polMkm <- as.array(lMk[, 1])
   }
-  if (!is.na(lMk[2]))
-    blicc_ld$polMks <- lMk[2]
+  if (!any(is.na(lMk[,2])))
+    blicc_ld$polMks <- as.array(lMk[,2])
   return(blicc_ld)
 }
 
@@ -173,7 +186,7 @@ blip_Fk <- function(blicc_ld,
                     lFks = NULL,
                     model_name=NULL) {
   if (is.null(lFk)) {
-    lFk <- blicc_ld$polMkm + log(blicc_ld$prop_catch)
+    lFk <- mean(blicc_ld$polMkm) + log(blicc_ld$prop_catch)
   }
   if (any(is.null(lFks)))
     lFks = 2.0
@@ -219,14 +232,15 @@ blip_LH <-
            wt_L = NULL,
            model_name = NULL,
            set_defaults = FALSE) {
-    Linf <- blicc_ld$poLinfm
+    Linf <- as.vector(blicc_ld$poLinfm)
     # Weight and maturity
     if (is.null(L50)) {
       if (set_defaults)
         L50 <- 0.66 * Linf
     } else {
-      if (L50 <= 0.2 * Linf | L50 >= Linf) {
-        stop("Error: Length at 50% maturity must be greater than 0.2*Linf and less than Linf. \n")
+      if (any(c(L50 <= 0.2 * Linf, L50 >= Linf, length(L50) != blicc_ld$NX))) {
+        stop("Error: Length at 50% maturity must be greater than 0.2*Linf, 
+             less than Linf and provide for each growth group. \n")
       }
     }
     if (is.null(L95)) {
@@ -236,10 +250,11 @@ blip_LH <-
       else
         Ls <- NULL
     } else {
-      if (L95 <= L50) {
-        stop("Error: Length at 95% maturity must be greater than L50. \n")
+      if (any(c(L95 <= L50, length(L95) != blicc_ld$NX))) {
+        stop("Error: Length at 95% maturity must be greater than L50 and 
+             set for each growth group. \n")
       }
-      if (L95 > Linf) {
+      if (any(L95 > Linf)) {
         warning("Length at 95% maturity is greater than Linf. \n")
       }
       Ls <- -log(1 / 0.95 - 1) / (L95 - L50)
@@ -248,37 +263,58 @@ blip_LH <-
     if (is.null(wt_L)) {
       if (is.null(a) & set_defaults) {
         warning("No weight-at-length information provided - the weight units will be incorrect. \n")
-        a <- 1.0
-      }
+        a <- rep(1.0, blicc_ld$NX)
+      } else if (length(a) != blicc_ld$NX) 
+        stop("Error: Parameter a must be provided for each growth group. \n")
       if (is.null(b)) {
-        if (set_defaults) b <- 3.0 
-      } else if (! is.na(b)) {
-        if (b <= 2 | b > 4) 
-          stop("Error: Length-weight exponent (b) must be greater than 2 and less than 4. \n")
+        if (set_defaults) b <- rep(3.0, blicc_ld$NX)
+      } else {
+        if (any(c(b <= 2, b > 4, length(b) != blicc_ld$NX)))
+          stop("Error: Length-weight exponent (b) must be greater than 2 
+               and less than 4, and set for each growth group. \n")
       }
       if (!(is.null(a) | is.null(b)))
         wt_L <-
-          with(blicc_ld, a * exp(b * log(LMP)))    # Estimated biomass per recruit
+          with(blicc_ld, sweep(exp(outer(log(LMP), b)), 
+               MARGIN=2, STATS=a, FUN="*"))    # Estimated biomass per recruit
       else {
         if (set_defaults)
           warning("a or b not specified: weight-at-length not changed. \n")
       }
     } else {
-      if (!is.numeric(wt_L) | length(wt_L) != blicc_ld$NB) {
-        stop("Error: Weight-at-length vector must be a numeric vector with size equal to the number of length bins. \n")
+      if (blicc_ld$NX==1L & is.vector(wt_L, mode="numeric"))
+        dim(wt_L) <- c(blicc_ld$NB, 1L)
+      if (!is.numeric(wt_L) | any(dim(wt_L) != c(blicc_ld$NB, blicc_ld$NX))) {
+        stop("Error: Weight-at-length vector must be a numeric matrix with 
+             rows equal to the number of length bins and columns to the
+             number of growth groups. \n")
       }
     }
     
-    if (any(is.null(ma_L))) {
-      if (!(is.null(Ls) | is.null(L50)))
+    if (is.null(ma_L)) {
+      if (!(is.null(Ls) | is.null(L50))) {
+        if ( ! (is.vector(L50, mode="numeric") & is.vector(Ls, mode="numeric") &
+                length(Ls) == blicc_ld$NX & length(L50) == blicc_ld$NX) )
+          stop(
+            "Error: Parameters L50 and Ls must be numeric vectors with 
+            length equal to number of growth groups. \n"
+          )
+        
         ma_L <-
-          with(blicc_ld, wt_L / (1 + exp(-Ls * (LMP - L50))))    #Mature biomass
-      else
-        warning("L50 or L95 not specified: mature biomass -at-length not changed. \n")
+          with(blicc_ld, wt_L / 
+                 (1 + exp( - sweep(outer(as.array(LMP), as.array(L50), FUN="-"), 
+                                   MARGIN=2, STATS=as.array(Ls), FUN="*"))))    #Mature biomass
+      } else {
+        warning("L50 or L95 not specified: 
+                mature biomass -at-length not changed. \n")
+      }
     } else {
-      if (!is.numeric(ma_L) | length(ma_L) != blicc_ld$NB) {
+      if (blicc_ld$NX==1 & is.vector(ma_L, mode="numeric"))
+        dim(ma_L) <- c(blicc_ld$NB, 1)
+      if ( ! is.numeric(ma_L) | any(dim(ma_L) != c(blicc_ld$NB, blicc_ld$NX))) {
         stop(
-          "Error: Mature biomass -at-length vector must be a numeric vector with size equal to the number of length bins. \n"
+          "Error: Mature biomass -at-length vector must be a numeric matrix with 
+            rows equal to the number of length bins and columns to number of growth groups. \n"
         )
       }
     }
@@ -286,17 +322,17 @@ blip_LH <-
     if (!is.null(model_name))
       blicc_ld$model_name <- model_name
     if (!is.null(a))
-      blicc_ld$a <- a
+      blicc_ld$a <- as.array(a)
     if (!is.null(b))
-      blicc_ld$b <- b
+      blicc_ld$b <- as.array(b)
     if (!is.null(L50))
-      blicc_ld$L50 <- L50
+      blicc_ld$L50 <- as.array(L50)
     if (!is.null(Ls))
-      blicc_ld$Ls <- Ls
+      blicc_ld$Ls <- as.array(Ls)
     if (!any(is.null(wt_L)))
       blicc_ld$wt_L <- wt_L
     if (!any(is.null(ma_L)))
-      blicc_ld$ma_L <- ma_L
+      blicc_ld$ma_L <- t(ma_L)
     return(blicc_ld)
   }
 
@@ -337,14 +373,18 @@ blip_sel_auto <- function(blicc_ld,
   # ssd <- 1.281552
   ssd <- 2.0 # sd parameter for selectivity slopes 10%-90% range
   Galpha <- exp(blicc_ld$polGam)
-  Linf <- blicc_ld$poLinfm
+  Linf <- as.vector(blicc_ld$poLinfm)
   Gbeta <- Galpha/Linf
   LLB <- blicc_ld$LLB
   LMP <- blicc_ld$LMP
-  Zk <- exp(blicc_ld$polMkm)*blicc_ld$M_L
+  Zk <- outer(blicc_ld$M_L, exp(blicc_ld$polMkm))
   gl <- statmod::gauss.quad(110, "laguerre", alpha=0)
-  pop <- Rpop_len(gl$nodes, gl$weights, LLB, Zk, Galpha, Gbeta) 
-  mort_corr <- 1.0/(pop + (1.0/blicc_ld$NB)) # robust mortality correction
+  mort_corr <- matrix(0, nrow=blicc_ld$NB, ncol=blicc_ld$NX)
+  for (i in 1:blicc_ld$NX) {
+    pop <- Rpop_len(gl$nodes, gl$weights, LLB, Zk[ , i], 
+                    Galpha, Gbeta[i]) 
+    mort_corr[, i] <- 1.0/(pop + (1.0/blicc_ld$NB)) # robust mortality correction
+  }
   
   for (si in sel_indx) {
     par_range <- with(blicc_ld, sp_i[si]:sp_e[si])
@@ -366,9 +406,10 @@ blip_sel_auto <- function(blicc_ld,
         )
       )
     else {
-      qi <- which(blicc_ld$Gi==gi) # combine frequencies for this gear
-      fq <- Reduce(`+`, blicc_ld$fq[qi])
-      pfq <- fq * mort_corr  # adjust data for mortality
+      fqi <- which(blicc_ld$Gi==gi) # combine frequencies for this gear
+      pfq <- rep(0, blicc_ld$NB)
+      for (i in fqi)
+        pfq <- pfq + blicc_ld$fq[[i]]*mort_corr[, blicc_ld$Xi[blicc_ld$Ni[i]]]
       pfq <- pfq / sum(pfq)                 # normalise
       cfq <- cumsum(pfq)                    # cumulative sum
       i10 <-
@@ -709,9 +750,12 @@ blip_catchLN <- function(blicc_ld,
 #' @noRd
 #' 
 LG_Nodes <- function(blicc_ld, draws, toler=1.0e-06) {
+  Linf=resid=gear=Mk=Gbeta=NULL
   Min_NK <- 50
   glq <-
     statmod::gauss.quad(110, kind = "laguerre", alpha = 0.0)
+
+  draws <- tidyr::unnest(draws, c(Linf, Mk, Gbeta))  
   suppressWarnings(
     Fk <- as.matrix(tidyr::unnest_wider(dplyr::select(draws, Fk), col="Fk", names_sep="_"))
   )
