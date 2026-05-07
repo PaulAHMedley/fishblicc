@@ -24,7 +24,7 @@ knitr::opts_chunk$set(
 
 ## Installation
 
-You will need to have Rtools installed so that the model can compile.
+You will need to have a compiler installed for the GitHub non-binary package version.
 
 For Windows, Rtools can be downloaded from "<https://cran.r-project.org/bin/windows/Rtools/>"
 
@@ -41,7 +41,7 @@ remotes::install_github("PaulAHMedley/fishblicc")
 
 This is the Bayesian Length Interval Catch Curve to estimate mortality from length frequency samples that form a snapshot of a fishery. This is explicitly a "data-limited" method designed to be used as a risk assessment approach rather than provide definitive information on stock status. The model does not require a data time series, but it assumes that the data are a snapshot of the catch length composition from a fishery in a stationary state. The model can account for multiple gears with different selectivities and has a flexible approach to estimating selectivity, including dome-shaped functions and functions with multiple modes. It is suitable for end-of-project evaluation of length frequency data that may have been collected over a short time period (e.g. a year) or to monitor status of many species that may take up a small proportion of the catches.
 
-Multiple time periods can be fitted for comparison. In this case, fishing mortality is estimated separately for each period, but other parameters such as growth, natural mortality and selectivity (by gear) remain the same.
+Multiple time periods and growth groups can be fitted for comparison. For time periods, fishing mortality is estimated separately for each period, but other parameters such as growth, natural mortality and selectivity (by gear) remain the same. For growth groups, growth and mortality parameters are also estimated separately and only selectivity models are shared. These alternative fitting methods may be particularly useful where you believe selectivity is the same across time or between populations with different growth characteristics and help where effective sample sizes are low.
 
 The method is implemented in R using Stan (mc-stan.org) to carry out the MCMC.
 
@@ -53,19 +53,19 @@ The model used here does not convert length to age, but instead accounts for mor
 
 The model fits the following parameters:
 
--   Linf the asymptotic mean length
+-   Linf the asymptotic mean length(s)
 
 -   Galpha the growth model inverse error parameter ( $CV = Galpha^{-0.5}$ )
 
--   Mk the natural mortality in time units of K (growth rate)
+-   Mk the natural mortality(ies) in time units of K (growth rate)
 
--   Fk the fishing mortality in time units of K (growth rate), one for each fishing gear contributing to fishing mortality
+-   Fk the fishing mortality in time units of K (growth rate), one for each fishing gear contributing to fishing mortality, separate estimates for different time periods / growth-groups
 
 -   Sm All selectivity function parameters in a single vector, including length location parameters, slope parameters for each parametric selectivity function and mixed function weights.
 
 -   phi the over-dispersion parameter of the counts in the length bins for the negative binomial.
 
-The following additional fixed parameters are required to calculate the SPR:
+The following additional fixed parameters for each growth group are required to calculate the SPR:
 
 -   $L_m$ (and $L_s$) for the maturity at 50% (and steepness) for a logistic maturity curve.
 

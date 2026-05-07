@@ -20,7 +20,8 @@ quantities of interest.
 
 ## Installation
 
-You will need to have Rtools installed so that the model can compile.
+You will need to have a compiler installed for the GitHub non-binary
+package version.
 
 For Windows, Rtools can be downloaded from
 “<https://cran.r-project.org/bin/windows/Rtools/>”
@@ -52,10 +53,15 @@ data that may have been collected over a short time period (e.g. a year)
 or to monitor status of many species that may take up a small proportion
 of the catches.
 
-Multiple time periods can be fitted for comparison. In this case,
-fishing mortality is estimated separately for each period, but other
-parameters such as growth, natural mortality and selectivity (by gear)
-remain the same.
+Multiple time periods and growth groups can be fitted for comparison.
+For time periods, fishing mortality is estimated separately for each
+period, but other parameters such as growth, natural mortality and
+selectivity (by gear) remain the same. For growth groups, growth and
+mortality parameters are also estimated separately and only selectivity
+models are shared. These alternative fitting methods may be particularly
+useful where you believe selectivity is the same across time or between
+populations with different growth characteristics and help where
+effective sample sizes are low.
 
 The method is implemented in R using Stan (mc-stan.org) to carry out the
 MCMC.
@@ -90,15 +96,16 @@ natural mortality with length, can be accommodated.
 
 The model fits the following parameters:
 
-- Linf the asymptotic mean length
+- Linf the asymptotic mean length(s)
 
 - Galpha the growth model inverse error parameter ( $CV = Galpha^{-0.5}$
   )
 
-- Mk the natural mortality in time units of K (growth rate)
+- Mk the natural mortality(ies) in time units of K (growth rate)
 
 - Fk the fishing mortality in time units of K (growth rate), one for
-  each fishing gear contributing to fishing mortality
+  each fishing gear contributing to fishing mortality, separate
+  estimates for different time periods / growth-groups
 
 - Sm All selectivity function parameters in a single vector, including
   length location parameters, slope parameters for each parametric
@@ -107,8 +114,8 @@ The model fits the following parameters:
 - phi the over-dispersion parameter of the counts in the length bins for
   the negative binomial.
 
-The following additional fixed parameters are required to calculate the
-SPR:
+The following additional fixed parameters for each growth group are
+required to calculate the SPR:
 
 - $L_m$ (and $L_s$) for the maturity at 50% (and steepness) for a
   logistic maturity curve.
@@ -173,15 +180,15 @@ dl <- blicc_dat(
 slim <- blicc_mpd(dl)
 ><> Chain 1: Initial log joint probability = -14122.9
 ><> Chain 1:     Iter      log prob        ||dx||      ||grad||       alpha      alpha0  # evals  Notes 
-><> Chain 1: Exception: neg_binomial_2_lpmf: Location parameter[1] is nan, but must be positive finite! (in 'string', line 291, column 8 to column 61)
-><> Exception: neg_binomial_2_lpmf: Location parameter[1] is nan, but must be positive finite! (in 'string', line 291, column 8 to column 61)
-><> Exception: neg_binomial_2_lpmf: Location parameter[1] is nan, but must be positive finite! (in 'string', line 291, column 8 to column 61)
-><> Exception: neg_binomial_2_lpmf: Location parameter[1] is nan, but must be positive finite! (in 'string', line 291, column 8 to column 61)
-><> Exception: neg_binomial_2_lpmf: Location parameter[1] is nan, but must be positive finite! (in 'string', line 291, column 8 to column 61)
+><> Chain 1: Exception: neg_binomial_2_lpmf: Location parameter[1] is nan, but must be positive finite! (in 'string', line 295, column 8 to column 61)
+><> Exception: neg_binomial_2_lpmf: Location parameter[1] is nan, but must be positive finite! (in 'string', line 295, column 8 to column 61)
+><> Exception: neg_binomial_2_lpmf: Location parameter[1] is nan, but must be positive finite! (in 'string', line 295, column 8 to column 61)
+><> Exception: neg_binomial_2_lpmf: Location parameter[1] is nan, but must be positive finite! (in 'string', line 295, column 8 to column 61)
+><> Exception: neg_binomial_2_lpmf: Location parameter[1] is nan, but must be positive finite! (in 'string', line 295, column 8 to column 61)
 ><> 
-><> Chain 1:      499      -535.644   0.000268392      0.253038           1           1      554   
+><> Chain 1:      499      -535.644   3.37276e-05      0.471424      0.3196      0.3196      564   
 ><> Chain 1:     Iter      log prob        ||dx||      ||grad||       alpha      alpha0  # evals  Notes 
-><> Chain 1:      688      -535.644    1.9733e-06     0.0173782           1           1      758   
+><> Chain 1:      683      -535.644   5.41613e-06     0.0254633           1           1      775   
 ><> Chain 1: Optimization terminated normally: 
 ><> Chain 1:   Convergence detected: relative gradient magnitude is below tolerance
 ## "slim <- blicc_fit(dl)" to run the full MCMC, but this takes a little time to run.
@@ -252,24 +259,24 @@ blicc_results(slim)
 ><> # A tibble: 19 × 3
 ><>    Parameter `Max. Posterior`        SE
 ><>    <chr>                <dbl>     <dbl>
-><>  1 Linf              42.4      1.35    
-><>  2 Galpha            97.1     24.4     
-><>  3 Mk                 2.00     0.211   
-><>  4 Fk[1]              0.123    0.0276  
-><>  5 Fk[2]              0.399    0.0988  
-><>  6 Fk[3]              1.06     0.233   
-><>  7 Sm[1]             13.7      0.590   
-><>  8 Sm[2]              0.0519   0.00730 
-><>  9 Sm[3]              0.00303  0.000708
-><> 10 Sm[4]             25.2      0.778   
-><> 11 Sm[5]              0.0230   0.00240 
-><> 12 Sm[6]              0.0115   0.00173 
-><> 13 Sm[7]             24.2      0.634   
-><> 14 Sm[8]              0.0250   0.00217 
-><> 15 Sm[9]              0.0101   0.00131 
-><> 16 NB_phi            18.0      3.88    
-><> 17 Gbeta              2.29     0.554   
-><> 18 SPR[1]             0.340    0.0798  
+><>  1 Linf[1]           42.4      1.37    
+><>  2 Galpha            97.2     25.9     
+><>  3 Mk[1]              2.00     0.198   
+><>  4 Fk[1]              0.123    0.0271  
+><>  5 Fk[2]              0.399    0.0996  
+><>  6 Fk[3]              1.06     0.234   
+><>  7 Sm[1]             13.7      0.583   
+><>  8 Sm[2]              0.0519   0.00728 
+><>  9 Sm[3]              0.00303  0.000685
+><> 10 Sm[4]             25.2      0.758   
+><> 11 Sm[5]              0.0230   0.00238 
+><> 12 Sm[6]              0.0115   0.00168 
+><> 13 Sm[7]             24.2      0.650   
+><> 14 Sm[8]              0.0250   0.00226 
+><> 15 Sm[9]              0.0101   0.00129 
+><> 16 NB_phi            18.0      4.08    
+><> 17 Gbeta[1]           2.29     0.582   
+><> 18 SPR[1]             0.340    0.0795  
 ><> 19 lp__            -536.      NA
 ```
 

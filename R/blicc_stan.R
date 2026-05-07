@@ -583,8 +583,8 @@ blicc_dat <-
       if (!is.vector(Catch) | length(Catch) != Nfq | any(Catch<0) | !any(Catch>0)) {
         stop("Error: Relative catches `Catch`, including zeros where negligible, must be provided for each length frequency. \n")
       }
-      sums <- tapply(Catch, period_freq, sum)
-      catch_prop <- Catch[Catch > 0] / sums[period_freq[Catch > 0]] # Normalise
+      sums <- tapply(Catch, pop_freq, sum)
+      catch_prop <- Catch[Catch > 0] / sums[pop_freq[Catch > 0]] # Normalise
       names(catch_prop) <- NULL
       # Create the F index based on catches
       Ffq <- integer(Nfq)
@@ -1005,7 +1005,6 @@ blicc_population_filter <- function(blicc_ld, population) {
   ld$NP <- length(Pindx)
   ld$NX <- length(GTGindx)
   
-  
   ld$fqname <- as.array(blicc_ld$fqname[Qindx])
   ld$gname <- as.array(blicc_ld$gname[Gindx])
   ld$tpname <- as.array(blicc_ld$tpname[Tindx])
@@ -1040,7 +1039,7 @@ blicc_population_filter <- function(blicc_ld, population) {
   ld$GSmix1 <- integer(2*length(Gindx))
   mix_1 <- 1L
   mix_2 <- 1L
-  for (gi in seq(Gindx)) {
+  for (gi in Gindx) {
     mgi <- (gi-1L)*2L + 1L
     if (blicc_ld$GSmix1[mgi] > 0) {
       mxindx <- blicc_ld$GSmix2[blicc_ld$GSmix1[gi]:blicc_ld$GSmix1[gi+1L]]
