@@ -162,21 +162,21 @@ blicc_ref_pts <-
     } else if (class(slimf)[1] == "tbl_df" &&
                all(names(slimf) == c("par", "mpd", "se"))) {
 
-    dr_df <- slimf |>
-      tidyr::extract(
-        par,
-        into = c("name", "index"),
-        regex = "(.+?)\\[(\\d+)\\]",
-        remove = FALSE
-        ) |>
-      dplyr::mutate(
-        name = ifelse(is.na(name), par, name),
-        index = as.integer(index)) |>
-        dplyr::group_by(name) |>
-        dplyr::summarise(
-          vec = list(if (all(is.na(index))) mpd else list(mpd[order(index)])),
-          .groups = "drop"
-        ) |>
+      dr_df <- slimf |>
+        tidyr::extract(
+          par,
+          into = c("name", "index"),
+          regex = "(.+?)\\[(\\d+)\\]",
+          remove = FALSE
+          ) |>
+        dplyr::mutate(
+          name = ifelse(is.na(name), par, name),
+          index = as.integer(index)) |>
+          dplyr::group_by(name) |>
+          dplyr::summarise(
+            vec = list(if (all(is.na(index))) mpd else list(mpd[order(index)])),
+            .groups = "drop"
+          ) |>
         tidyr::pivot_wider(
           names_from = name,
           values_from = vec
