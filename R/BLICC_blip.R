@@ -237,6 +237,8 @@ blip_LH <-
     if (is.null(L50)) {
       if (set_defaults)
         L50 <- 0.66 * Linf
+      else
+        L50 <- as.vector(blicc_ld$L50)
     } else {
       if (any(c(L50 <= 0.2 * Linf, L50 >= Linf, length(L50) != blicc_ld$NX))) {
         stop("Error: Length at 50% maturity must be greater than 0.2*Linf, 
@@ -248,7 +250,7 @@ blip_LH <-
       if (set_defaults)
         Ls <- -log(1 / 0.95 - 1) / (0.05 * (Linf - L50))
       else
-        Ls <- NULL
+        Ls <- as.vector(blicc_ld$Ls)
     } else {
       if (any(c(L95 <= L50, length(L95) != blicc_ld$NX))) {
         stop("Error: Length at 95% maturity must be greater than L50 and 
@@ -261,25 +263,33 @@ blip_LH <-
     }
     
     if (is.null(wt_L)) {
-      if (is.null(a) & set_defaults) {
-        warning("No weight-at-length information provided - the weight units will be incorrect. \n")
-        a <- rep(1.0, blicc_ld$NX)
+      if (is.null(a)) {
+        if (set_defaults) {
+          warning("No weight-at-length information provided - the weight units will be incorrect. \n")
+          a <- rep(1.0, blicc_ld$NX)
+        } else {
+          a <- as.vector(blicc_ld$a)
+          }
       } else if (length(a) != blicc_ld$NX) 
         stop("Error: Parameter a must be provided for each growth group. \n")
       if (is.null(b)) {
-        if (set_defaults) b <- rep(3.0, blicc_ld$NX)
+        if (set_defaults) 
+          b <- rep(3.0, blicc_ld$NX)
+        else
+          b <- as.vector(blicc_ld$b)
       } else {
         if (any(c(b <= 2, b > 4, length(b) != blicc_ld$NX)))
           stop("Error: Length-weight exponent (b) must be greater than 2 
                and less than 4, and set for each growth group. \n")
       }
-      if (!(is.null(a) | is.null(b)))
+      if (!(is.null(a) | is.null(b))) {
         wt_L <-
           with(blicc_ld, sweep(exp(outer(log(LMP), b)), 
                MARGIN=2, STATS=a, FUN="*"))    # Estimated biomass per recruit
-      else {
+      } else {
         if (set_defaults)
           warning("a or b not specified: weight-at-length not changed. \n")
+        wt_L <- blicc_ld$wt_L
       }
     } else {
       if (blicc_ld$NX==1L & is.vector(wt_L, mode="numeric"))
@@ -290,20 +300,17 @@ blip_LH <-
              number of growth groups. \n")
       }
     }
-    
     if (is.null(ma_L)) {
       if (!(is.null(Ls) | is.null(L50))) {
         if ( ! (is.vector(L50, mode="numeric") & is.vector(Ls, mode="numeric") &
-                length(Ls) == blicc_ld$NX & length(L50) == blicc_ld$NX) )
+                length(Ls) == blicc_ld$NX & length(L50) == blicc_ld$NX) ) {
           stop(
             "Error: Parameters L50 and Ls must be numeric vectors with 
             length equal to number of growth groups. \n"
-          )
-        
-        ma_L <-
-          with(blicc_ld, wt_L / 
-                 (1 + exp( - sweep(outer(as.array(LMP), as.array(L50), FUN="-"), 
-                                   MARGIN=2, STATS=as.array(Ls), FUN="*"))))    #Mature biomass
+          )}
+        ma_L <- wt_L / 
+            (1 + exp( - sweep(outer(as.array(blicc_ld$LMP), as.array(L50), FUN="-"), 
+                                   MARGIN=2, STATS=as.array(Ls), FUN="*")))
       } else {
         warning("L50 or L95 not specified: 
                 mature biomass -at-length not changed. \n")
@@ -318,7 +325,7 @@ blip_LH <-
         )
       }
     }
-    
+
     if (!is.null(model_name))
       blicc_ld$model_name <- model_name
     if (!is.null(a))
@@ -449,7 +456,14 @@ blip_sel_auto <- function(blicc_ld,
                  log(c(LMP[i50], 
                        ((LMP[i50] - LMP[i10]) / ssd) ^ -2, 
                        ((LMP[i90] - LMP[i50]) / ssd) ^ -2))
-             })
+             },
+             {
+               #studentt
+               blicc_ld$polSm[par_range] <-
+                 log(c(LMP[i50], (0.5 * (LMP[i90] - LMP[i10]) / ssd) ^
+                         -2, 5))
+             }
+      )
       blicc_ld$polSs[par_range] <- 1.5  # default
     }
   }
@@ -495,7 +509,7 @@ blip_sel <- function(blicc_ld,
       loc <= 0)
     stop("Error: `loc` must be a single positive numeric value for logistic 50% selectivity or normal mode. \n")
 
-  if (blicc_ld$fSel[sel_indx] == 4) np <- 2 else np <- 1
+  if (blicc_ld$fSel[sel_indx] %in% c(4, 5)) np <- 2 else np <- 1
 
   if (! is.null(lslope)) {
     if (! (is.vector(lslope, mode="numeric")) |

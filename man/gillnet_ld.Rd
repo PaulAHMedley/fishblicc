@@ -3,7 +3,7 @@
 \docType{data}
 \name{gillnet_ld}
 \alias{gillnet_ld}
-\title{Example small sample of length frequency data from gillnet fishery}
+\title{Example small sample of length frequency data from a gillnet fishery}
 \format{
 A list of 26 data vectors used in the BLICC model:
 \describe{

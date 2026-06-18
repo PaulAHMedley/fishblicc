@@ -108,6 +108,32 @@ Rsel_dsnormal <- function(Sp, LMP) {
   return(SL)
 }
 
+# Model 5
+
+#' Calculate a Student's t-distribution selectivity curve for a length vector
+#' 
+#' Student's t-distribution is similar to the normal ([Rsel_normal]) but with 
+#' heavier tails. A Student's t takes an additional kurtosis parameter 
+#' (degrees of freedom: v) as well as a location and scale parameter. As v 
+#' decreases, the degree of kurtosis increases. Student's t with high degrees of 
+#' freedom resembles the normal. The resulting selectivity varies from 0 to 1.0, 
+#' with 1.0 being the mode. It is calculated for each position defined in the 
+#' length vector.
+#'
+#' @export
+#' @inheritParams Rsel_logistic
+#' @param  Sp   Vector (length 2) of the selectivity parameters (mode and
+#'   'degrees of freedom') for the Student's t-distribution selectivity function
+#' @return      A vector of selectivity values varying from 0.0 to 1.0
+#' @examples
+#' Sel <- Rsel_studentt(Sp = c(35, 0.2, 1), LMP = seq(15.5, 55.5, by=1.0))
+#' plot(y=Sel, x=seq(15.5, 55.5, by=1.0))
+#' 
+Rsel_studentt <- function(Sp, LMP) {
+  SL <- double(length(LMP))
+  SL <- (1 + Sp[2L]*((LMP - Sp[1L]) ^ 2) / Sp[3L])^(-0.5*(Sp[3L]+1))
+  return(SL)
+}
 
 #' Calculate the population size and fishing mortality applied within the length
 #' bins for the BLICC model
@@ -244,7 +270,8 @@ Rselectivities <- function(Sm, blicc_ld) {
                              Rsel_logistic(Sm[Indx], LMP),
                              Rsel_normal(Sm[Indx], LMP),
                              Rsel_ssnormal(Sm[Indx], LMP),
-                             Rsel_dsnormal(Sm[Indx], LMP)))
+                             Rsel_dsnormal(Sm[Indx], LMP),
+                             Rsel_studentt(Sm[Indx], LMP)))
   }
   
   for (gi in seq(blicc_ld$NG)) {

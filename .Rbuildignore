@@ -13,6 +13,7 @@
 ^tmp\.rda$
 ^IO_YFT_Example_Analysis\.pdf$
 ^IO_YFT_Example_Analysis\.qmd$
+^FMA6_Decapterus_macarellus_SPR_TEST\.qmd$
 ^data/iotc_yft_2013_19\.rda$
 ^data/Cynoscion_virescens_SPR\.rda$
 ^data/GuyanaSeatrout_ld\.rda$

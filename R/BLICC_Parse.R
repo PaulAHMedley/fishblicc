@@ -19,16 +19,19 @@ Rsel_functions <- function() {
   sel <- list(long_name = c("Logistic",
                             "Normal",
                             "Single-sided Normal",
-                            "Double-sided Normal"),
+                            "Double-sided Normal",
+                            "Student's t"),
               short_name = c("logistic",
                              "normal",
                              "ssnormal",
-                             "dsnormal"),
+                             "dsnormal",
+                             "studentt"),
               par_names  = list(
                 logistic = c("Sel 50%", "Steepness"),
                 normal = c("Mode", "SD"),
                 ssnormal = c("Mode", "Left SD"),
-                dsnormal = c("Mode", "Left SD", "Right SD"))
+                dsnormal = c("Mode", "Left SD", "Right SD"),
+                studentt = c("Mode", "SD", "DoF"))
   )
   sel$npar <- sapply(sel$par_names, FUN=length)
   return(sel)
@@ -342,13 +345,21 @@ get_sel_par_names <- function(blicc_ld)  {
       j <- j + 1
       par_names[j] <- paste0("S", as.character(i), "_slp")
       j <- j + 1
-    } else {
+    } else if (blicc_ld$fSel[i] == 4) {
       par_names[j] <- paste0("S", as.character(i), "_loc")
       j <- j + 1
       par_names[j] <- paste0("S", as.character(i), "_slp1")
       j <- j + 1
       par_names[j] <- paste0("S", as.character(i), "_slp2")
       j <- j + 1
+    } else {
+      par_names[j] <- paste0("S", as.character(i), "_loc")
+      j <- j + 1
+      par_names[j] <- paste0("S", as.character(i), "_slp")
+      j <- j + 1
+      par_names[j] <- paste0("S", as.character(i), "_dof")
+      j <- j + 1
+      
     }
   }
   return(par_names)

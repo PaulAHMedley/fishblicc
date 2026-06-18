@@ -78,6 +78,16 @@ vector sel_dsnormal(vector LMP, vector par) {
   return Sel;
 } //sel_dsnormal
 
+// MODEL 5
+vector sel_studentt(vector LMP, vector par) {
+  // Student's t selectivity model 
+  // par[1] = Smax, par[2] = Ss1, par[3] = v
+  int nl = rows(LMP);
+  vector[nl] Sel = (1 + (par[2] * square((LMP - par[1]))) / par[3])^(-0.5*(par[3] + 1));
+  return Sel;
+} //sel_studentt
+
+
 
 // Population model: survival
 
@@ -146,7 +156,7 @@ data {
   int<lower=1, upper=NN>  Ni[NQ];         // Population index for frequency
   vector[NF]              prop_catch;     // Estimated total relative catch in numbers of fish, excluding zeroes for surveys etc.
   int<lower=0, upper=NF>  Fkq[NQ];        // Index of the Fk associated with frequency data. 0 implies no contribution to F (catch negligible)
-  int<lower=1, upper=4>   fSel[NS];       // Selectivity function to use: 1 = logistic, 2 = normal, 3 = ss_normal, 4 = ds_normal
+  int<lower=1, upper=5>   fSel[NS];       // Selectivity function to use: 1=logistic, 2=normal, 3=ss_normal, 4=ds_normal, 5=studentt
   int<lower=1, upper=NP>  sp_i[NS];       // Selectivity function parameter start index
   int<lower=1, upper=NS>  GSbase[NG];     // Integers linking gear to a selectivity function reference in fSel
   int<lower=0, upper=NM>  GSmix1[NG*2];   // Integer pairs linking gear to selectivity function reference in GSMix2
@@ -300,6 +310,8 @@ model {
         Seli[si] = sel_ssnormal(LMP, segment(Sm, sp_i[si], 2));  // Normal flat selectivity
       else if (fSel[si] == 4)
         Seli[si] = sel_dsnormal(LMP, segment(Sm, sp_i[si], 3));  // Domed selectivity
+      else if (fSel[si] == 5)
+        Seli[si] = sel_studentt(LMP, segment(Sm, sp_i[si], 3));  // Student t
     }
 
     // Each gear selectivity
@@ -380,15 +392,17 @@ generated quantities {
       SPR0[xi] = ma_L[xi] * Pop_L(gl_nodes, gl_weights, LLB, Mk[xi] * M_L, Galpha, Gbeta[xi]);
 
     // Add fishing mortality rate to each length bin
-    for (gi in 1:NS) {
-      if (fSel[gi] == 1)
-        Seli[gi] = sel_logistic(LMP, segment(Sm, sp_i[gi], 2));  // Logistic selectivity
-      else if (fSel[gi] == 2)
-        Seli[gi] = sel_normal(LMP, segment(Sm, sp_i[gi], 2));    // Normal selectivity
-      else if (fSel[gi] == 3)
-        Seli[gi] = sel_ssnormal(LMP, segment(Sm, sp_i[gi], 2));  // Normal flat selectivity
-      else if (fSel[gi] == 4)
-        Seli[gi] = sel_dsnormal(LMP, segment(Sm, sp_i[gi], 3));  // Domed selectivity
+    for (si in 1:NS) {
+      if (fSel[si] == 1)
+        Seli[si] = sel_logistic(LMP, segment(Sm, sp_i[si], 2));  // Logistic selectivity
+      else if (fSel[si] == 2)
+        Seli[si] = sel_normal(LMP, segment(Sm, sp_i[si], 2));    // Normal selectivity
+      else if (fSel[si] == 3)
+        Seli[si] = sel_ssnormal(LMP, segment(Sm, sp_i[si], 2));  // Normal flat selectivity
+      else if (fSel[si] == 4)
+        Seli[si] = sel_dsnormal(LMP, segment(Sm, sp_i[si], 3));  // Domed selectivity
+      else if (fSel[si] == 5)
+        Seli[si] = sel_studentt(LMP, segment(Sm, sp_i[si], 3));  // Student t
     }
 
     for (qi in 1:NQ) {

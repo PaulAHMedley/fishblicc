@@ -29,5 +29,10 @@ Useful links:
 \author{
 \strong{Maintainer}: Paul A.H. Medley \email{paulahmedley@gmail.com}
 
+Authors:
+\itemize{
+  \item Paul A.H. Medley \email{paulahmedley@gmail.com}
+}
+
 }
 \keyword{internal}

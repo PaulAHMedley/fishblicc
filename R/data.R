@@ -1,4 +1,4 @@
-#' Example small sample of length frequency data from gillnet fishery
+#' Example small sample of length frequency data from a gillnet fishery
 #'
 #' A data list created using simulated length frequency data from the
 #' function [blicc_dat]:
@@ -163,25 +163,51 @@
 #'  \item{dr_df}{A draws tibble of parameter estimates}
 #'  \item{lx_df}{A tibble of expected numbers of fish in each length bin for each gear}
 #'  \item{ld}{The data list from [blicc_dat] used to fit the model and calculate indicators and results}
+#'  \item{mcmc_summary}{Summary tibble of the Stan MCMC model fit}
 #'  \item{scenario}{A list of time period, gears, a vector describing the "direction" across gears and data list used to calculate reference points}
 #'  \item{rp_df}{A draws tibble of parameter estimates and reference points for the scenario}
 #'}
-#'@format rp_df is a tibble of parameter estimates from a BLICC model fit:
+#'@format dr_df is a tibble of parameter estimates from a BLICC model fit:
+#'\describe{
+#'  \item{Linf}{Mean maximum length from the von Bertalanffy growth model, by growth group (list column)}
+#'  \item{Galpha}{Gamma distribution parameter governing growth variability}
+#'  \item{Mk}{Natural mortality (per unit K time), by growth group (list column)}
+#'  \item{Fk}{Fishing mortality, by gear and population (per unit K time) (list column)}
+#'  \item{Sm}{Selectivity model parameters (list column)}
+#'  \item{NB_phi}{Negative binomial parameter: Excess variance compared to the Poisson}
+#'  \item{lp__}{posterior log probability for the random draw}
+#'  \item{Gbeta}{Gamma distribution "rate" parameter, by growth group (=Galpha/Linf) (list column)}
+#'  \item{SPR}{Spawning potential ratio, by population (list column)}
+#'  \item{B_B0}{Harvestable biomass level relative to the unfished state, by population (list column)}
+#'  \item{YPR}{Yield per recruit, by gear (list column)}
+#'  \item{.chain}{MCMC chain identifier}
+#'  \item{.iteration}{MCMC iteration identifier}
+#'  \item{.draw}{MCMC draw identifier}
+#'}
+#'@format lx_df is a tibble of expected frequencies corresponding to the observed length frequency:
+#'\describe{
+#'  \item{Qgroup}{Identifier for the observed data frequency}
+#'  \item{Lgroup}{Length lower bound as a factor}
+#'  \item{sel}{Selectivity estimate}
+#'  \item{N_L}{Population relative numbers at length estimate}
+#'  \item{efq}{Expected number of fish in the length bin}
+#'}
+#'@format rp_df is a tibble of reference points based on the scenario from a BLICC model fit:
 #'\describe{
 #'  \item{Linf}{Mean maximum length from the von Bertalanffy growth model}
 #'  \item{Galpha}{Gamma distribution parameter governing growth variability}
 #'  \item{Mk}{Natural mortality (per unit K time)}
-#'  \item{Fk}{A list vector of fishing mortality (per unit K time)}
-#'  \item{Sm}{A list vector of selectivity model parameters}
+#'  \item{Fk}{Fishing mortality by gear (per unit K time) (list column)}
+#'  \item{Sm}{Selectivity model parameters (list column)}
 #'  \item{NB_phi}{Negative binomial parameter: Excess variance compared to the Poisson}
-#'  \item{Gbeta}{Gamma distribution "rate" parameter: (=Galpha/Linf)}
+#'  \item{Gbeta}{Gamma distribution "rate" parameter (=Galpha/Linf)}
 #'  \item{.chain}{MCMC chain identifier}
 #'  \item{.iteration}{MCMC iteration identifier}
 #'  \item{.draw}{MCMC draw identifier}
-#'  \item{F20}{List vector of fishing mortality estimated to achieve 20% SPR}
-#'  \item{F40}{List vector of fishing mortality estimated to achieve 40% SPR}
-#'  \item{S40}{List vector of selectivity location estimated to achieve 40% SPR}
-#'  \item{SMY}{List vector of selectivity location estimated to achieve maximum yield per recruit}
+#'  \item{F20}{Fishing mortality estimated to achieve 20% SPR (list column)}
+#'  \item{F40}{Fishing mortality estimated to achieve 40% SPR (list column)}
+#'  \item{S40}{Selectivity location estimated to achieve 40% SPR (list column)}
+#'  \item{SMY}{Selectivity location estimated to achieve maximum yield per recruit (list column)}
 #'}
 #'
 #'@source Data are simulated.

@@ -49,7 +49,7 @@ plot_prior <- function(blicc_ld,
   sel <- Rselectivities(exp(blicc_ld$polSm), blicc_ld)
 
   Zk <- list()
-  for (ni in 1:blicc_ld$NN) {
+  for (ni in seq_len(blicc_ld$NN)) {
     Zk[[ni]] <- with(blicc_ld, exp(polMkm[Xi[ni]])*M_L)
   }
   for (qi in subset_fq) {
@@ -59,10 +59,10 @@ plot_prior <- function(blicc_ld,
   }
   pop <- list()
   Ni_range <- unique(blicc_ld$Ni[subset_fq])
-  
-  for (pi in Ni_range)
+  for (pi in Ni_range) {
     pop[[pi]] <- with(blicc_ld, Rpop_len(gl_nodes, gl_weights, LLB, Zk[[pi]],
-                                   exp(polGam), exp(polGam)/poLinfm[pi]))
+                                   exp(polGam), exp(polGam)/poLinfm[Xi[pi]]))
+  }
 
   df <- tibble::tibble()
   for (qi in subset_fq) {
