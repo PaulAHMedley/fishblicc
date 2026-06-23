@@ -64,14 +64,20 @@ blicc_population_filter <- function(blicc_ld, population) {
   ld$wt_L <- blicc_ld$wt_L[, GTGindx, drop=FALSE]
   ld$ma_L <- blicc_ld$ma_L[GTGindx, , drop=FALSE]
   
-  ld$prop_catch <- as.array(blicc_ld$prop_catch[Qindx])
-  ld$Fkq <- as.array(match(blicc_ld$Fkq[Qindx], which(Findx)))
+  pc <- double(blicc_ld$NQ)
+  pc[blicc_ld$Fkq>0] <- blicc_ld$prop_catch
+  ld$prop_catch <- pc[Qindx]
+  if (!any(ld$prop_catch > 0))
+    stop("Error: at least one population must have catches greater than zero.")
+  ld$prop_catch <- as.array(ld$prop_catch[ld$prop_catch>0])
+  ld$Fkq <- match(blicc_ld$Fkq[Qindx], which(Findx))
   ld$Fkq[is.na(ld$Fkq)] <- 0
-  sums <- with(ld, tapply(prop_catch, Ni[Fkq>0], sum))
+  sums <- with(ld, tapply(prop_catch[prop_catch>0], Ni[Fkq>0], sum))
+  names(sums) <- NULL 
   ld$prop_catch <- with(ld, prop_catch / sums[Ni[Fkq>0]]) # Normalise
   
   #seq_along(Gindx)
-  ld$GSbase <- as.array(blicc_ld$GSbase[Gindx]) # resequence
+  ld$GSbase <- as.array(match(blicc_ld$GSbase[Gindx], Sindx)) # resequence
   mxn <- integer(0)
   mxpar <- mxpars <- double(0)
   

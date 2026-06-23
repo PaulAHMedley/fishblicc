@@ -274,6 +274,8 @@ blicc_ref_pts <-
     
     tp_ld <- blicc_population_filter(blicc_ld, population) # reduces ld to single time period
     
+return(tp_ld)    
+    
     rp_df <- rp_df |>
       dplyr::mutate(
         F20 = purrr::pmap(
