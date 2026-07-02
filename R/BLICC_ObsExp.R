@@ -272,10 +272,9 @@ blicc_ref_pts <-
        ) |>
        tidyr::unnest(c(Linf, Mk, Gbeta))
     
-    tp_ld <- blicc_population_filter(blicc_ld, population) # reduces ld to single time period
-    
-return(tp_ld)    
-    
+    tp_ld <- blicc_population_filter(blicc_ld, population) |>
+      blicc_zeroF_filter()
+
     rp_df <- rp_df |>
       dplyr::mutate(
         F20 = purrr::pmap(
