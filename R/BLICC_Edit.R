@@ -218,7 +218,7 @@ blicc_combine_bins <- function(blicc_ld, interval_range) {
                                    LLB[NB] + 0.5*(LLB[NB]-LLB[NB-1])))
   
   blicc_ld$fq <- lapply(blicc_ld$fq, 
-                        FUN = \(x) { x[collapse[1]] <- x[collapse[1]]+sum(x[cl_seq])
+                        \(x) { x[collapse[1]] <- x[collapse[1]]+sum(x[cl_seq])
                         return(x[-cl_seq])  })
 
   if (!any(is.na(blicc_ld$a) | is.na(blicc_ld$b) | is.na(blicc_ld$L50) | is.na(blicc_ld$Ls))) {

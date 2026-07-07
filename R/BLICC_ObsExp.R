@@ -228,7 +228,7 @@ blicc_ref_pts <-
           .progress = "YPR"
       )) |>
       dplyr::select(Linf:Gbeta, SPR, B_B0, YPR, tidyselect::everything())
-    
+
     lx_df <- blicc_expect_len(dr_df, blicc_ld)
     
     # For reference points, we only estimate for the reference population scenario    
@@ -460,7 +460,6 @@ blicc_get_expected <-
     # Returns expected values based on the model
     Rsel <- Rselectivities(Sm, blicc_ld)
     pop <- Rpop_F(Galpha, Galpha / Linf, Mk, Fk, Rsel, blicc_ld)
-
     ex_df <- tibble::tibble()
     for (qi in seq(blicc_ld$NQ)) {
       gi <- blicc_ld$Gi[qi]

@@ -167,14 +167,20 @@ Rsel_studentt <- function(Sp, LMP) {
 #' 
 Rpop_F <- function(Galpha, Gbeta, Mk, Fk, FSel, blicc_ld) {
   FFSel <- rep(list(NULL), blicc_ld$NQ)
-  N_L <- Zki <- rep(list(NULL), blicc_ld$NN)
+  N_L <- rep(list(rep(0, blicc_ld$NB)), blicc_ld$NN)
+  Zki <- list()
+  for (pi in seq_len(blicc_ld$NN)) {
+    Zki[[pi]] <- Mk[blicc_ld$Xi[pi]] * blicc_ld$M_L
+  } 
   #Zki <- rep(list(Mk * blicc_ld$M_L), blicc_ld$NN)
-  for (qi in seq(blicc_ld$NQ)) {
+  for (qi in seq_len(blicc_ld$NQ)) {
     if (blicc_ld$Fkq[qi] > 0) {
       pi <- blicc_ld$Ni[qi]
       gi <- blicc_ld$Gi[qi]
       FFSel[[qi]] <- FSel[[gi]] * Fk[blicc_ld$Fkq[qi]]  # Fishing mortality
-      Zki[[pi]] <- Mk[blicc_ld$Xi[pi]] * blicc_ld$M_L + FFSel[[qi]]
+      Zki[[pi]] <- Zki[[pi]] + FFSel[[qi]]
+    } else {
+      FFSel[[qi]] <- FSel[[gi]]*0.01   # dummy for F==0
     }
   }
   
