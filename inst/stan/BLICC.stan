@@ -149,19 +149,18 @@ data {
   int<lower=2>               NP;           // Number of selectivity parameters
   int<lower=0>               NM;           // Number of mixture functions, & therefore mixture weights. Can be zero.
 
-  vector[NB]              LLB;            // Bin lower bounds
-  int                     fq[NQ, NB];     // Frequency in each bin for each gear
-  int<lower=1, upper=NG>  Gi[NQ];         // Gear index for frequency data
-  int<lower=1, upper=NX>  Xi[NN];         // Growth group index for population
-  int<lower=1, upper=NN>  Ni[NQ];         // Population index for frequency
-  vector[NF]              prop_catch;     // Estimated total relative catch in numbers of fish, excluding zeroes for surveys etc.
-  int<lower=0, upper=NF>  Fkq[NQ];        // Index of the Fk associated with frequency data. 0 implies no contribution to F (catch negligible)
-  int<lower=1, upper=5>   fSel[NS];       // Selectivity function to use: 1=logistic, 2=normal, 3=ss_normal, 4=ds_normal, 5=studentt
-  int<lower=1, upper=NP>  sp_i[NS];       // Selectivity function parameter start index
-  int<lower=1, upper=NS>  GSbase[NG];     // Integers linking gear to a selectivity function reference in fSel
-  int<lower=0, upper=NM>  GSmix1[NG*2];   // Integer pairs linking gear to selectivity function reference in GSMix2
-  int<lower=1, upper=NS>  GSmix2[NM];     // Integer references to fSel for mixtures. Could be zero length.
-  //matrix[NB, NX]          ma_L;           
+  vector[NB]    LLB;            // Bin lower bounds
+  array[NQ, NB] int fq;     // Frequency in each bin for each gear
+  array[NQ]     int<lower=1, upper=NG>  Gi;         // Gear index for frequency data
+  array[NN]     int<lower=1, upper=NX>  Xi;         // Growth group index for population
+  array[NQ]     int<lower=1, upper=NN>  Ni;         // Population index for frequency
+  vector[NF]    prop_catch;     // Estimated total relative catch in numbers of fish, excluding zeroes for surveys etc.
+  array[NQ]     int<lower=0, upper=NF>  Fkq;        // Index of the Fk associated with frequency data. 0 implies no contribution to F (catch negligible)
+  array[NS]     int<lower=1, upper=5>   fSel;       // Selectivity function to use: 1=logistic, 2=normal, 3=ss_normal, 4=ds_normal, 5=studentt
+  array[NS]     int<lower=1, upper=NP>  sp_i;       // Selectivity function parameter start index
+  array[NG]     int<lower=1, upper=NS>  GSbase;     // Integers linking gear to a selectivity function reference in fSel
+  array[NG*2]   int<lower=0, upper=NM>  GSmix1;   // Integer pairs linking gear to selectivity function reference in GSMix2
+  array[NM]     int<lower=1, upper=NS>  GSmix2;     // Integer references to fSel for mixtures. Could be zero length.
   array[NX] row_vector[NB] ma_L;          // Mature biomass at length for each species
   //Constant Hyperparameters for priors - Linf has a normal prior; all other priors are log normal
   //see https://github.com/stan-dev/stan/wiki/Prior-Choice-Recommendations
@@ -290,12 +289,11 @@ model {
     vector[NF] elC;
     real       eC_sum;
     vector[NB] eC;
-    vector[NS] Seli[NS];                    // Selectivity models
-    vector[NB] Sgi[NG];                     // Gear Selectivity
-    vector[NB] Fki[NQ];                     // Gear Selectivity
-    //vector[NB] Mki = Mk * M_L;              // Natural mortality
-    vector[NB] Zki[NN];                     // Total mortality
-    vector[NB] Pop[NN];                     // Populations
+    array[NS] vector[NB] Seli;                    // Selectivity models
+    array[NG] vector[NB] Sgi;                     // Gear Selectivity
+    array[NQ] vector[NB] Fki;                     // Gear Selectivity
+    array[NN] vector[NB] Zki;                     // Total mortality
+    array[NN] vector[NB] Pop;                     // Populations
 
     for (ni in 1:NN)
       Zki[ni] = Mk[Xi[ni]] * M_L;
@@ -377,12 +375,10 @@ generated quantities {
   {
     vector[NX] SPR0;
     vector[NN] SPRF;
-    vector[NS] Seli[NS];                    // Selectivity models
-    vector[NB] Sv;                         // Survival
-    //vector[NB] Fki[NQ];                     // fishing mortality
-    //vector[NB] Mki = Mk * M_L;              // Natural mortality
-    vector[NB] Zki[NN];                     // Total mortality
-    vector[NB] Pop[NN];                     // Populations
+    array[NS] vector[NB] Seli;                    // Selectivity models
+    vector[NB] Sv;                                // Survival
+    array[NN] vector[NB] Zki;                     // Total mortality
+    array[NN] vector[NB] Pop;                     // Populations
 
     for (ni in 1:NN)
       Zki[ni] = Mk[Xi[ni]] * M_L;

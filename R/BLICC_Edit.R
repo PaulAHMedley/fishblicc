@@ -7,7 +7,7 @@
 #' and parameters relevant indicated are retained. There are 
 #' no checks on consistency of the resulting data list.
 #'
-#' @NoRd
+#' @noRd
 #' @param blicc_ld Data list to be edited
 #' @param NewName New name for model
 #' @param Nindx Index for populations to include
